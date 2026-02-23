@@ -1,1 +1,1 @@
-import complaintDB from '../models/complaint.model.js';
+console.log("Complaint controller loaded");
