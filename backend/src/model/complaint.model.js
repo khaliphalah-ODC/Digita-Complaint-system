@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS complaints (
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 `;
-
+ 
 export const createComplaintQuery = `
 INSERT INTO complaints (
   user_id, is_anonymous, anonymous_label, title, description, category, target_type, target_name, target_contact, source_channel, classification, priority, tracking_code
