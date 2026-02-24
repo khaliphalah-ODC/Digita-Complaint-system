@@ -5,9 +5,6 @@ import {
   deleteStatusLogById
 } from "../model/statusLog.model.js";
 
-
-const complainDB = new sqlite3.Database("./complaints.db");
-
 // Add new status log
 export const createStatusLog = (req, res) => {
   const { complaint_id, changed_by, old_status, new_status, change_at } = req.body;
