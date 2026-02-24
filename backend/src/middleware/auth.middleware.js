@@ -1,1 +1,0 @@
-const authenticateToken = (req, res, next) 

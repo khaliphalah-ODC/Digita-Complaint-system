@@ -3,6 +3,7 @@ import {
   createStatusLog,
   getAllStatusLogs,
   getStatusLogsByComplaintId,
+  updateStatusLog,
   deleteStatusLog
 } from "../controllers/statusLog.controller.js";
 
@@ -17,6 +18,9 @@ StatusLogRouter.get("/status-log", getAllStatusLogs);
 // Get logs by complaint ID
 StatusLogRouter.get("/status-log/:id", getStatusLogsByComplaintId);
 
+StatusLogRouter.put("/status-log/:id", updateStatusLog);
+  res.status(501).json({ message: "Update status log not implemented yet" });
+  
 // Delete a status log by ID
 StatusLogRouter.delete("/status-log/:id", deleteStatusLog);
 

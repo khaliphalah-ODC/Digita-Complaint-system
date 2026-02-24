@@ -1,4 +1,5 @@
 
+import e from "express";
 import {
   insertStatusLog,
   selectStatusLogsByComplaintId,
@@ -53,6 +54,10 @@ export const getStatusLogsByComplaintId = (req, res) => {
   });
 };
 
+// Update log by Complaint ID 
+export const updateStatusLog = (req, res) => {
+  res.status(501).json({ message: "Update status log not implemented yet" });
+} ;
 
 // Delete log by ID
 export const deleteStatusLog = (req, res) => {
