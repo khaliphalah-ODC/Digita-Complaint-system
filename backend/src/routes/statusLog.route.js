@@ -1,8 +1,23 @@
-const express = require("express");
-const router = express.Router();
-const { getLogsByComplaintId } = require("../controllers/statusLogController");
+import express from "express";
+import {
+  createStatusLog,
+  getAllStatusLogs,
+  getStatusLogsByComplaintId,
+  deleteStatusLog
+} from "../controllers/statusLog.controller.js";
 
-// GET logs for a complaint
-router.get("/complaints/:id/logs", getLogsByComplaintId);
+const StatusLogRouter = express.Router();
 
-module.exports = router;
+// Create a new status log
+StatusLogRouter.post("/status-log", createStatusLog);
+
+// Get all status logs
+StatusLogRouter.get("/status-log", getAllStatusLogs);
+
+// Get logs by complaint ID
+StatusLogRouter.get("/status-log/:id", getStatusLogsByComplaintId);
+
+// Delete a status log by ID
+StatusLogRouter.delete("/status-log/:id", deleteStatusLog);
+
+export default StatusLogRouter;
