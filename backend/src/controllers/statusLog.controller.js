@@ -1,5 +1,3 @@
-
-import e from "express";
 import {
   insertStatusLog,
   selectStatusLogsByComplaintId,
@@ -8,13 +6,15 @@ import {
 } from "../model/statusLog.model.js";
 
 
+const complainDB = new sqlite3.Database("./complaints.db");
+
 // Add new status log
 export const createStatusLog = (req, res) => {
-  const { complaint_id, changed_by, old_status, new_status } = req.body;
+  const { complaint_id, changed_by, old_status, new_status, change_at } = req.body;
 
   complainDB.run(
     insertStatusLog,
-    [complaint_id, changed_by, old_status, new_status],
+    [complaint_id, changed_by, old_status, new_status, change_at],
     function (err) {
       if (err) {
         return res.status(500).json({ error: err.message });
