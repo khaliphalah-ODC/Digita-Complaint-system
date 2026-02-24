@@ -19,8 +19,8 @@ StatusLogRouter.get("/status-log", getAllStatusLogs);
 StatusLogRouter.get("/status-log/:id", getStatusLogsByComplaintId);
 
 StatusLogRouter.put("/status-log/:id", updateStatusLog);
-  res.status(501).json({ message: "Update status log not implemented yet" });
-  
+ 
+
 // Delete a status log by ID
 StatusLogRouter.delete("/status-log/:id", deleteStatusLog);
 
