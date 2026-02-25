@@ -1,6 +1,6 @@
 import complainDB from '../model/notification.model.js';
 
-import {createNotificationTable, userNotice, complaintByID, deletenotification} from `../model/notification.model.js`;
+import {notification, createNotificationTable, userNotice, complaintByID, deletenotification} from `../model/notification.model.js`;
 
 
 
@@ -15,7 +15,7 @@ import {createNotificationTable, userNotice, complaintByID, deletenotification} 
 const createNoticeTable = (req, res) => {
      const {user_id, complaint_id, type, message, is_real, creat_at} = req.body;
 
-    if(!title) return res.status(400).json({err: 'notice is not define'})
+    if(!complaint_id) return res.status(400).json({err: 'notice is not define'})
 
     complainDB.run(createNotificationTable, [user_id, complaint_id, type, message, is_real, creat_at], (err) => {
         if (err) {
@@ -52,8 +52,8 @@ const getnotificationById = (req, res) => {
 }
 
 const deletecomplainById = (req, res) => {
-    const {deletecomplaintByID} = req.params;
-    shopdata.run(deletenotification, [deletecomplaintByID], function (err) {
+    const {deletecomplaint} = req.params;
+    shopdata.run(deletenotification, [deletecomplaint], function (err) {
         if (err) {
             console.error("Error", err.message);
             res.status(500).send("Error deleting notificaton");
@@ -64,4 +64,4 @@ const deletecomplainById = (req, res) => {
     }); 
 }
 
-export {notice, createNoticeTable, getAllnotifications, getnotificationById, deletecomplainById}
+export {notice, createNoticeTable, getAllnotifications, getnotificationById, deletecomplainById};
