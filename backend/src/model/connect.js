@@ -2,7 +2,7 @@ import sqlite3 from 'sqlite3';
 
 const sql3 = sqlite3.verbose();
 
-const complainDB = new sql3.Database('./complaints.db', sql3.OPEN_READWRITE | sql3.OPEN_CREATE, (err) => {
+const complaintDB = new sql3.Database('./complaints.db', sql3.OPEN_READWRITE | sql3.OPEN_CREATE, (err) => {
   if (err) {
     console.error('Error opening database:', err.message);
   } else {
@@ -10,6 +10,6 @@ const complainDB = new sql3.Database('./complaints.db', sql3.OPEN_READWRITE | sq
   }
 });
 
-complainDB.run('PRAGMA foreign_keys = ON');
+complaintDB.run('PRAGMA foreign_keys = ON');
 
-export default complainDB;
+export default complaintDB;
