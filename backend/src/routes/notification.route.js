@@ -12,4 +12,4 @@ notificationRouter.route('/:notificationId')
 .get(getnotificationById)
 .delete(deletecomplainById)
 
-export default notificationRouter;
+export {notificationRouter};
