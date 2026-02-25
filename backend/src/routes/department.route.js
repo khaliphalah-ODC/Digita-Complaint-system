@@ -7,4 +7,4 @@ DepartmentRouter.route('/')
     .get(getAllDepartment)
     .post(createNewDepartment)
 
-export { DepartmentRouter };
+export default DepartmentRouter;

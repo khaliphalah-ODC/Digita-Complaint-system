@@ -1,5 +1,5 @@
 import complainDB from "../model/connect.js";
-import { Organization, insertOrganization, selectOrganizations, selectOrganizationById } from "../model/Organization.model.js";
+import { Organization, insertOrganization, selectOrganizations, selectOrganizationById } from "../model/organization.model.js";
 
 
 const createOrganizationTable = complainDB.run(Organization, (err) => {
@@ -12,14 +12,15 @@ const createOrganizationTable = complainDB.run(Organization, (err) => {
 
 
 const createNewOrganization = (req, res) => {
-    const { name, organizationType, email, phone, address, logo, status } = req.body;
-    complainDB.run(insertOrganization, [name, organizationType, email, phone, address, logo, status], (err) => {
+    const { name, organization_type, email, phone, address, logo, status } = req.body;
+    complainDB.run(insertOrganization, [name, organization_type, email, phone, address, logo, status], (err) => {
         if (err) {
             console.error('Could not insert organization', err);
             res.status(500).send('Error creating organization');
         } else {
             console.log('Organization inserted successfully');
-            res.send('Organization created successfully');
+            //res.send('Organization created successfully');
+            res.json({ message: 'Organization created successfully', organization_type, name, email, phone, address, logo, status });
         }
     })
 }

@@ -7,4 +7,4 @@ OrganizationRouter.route('/')
     .get(getAllOrganization)
     .post(createNewOrganization)
 
-export { OrganizationRouter };
+export default OrganizationRouter 

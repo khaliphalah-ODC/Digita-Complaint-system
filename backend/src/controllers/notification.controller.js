@@ -1,6 +1,6 @@
-import complainDB from '../model/notification.model.js';
+import complainDB from '../model/connect.js';
 
-import {notification, createNotificationTable, userNotice, complaintByID, deletenotification} from `../model/notification.model.js`;
+import {notification, createNotificationTable, userNotice, complaintByID, deletenotification} from '../model/notification.model.js';
 
 
 

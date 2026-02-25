@@ -11,8 +11,8 @@ const createDepartmentTable = complainDB.run(Department, (err) => {
 
 
 const createNewDepartment = (req, res) => {
-    const { organizationId, name, description, accessmentId } = req.body;
-    complainDB.run(insertDepartment, [organizationId, name, description, accessmentId], (err) => {
+    const { organization_id, name, description, accessment_id } = req.body;
+    complainDB.run(insertDepartment, [organization_id, name, description, accessment_id], (err) => {
         if (err) {
             console.error('Could not insert department', err);
             res.status(500).send('Error creating department');

@@ -7,4 +7,4 @@ ComplaintRouter.route('/')
     .get(getAllComplaint)
     .post(createNewComplaint)
 
-export { ComplaintRouter };
+export default ComplaintRouter
