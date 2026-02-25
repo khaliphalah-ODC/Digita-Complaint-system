@@ -58,23 +58,3 @@ app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
 
-
-// import userRoutes from './src/routes/user.route.js';
-// import accessmentRoutes from './src/routes/accessment.route.js';
-// import { CreateUsersTable } from './src/controllers/user.controller.js';
-// import { CreateAccessmentsTable } from './src/controllers/accessment.controller.js';
-// // Organization Route
-// import { OrganizationRouter } from './src/routes/organization.route.js';
-// import { createOrganizationTable } from './src/controllers/organization.controller.js';
-// // Department Route
-// import { DepartmentRouter } from './src/routes/department.route.js';
-// import { createDepartmentTable } from './src/controllers/department.controller.js';
-// // Status Log Route
-// import StatusLogRouter from './src/routes/statusLog.route.js';
-
-// dotenv.config();
-// const app = express();
-
-// app.use('/api', StatusLogRouter);
-// app.use(cors());
-// app.use(express.json());
