@@ -24,6 +24,15 @@ import { createComplaintTable } from './src/controllers/complaint.controller.js'
 
 
 
+<<<<<<< HEAD
+=======
+//Notification Route
+import {notificationRouter} from './src/routes/notification.route.js';
+import {notice} from './src/controllers/notification.controller.js';
+
+
+import StatusLogRouter from './src/routes/statusLog.route.js';
+>>>>>>> 0f5c07344c22a6d8d7b6856aae59c28253104b78
 
 dotenv.config();
 
@@ -59,28 +68,12 @@ app.use("/api/complaint", ComplaintRouter);
 createDepartmentTable;
 app.use("/api/department", DepartmentRouter);
 
+//Notification
+notice;
+app.use("/api/notification", notificationRouter);
+
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
 
-
-// import userRoutes from './src/routes/user.route.js';
-// import accessmentRoutes from './src/routes/accessment.route.js';
-// import { CreateUsersTable } from './src/controllers/user.controller.js';
-// import { CreateAccessmentsTable } from './src/controllers/accessment.controller.js';
-// // Organization Route
-// import { OrganizationRouter } from './src/routes/organization.route.js';
-// import { createOrganizationTable } from './src/controllers/organization.controller.js';
-// // Department Route
-// import { DepartmentRouter } from './src/routes/department.route.js';
-// import { createDepartmentTable } from './src/controllers/department.controller.js';
-// // Status Log Route
-// import StatusLogRouter from './src/routes/statusLog.route.js';
-
-// dotenv.config();
-// const app = express();
-
-// app.use('/api', StatusLogRouter);
-// app.use(cors());
-// app.use(express.json());
