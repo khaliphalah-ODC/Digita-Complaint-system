@@ -1,4 +1,4 @@
-import complainDB from '../model/connect.js';
+import complaintDB from '../model/connect.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import {
   accessmentQuery,
@@ -13,7 +13,7 @@ import {
 } from '../model/accessment.model.js';
 
 export const CreateAccessmentsTable = () => {
-  complainDB.run(accessmentQuery, (err) => {
+  complaintDB.run(accessmentQuery, (err) => {
     if (err) {
       console.error('Error creating accessments table:', err.message);
     } else {
@@ -54,7 +54,7 @@ export const createAccessment = (req, res) => {
     );
   }
 
-  complainDB.run(
+  complaintDB.run(
     createAccessmentQuery,
     [user_id, is_anonymous ? 1 : 0, title, accessment_type, priority, tracking_code],
     function onCreate(err) {
@@ -62,7 +62,7 @@ export const createAccessment = (req, res) => {
         return sendError(res, 500, 'Failed to create accessment', err.message);
       }
 
-      complainDB.get(fetchAccessmentByIdQuery, [this.lastID], (getErr, row) => {
+      complaintDB.get(fetchAccessmentByIdQuery, [this.lastID], (getErr, row) => {
         if (getErr) {
           return sendError(res, 500, 'Failed to fetch accessment', getErr.message);
         }
@@ -73,7 +73,7 @@ export const createAccessment = (req, res) => {
 };
 
 export const getAllAccessments = (_req, res) => {
-  complainDB.all(fetchAccessmentsQuery, [], (err, rows) => {
+  complaintDB.all(fetchAccessmentsQuery, [], (err, rows) => {
     if (err) {
       return sendError(res, 500, 'Failed to fetch accessments', err.message);
     }
@@ -82,7 +82,7 @@ export const getAllAccessments = (_req, res) => {
 };
 
 export const getAccessmentById = (req, res) => {
-  complainDB.get(fetchAccessmentByIdQuery, [req.params.id], (err, row) => {
+  complaintDB.get(fetchAccessmentByIdQuery, [req.params.id], (err, row) => {
     if (err) {
       return sendError(res, 500, 'Failed to fetch accessment', err.message);
     }
@@ -94,7 +94,7 @@ export const getAccessmentById = (req, res) => {
 };
 
 export const getAccessmentsByUserId = (req, res) => {
-  complainDB.all(fetchAccessmentsByUserIdQuery, [req.params.userId], (err, rows) => {
+  complaintDB.all(fetchAccessmentsByUserIdQuery, [req.params.userId], (err, rows) => {
     if (err) {
       return sendError(res, 500, 'Failed to fetch accessments by user', err.message);
     }
@@ -109,7 +109,7 @@ export const updateAccessmentAdminResponse = (req, res) => {
     return sendError(res, 400, 'admin_response is required');
   }
 
-  complainDB.run(updateAccessmentAdminResponseQuery, [admin_response, req.params.id], function onUpdate(err) {
+  complaintDB.run(updateAccessmentAdminResponseQuery, [admin_response, req.params.id], function onUpdate(err) {
     if (err) {
       return sendError(res, 500, 'Failed to update accessment', err.message);
     }
@@ -118,7 +118,7 @@ export const updateAccessmentAdminResponse = (req, res) => {
       return sendError(res, 404, 'Accessment not found');
     }
 
-    complainDB.get(fetchAccessmentByIdQuery, [req.params.id], (getErr, row) => {
+    complaintDB.get(fetchAccessmentByIdQuery, [req.params.id], (getErr, row) => {
       if (getErr) {
         return sendError(res, 500, 'Failed to fetch updated accessment', getErr.message);
       }
@@ -128,7 +128,7 @@ export const updateAccessmentAdminResponse = (req, res) => {
 };
 
 export const deleteAccessment = (req, res) => {
-  complainDB.run(deleteAccessmentQuery, [req.params.id], function onDelete(err) {
+  complaintDB.run(deleteAccessmentQuery, [req.params.id], function onDelete(err) {
     if (err) {
       return sendError(res, 500, 'Failed to delete accessment', err.message);
     }

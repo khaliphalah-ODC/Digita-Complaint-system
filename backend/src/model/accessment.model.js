@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS accessments (
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 `;
+
 export const VALID_ACCESSMENT_TYPES = ['type1', 'type2', 'type3'];
 export const VALID_ACCESSMENT_PRIORITIES = ['low', 'medium', 'high'];
 export const fetchAccessmentsQuery = `SELECT * FROM accessments ORDER BY id DESC;`;

@@ -1,4 +1,4 @@
-import complainDB from '../model/connect.js';
+import complaintDB from '../model/connect.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import {
   usersQuery,
@@ -11,7 +11,7 @@ import {
 } from '../model/user.model.js';
 
 export const CreateUsersTable = () => {
-  complainDB.run(usersQuery, (err) => {
+  complaintDB.run(usersQuery, (err) => {
     if (err) {
       console.error('Error creating users table:', err.message);
     } else {
@@ -34,7 +34,7 @@ export const createUser = (req, res) => {
     return sendError(res, 400, 'full_name, email, and password are required');
   }
 
-  complainDB.run(
+  complaintDB.run(
     createUserQuery,
     [organization_id, full_name, email, password, status, role],
     function onCreate(err) {
@@ -42,7 +42,7 @@ export const createUser = (req, res) => {
         return sendError(res, 500, 'Failed to create user', err.message);
       }
 
-      complainDB.get(fetchUserByIdQuery, [this.lastID], (getErr, row) => {
+      complaintDB.get(fetchUserByIdQuery, [this.lastID], (getErr, row) => {
         if (getErr) {
           return sendError(res, 500, 'Failed to fetch user', getErr.message);
         }
@@ -53,7 +53,7 @@ export const createUser = (req, res) => {
 };
 
 export const getAllUsers = (_req, res) => {
-  complainDB.all(fetchUsersQuery, [], (err, rows) => {
+  complaintDB.all(fetchUsersQuery, [], (err, rows) => {
     if (err) {
       return sendError(res, 500, 'Failed to fetch users', err.message);
     }
@@ -62,7 +62,7 @@ export const getAllUsers = (_req, res) => {
 };
 
 export const getUserById = (req, res) => {
-  complainDB.get(fetchUserByIdQuery, [req.params.id], (err, row) => {
+  complaintDB.get(fetchUserByIdQuery, [req.params.id], (err, row) => {
     if (err) {
       return sendError(res, 500, 'Failed to fetch user', err.message);
     }
@@ -74,7 +74,7 @@ export const getUserById = (req, res) => {
 };
 
 export const getUserByEmail = (req, res) => {
-  complainDB.get(fetchUserByEmailQuery, [req.params.email], (err, row) => {
+  complaintDB.get(fetchUserByEmailQuery, [req.params.email], (err, row) => {
     if (err) {
       return sendError(res, 500, 'Failed to fetch user by email', err.message);
     }
@@ -99,7 +99,7 @@ export const updateUser = (req, res) => {
     return sendError(res, 400, 'full_name, email, and password are required');
   }
 
-  complainDB.run(
+  complaintDB.run(
     updateUserQuery,
     [organization_id, full_name, email, password, status, role, req.params.id],
     function onUpdate(err) {
@@ -111,7 +111,7 @@ export const updateUser = (req, res) => {
         return sendError(res, 404, 'User not found');
       }
 
-      complainDB.get(fetchUserByIdQuery, [req.params.id], (getErr, row) => {
+      complaintDB.get(fetchUserByIdQuery, [req.params.id], (getErr, row) => {
         if (getErr) {
           return sendError(res, 500, 'Failed to fetch updated user', getErr.message);
         }
@@ -122,7 +122,7 @@ export const updateUser = (req, res) => {
 };
 
 export const deleteUser = (req, res) => {
-  complainDB.run(deleteUserQuery, [req.params.id], function onDelete(err) {
+  complaintDB.run(deleteUserQuery, [req.params.id], function onDelete(err) {
     if (err) {
       return sendError(res, 500, 'Failed to delete user', err.message);
     }

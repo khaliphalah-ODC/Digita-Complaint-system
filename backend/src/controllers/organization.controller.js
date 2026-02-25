@@ -1,6 +1,7 @@
 import complainDB from "../model/connect.js";
 import { Organization, insertOrganization, selectOrganizations, selectOrganizationById } from "../model/Organization.model.js";
 
+
 const createOrganizationTable = complainDB.run(Organization, (err) => {
     if (err) {
         console.error('Could not create table', err);
@@ -46,5 +47,6 @@ const getById = (req, res) => {
         }
     });
 }
+
 
 export { createOrganizationTable, createNewOrganization, getAllOrganization, getById };

@@ -1,72 +1,125 @@
+import complaintDB from '../model/connect.js';
+import { sendSuccess, sendError } from '../utils/response.js';
 import {
-  insertStatusLog,
-  selectStatusLogsByComplaintId,
-  selectStatusLogs,
-  deleteStatusLogById
-} from "../model/statusLog.model.js";
+  statusLogsQuery,
+  createStatusLogQuery,
+  fetchAllStatusLogsQuery,
+  fetchStatusLogByIdQuery,
+  fetchStatusLogsByAccessmentIdQuery,
+  updateStatusLogQuery,
+  deleteStatusLogByIdQuery,
+  deleteStatusLogsByAccessmentIdQuery
+} from '../model/statusLog.model.js';
 
-// Add new status log
+export const CreateStatusLogsTable = () => {
+  complaintDB.run(statusLogsQuery, (err) => {
+    if (err) {
+      console.error('Error creating status_logs table:', err.message);
+    } else {
+      console.log('Status logs table created or already exists');
+    }
+  });
+};
+
 export const createStatusLog = (req, res) => {
-  const { complaint_id, changed_by, old_status, new_status, change_at } = req.body;
+  const { accessment_id, changed_by, old_status = null, new_status, notes = null } = req.body;
 
-  complainDB.run(
-    insertStatusLog,
-    [complaint_id, changed_by, old_status, new_status, change_at],
-    function (err) {
+  if (!accessment_id || !changed_by || !new_status) {
+    return sendError(res, 400, 'accessment_id, changed_by, and new_status are required');
+  }
+
+  complaintDB.run(
+    createStatusLogQuery,
+    [accessment_id, changed_by, old_status, new_status, notes],
+    function onCreate(err) {
       if (err) {
-        return res.status(500).json({ error: err.message });
+        return sendError(res, 500, 'Failed to create status log', err.message);
       }
 
-      res.status(201).json({
-        message: "Status log created successfully",
-        log_id: this.lastID
+      complaintDB.get(fetchStatusLogByIdQuery, [this.lastID], (getErr, row) => {
+        if (getErr) {
+          return sendError(res, 500, 'Failed to fetch status log', getErr.message);
+        }
+        return sendSuccess(res, 201, 'Status log created successfully', row);
       });
     }
   );
 };
 
-
-// Get all logs
-export const getAllStatusLogs = (req, res) => {
-  complainDB.all(selectStatusLogs, [], (err, rows) => {
+export const getAllStatusLogs = (_req, res) => {
+  complaintDB.all(fetchAllStatusLogsQuery, [], (err, rows) => {
     if (err) {
-      return res.status(500).json({ error: err.message });
+      return sendError(res, 500, 'Failed to fetch status logs', err.message);
     }
-
-    res.status(200).json(rows);
+    return sendSuccess(res, 200, 'Status logs retrieved successfully', rows);
   });
 };
 
-
-// Get logs by complaint ID
-export const getStatusLogsByComplaintId = (req, res) => {
-  const { id } = req.params;
-
-  complainDB.all(selectStatusLogsByComplaintId, [id], (err, rows) => {
+export const getStatusLogById = (req, res) => {
+  complaintDB.get(fetchStatusLogByIdQuery, [req.params.id], (err, row) => {
     if (err) {
-      return res.status(500).json({ error: err.message });
+      return sendError(res, 500, 'Failed to fetch status log', err.message);
     }
-
-    res.status(200).json(rows);
+    if (!row) {
+      return sendError(res, 404, 'Status log not found');
+    }
+    return sendSuccess(res, 200, 'Status log retrieved successfully', row);
   });
 };
 
-// Update log by Complaint ID 
+export const getStatusLogsByAccessmentId = (req, res) => {
+  complaintDB.all(fetchStatusLogsByAccessmentIdQuery, [req.params.accessmentId], (err, rows) => {
+    if (err) {
+      return sendError(res, 500, 'Failed to fetch status logs by accessment', err.message);
+    }
+    return sendSuccess(res, 200, 'Status logs retrieved successfully', rows);
+  });
+};
+
 export const updateStatusLog = (req, res) => {
-  res.status(501).json({ message: "Update status log not implemented yet" });
-} ;
+  const { old_status = null, new_status, notes = null } = req.body;
 
-// Delete log by ID
-export const deleteStatusLog = (req, res) => {
-  const { id } = req.params;
+  if (!new_status) {
+    return sendError(res, 400, 'new_status is required');
+  }
 
-  complainDB.run(deleteStatusLogById, [id], function (err) {
+  complaintDB.run(updateStatusLogQuery, [old_status, new_status, notes, req.params.id], function onUpdate(err) {
     if (err) {
-      return res.status(500).json({ error: err.message });
+      return sendError(res, 500, 'Failed to update status log', err.message);
+    }
+    if (this.changes === 0) {
+      return sendError(res, 404, 'Status log not found');
     }
 
-    res.status(200).json({
-      message: "Status log deleted successfully"
+    complaintDB.get(fetchStatusLogByIdQuery, [req.params.id], (getErr, row) => {
+      if (getErr) {
+        return sendError(res, 500, 'Failed to fetch updated status log', getErr.message);
+      }
+      return sendSuccess(res, 200, 'Status log updated successfully', row);
+    });
+  });
+};
+
+export const deleteStatusLog = (req, res) => {
+  complaintDB.run(deleteStatusLogByIdQuery, [req.params.id], function onDelete(err) {
+    if (err) {
+      return sendError(res, 500, 'Failed to delete status log', err.message);
+    }
+    if (this.changes === 0) {
+      return sendError(res, 404, 'Status log not found');
+    }
+    return sendSuccess(res, 200, 'Status log deleted successfully', { id: req.params.id });
+  });
+};
+
+export const deleteStatusLogsByAccessmentId = (req, res) => {
+  complaintDB.run(deleteStatusLogsByAccessmentIdQuery, [req.params.accessmentId], function onDelete(err) {
+    if (err) {
+      return sendError(res, 500, 'Failed to delete status logs', err.message);
+    }
+    return sendSuccess(res, 200, 'Status logs deleted successfully', {
+      accessment_id: req.params.accessmentId,
+      deleted_count: this.changes
     });
   });
 };
