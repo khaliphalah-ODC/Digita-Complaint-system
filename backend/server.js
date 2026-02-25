@@ -16,6 +16,8 @@ import { createDepartmentTable } from './src/controllers/department.controller.j
 
 import { ComplaintRouter } from './src/routes/complaint.route.js';
 import { createComplaintTable } from './src/controllers/complaint.controller.js';
+import feedbackRoutes from './src/routes/feedback.route.js';
+import { CreateFeedbackTable } from './src/controllers/feedback.controller.js';
 
 
 
@@ -52,6 +54,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/accessments', accessmentRoutes);
 app.use('/api/escalations', escalationRoutes);
 app.use('/api/status-logs', statusLogRoutes);
+app.use('/api/feedback', feedbackRoutes);
 app.use("/api/organization", OrganizationRouter);
 app.use("/api/department", DepartmentRouter);
 
@@ -61,6 +64,7 @@ CreateUsersTable();
 CreateAccessmentsTable();
 CreateEscalationsTable();
 CreateStatusLogsTable();
+CreateFeedbackTable();
 createOrganizationTable
 createDepartmentTable
 

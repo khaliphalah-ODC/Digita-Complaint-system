@@ -12,7 +12,13 @@ export const Feedback = `
 `
 
 export const createFeedbackQuery = `INSERT INTO feedback (complaint_id, user_id, rating, comment) VALUES (?, ?, ?, ?);`;
-export const fetchAllFeedbackQuery = `SELECT * FROM feedback;`;
+export const fetchAllFeedbackQuery = `SELECT * FROM feedback ORDER BY id DESC;`;
+export const fetchFeedbackByIdQuery = `SELECT * FROM feedback WHERE id = ?;`;
 export const fetchFeedbackByComplaintIdQuery = `SELECT * FROM feedback WHERE complaint_id = ? ORDER BY created_at DESC;`;
+export const updateFeedbackQuery = `
+UPDATE feedback
+SET rating = ?, comment = ?
+WHERE id = ?;
+`;
 export const deleteFeedbackByComplaintIdQuery = `DELETE FROM feedback WHERE complaint_id = ?;`;
 export const deleteFeedbackByIdQuery = `DELETE FROM feedback WHERE id = ?;`;
