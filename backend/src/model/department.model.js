@@ -4,12 +4,13 @@ export const Department = `CREATE TABLE IF NOT EXISTS department (
     name TEXT,
    description TEXT,
    accessmentId INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
    FOREIGN KEY (organizationId) REFERENCES organization(organizationId),
-   FOREIGN KEY (accessmentId) REFERENCES accessment(accessmentId),
-   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+   FOREIGN KEY (accessmentId) REFERENCES accessment(accessmentId)
+
 )`;
 
-export const insertDepartment = `INSERT INTO department (organizationId, name, description, accessmentId) VALUES (?, ?, ?, ?, ?)`;
+export const insertDepartment = `INSERT INTO department (organizationId, name, description, accessmentId) VALUES (?, ?, ?, ?)`;
 
 export const selectDepartments = `SELECT * FROM department`;
 

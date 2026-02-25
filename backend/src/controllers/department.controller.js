@@ -24,7 +24,7 @@ const createNewDepartment = (req, res) => {
 }
 
 
-const getAllDepartments = (req, res) => {
+const getAllDepartment = (req, res) => {
     complainDB.all(selectDepartments, [], (err, rows) => {
         if (err) {
             console.error('Could not fetch departments', err);
@@ -47,4 +47,4 @@ const getById = (req, res) => {
     });
 }
 
-export { createDepartmentTable, createNewDepartment, getAllDepartments, getById };
+export { createDepartmentTable, createNewDepartment, getAllDepartment, getById };
