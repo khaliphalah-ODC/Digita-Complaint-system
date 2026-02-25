@@ -17,6 +17,11 @@ import { DepartmentRouter } from './src/routes/department.route.js';
 import { createDepartmentTable } from './src/controllers/department.controller.js';
 
 
+//Notification Route
+import {notificationRouter} from './src/routes/notification.route.js';
+import {notice} from './src/controllers/notification.controller.js';
+
+
 import StatusLogRouter from './src/routes/statusLog.route.js';
 
 dotenv.config();
@@ -52,6 +57,10 @@ app.use("/api/organization", OrganizationRouter);
 // Department Route
 createDepartmentTable;
 app.use("/api/department", DepartmentRouter);
+
+//Notification
+notice;
+app.use("/api/notification", notificationRouter);
 
 
 app.listen(PORT, () => {
