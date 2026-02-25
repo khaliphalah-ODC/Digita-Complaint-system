@@ -7,13 +7,6 @@ import './src/model/connect.js';
 // Import routes
 import userRoutes from './src/routes/user.route.js';
 import accessmentRoutes from './src/routes/accessment.route.js';
-import escalationRoutes from './src/routes/escalation.route.js';
-import statusLogRoutes from './src/routes/statusLog.route.js';
-import  DepartmentRouter from './src/routes/department.route.js';
-import OrganizationRouter from './src/routes/organization.route.js';
-
-
-// Import organization and department routes and controllers
 import { CreateUsersTable } from './src/controllers/user.controller.js';
 import { CreateAccessmentsTable } from './src/controllers/accessment.controller.js';
 import { CreateEscalationsTable } from './src/controllers/escalation.controller.js';
@@ -21,7 +14,20 @@ import { CreateStatusLogsTable } from './src/controllers/statusLog.controller.js
 import { createOrganizationTable } from './src/controllers/organization.controller.js';
 import { createDepartmentTable } from './src/controllers/department.controller.js';
 
-// Load environment variables
+import { ComplaintRouter } from './src/routes/complaint.route.js';
+import { createComplaintTable } from './src/controllers/complaint.controller.js';
+
+
+
+
+
+//Notification Route
+import {notificationRouter} from './src/routes/notification.route.js';
+import {notice} from './src/controllers/notification.controller.js';
+
+
+import StatusLogRouter from './src/routes/statusLog.route.js';
+
 dotenv.config();
 
 // Initialize Express app
@@ -31,7 +37,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Basic route to test server
+app.use('/api', StatusLogRouter);
+
+app.use(cors());
+app.use(express.json());
+
 app.get('/', (req, res) => {
     res.send('Digital Complaint Management System API');
 });
@@ -57,8 +67,36 @@ createDepartmentTable
 // Set the port from environment variable or default to 5000
 const PORT = process.env.PORT || 5000;
 
+// Organization Route
+createOrganizationTable;
+app.use("/api/organization", OrganizationRouter);
 
-// Start the server
+// Department Route
+createDepartmentTable;
+app.use("/api/department", DepartmentRouter);
+
+
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
+
+
+// import userRoutes from './src/routes/user.route.js';
+// import accessmentRoutes from './src/routes/accessment.route.js';
+// import { CreateUsersTable } from './src/controllers/user.controller.js';
+// import { CreateAccessmentsTable } from './src/controllers/accessment.controller.js';
+// // Organization Route
+// import { OrganizationRouter } from './src/routes/organization.route.js';
+// import { createOrganizationTable } from './src/controllers/organization.controller.js';
+// // Department Route
+// import { DepartmentRouter } from './src/routes/department.route.js';
+// import { createDepartmentTable } from './src/controllers/department.controller.js';
+// // Status Log Route
+// import StatusLogRouter from './src/routes/statusLog.route.js';
+
+// dotenv.config();
+// const app = express();
+
+// app.use('/api', StatusLogRouter);
+// app.use(cors());
+// app.use(express.json());

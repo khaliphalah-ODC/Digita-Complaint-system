@@ -1,5 +1,5 @@
 export const Organization = `CREATE TABLE IF NOT EXISTS organization (
-    organizationId INTEGER PRIMARY KEY AUTOINCREMENT,
+    organization_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     organizationType TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
