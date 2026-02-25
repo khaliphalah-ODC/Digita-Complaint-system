@@ -1,7 +1,11 @@
-import exppress from 'express';
+import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import './src/model/connect.js';
+import userRoutes from './src/routes/user.route.js';
+import accessmentRoutes from './src/routes/accessment.route.js';
+import { CreateUsersTable } from './src/controllers/user.controller.js';
+import { CreateAccessmentsTable } from './src/controllers/accessment.controller.js';
 
 // Organization Route
 import { OrganizationRouter } from './src/routes/organization.route.js';
@@ -14,16 +18,22 @@ import { createDepartmentTable } from './src/controllers/department.controller.j
 
 dotenv.config();
 
-const app = exppress();
+const app = express();
 
 
 app.use(cors());
-app.use(exppress.json());
+app.use(express.json());
 
 
 app.get('/', (req, res) => {
     res.send('Digital Complaint Management System API');
 });
+
+app.use('/api/users', userRoutes);
+app.use('/api/accessments', accessmentRoutes);
+
+CreateUsersTable();
+CreateAccessmentsTable();
 
 
 const PORT = process.env.PORT || 5000;
