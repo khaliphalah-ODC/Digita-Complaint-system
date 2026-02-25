@@ -1,6 +1,6 @@
-import complainDB from '../model/connect.js';
+import complainDB from '../model/notification.model.js';
 
-import {notification, createNotificationTable, userNotice, complaintByID, deletenotification} from '../model/notification.model.js';
+import {notification, createNotificationTable, userNotice, complaintByID, deletenotification} from `../model/notification.model.js`;
 
 
 
@@ -13,11 +13,11 @@ import {notification, createNotificationTable, userNotice, complaintByID, delete
 });
 
 const createNoticeTable = (req, res) => {
-     const {user_id, complaint_id, type, message, is_real, creat_at} = req.body;
+     const {user_id, complaint_id, type, message, is_real, create_at} = req.body;
 
     if(!complaint_id) return res.status(400).json({err: 'notice is not define'})
 
-    complainDB.run(createNotificationTable, [user_id, complaint_id, type, message, is_real, creat_at], (err) => {
+    complainDB.run(createNotificationTable, [user_id, complaint_id, type, message, is_real, create_at], (err) => {
         if (err) {
             console.error('Could not register notification', err);
             res.status(500).send('Error sending notification');

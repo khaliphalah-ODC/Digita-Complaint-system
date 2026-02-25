@@ -5,11 +5,11 @@ export const notification = `CREATE TABLE IF NOT EXISTS NOTIFICATION (
     type TEXT,
     message TEXT,
     is_read TEXT,
-    creat_at TEXT DEFAULT CURRENT_TIMESTAMP
+    create_at TEXT DEFAULT CURRENT_TIMESTAMP
 )`;
 
 
-export const createNotificationTable = `INSERT INTO notification (user_id, complaint_id, type, message, is_real, creat_at)VALUES (?, ?, ?, ?, ?, ?)`  
+export const createNotificationTable = `INSERT INTO notification (user_id, complaint_id, type, message, is_real, create_at)VALUES (?, ?, ?, ?, ?, ?)`; 
 export const userNotice = `SELECT * FROM notification ORDER BY id DESC`;
 export const complaintByID = `SELECT * FROM complaints WHERE id = ?`;
 export const deletenotification = `DELETE * FROM notification WHERE id = ?`;
