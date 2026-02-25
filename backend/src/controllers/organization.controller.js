@@ -1,5 +1,5 @@
 import complainDB from "../model/connect.js";
-import { Organization, insertOrganization, selectOrganization, selectOrganizationById, deleteOrganizationById, updateOrganizationById } from "../model/Organization.model.js";
+import { Organization, insertOrganization, selectOrganizations, selectOrganizationById } from "../model/Organization.model.js";
 
 const createOrganizationTable = complainDB.run(Organization, (err) => {
     if (err) {
@@ -24,8 +24,8 @@ const createNewOrganization = (req, res) => {
 }
 
 
-const getAllOrganizations = (req, res) => {
-    complainDB.all(selectOrganization, [], (err, rows) => {
+const getAllOrganization = (req, res) => {
+    complainDB.all(selectOrganizations, [], (err, rows) => {
         if (err) {
             console.error('Could not fetch organizations', err);
             res.status(500).send('Error fetching organizations');
@@ -47,4 +47,4 @@ const getById = (req, res) => {
     });
 }
 
-export { createOrganizationTable, createNewOrganization, getAllOrganizations, getById };
+export { createOrganizationTable, createNewOrganization, getAllOrganization, getById };
