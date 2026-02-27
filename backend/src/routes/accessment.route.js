@@ -3,7 +3,7 @@ import {
   createAccessment,
   deleteAccessment,
   getAccessmentById,
-  getAccessments,
+  getAllAccessments,
   getAccessmentsByUserId,
   updateAccessmentAdminResponse
 } from '../controllers/accessment.controller.js';
@@ -11,7 +11,7 @@ import {
 const router = express.Router();
 
 router.post('/', createAccessment);
-router.get('/', getAccessments);
+router.get('/', getAllAccessments);
 router.get('/user/:userId', getAccessmentsByUserId);
 router.get('/:id', getAccessmentById);
 router.patch('/:id/admin-response', updateAccessmentAdminResponse);

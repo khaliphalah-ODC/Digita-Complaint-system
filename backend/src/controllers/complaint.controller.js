@@ -1,50 +1,60 @@
-import complainDB from "../model/connect.js";
-import { Complaint, insertComplaint, selectComplaint, selectComplaintById } from "../model/complaint.model.js";
+import complaintDB from '../model/connect.js';
+import { sendSuccess, sendError } from '../utils/response.js';
+import {
+  Complaint,
+  insertComplaint,
+  selectComplaint,
+  selectComplaintById
+} from '../model/complaint.model.js';
 
-const createComplaintTable = complainDB.run(Complaint, (err) => {
+export const CreateComplaintTable = () => {
+  complaintDB.run(Complaint, (err) => {
     if (err) {
-        console.error('Could not create table', err);
+      console.error('Error creating complaint table:', err.message);
     } else {
-        console.log('Table created or already exists');
+      console.log('Complaint table created or already exists');
     }
-});
+  });
+};
 
+export const createComplaint = (req, res) => {
+  const { complaint } = req.body;
 
-const createNewComplaint = (req, res) => {
-    const { complaint } = req.body;
-    complainDB.run(insertComplaint, [complaint], (err) => {
-        if (err) {
-            console.error('Could not insert complaint', err);
-            res.status(500).send('Error creating complaint');
-        } else {
-            console.log('Complaint inserted successfully');
-            res.send('Complaint created successfully');
-        }
-    })
-}
+  if (!complaint) {
+    return sendError(res, 400, 'complaint is required');
+  }
 
+  complaintDB.run(insertComplaint, [complaint], function onCreate(err) {
+    if (err) {
+      return sendError(res, 500, 'Failed to create complaint', err.message);
+    }
 
-const getAllComplaint = (req, res) => {
-    complainDB.all(selectComplaint, [], (err, rows) => {
-        if (err) {
-            console.error('Could not fetch complaints', err);
-            res.status(500).send('Error fetching complaints');
-        } else {
-            res.json(rows);
-        }
+    complaintDB.get(selectComplaintById, [this.lastID], (getErr, row) => {
+      if (getErr) {
+        return sendError(res, 500, 'Failed to fetch complaint', getErr.message);
+      }
+      return sendSuccess(res, 201, 'Complaint created successfully', row);
     });
-}
+  });
+};
 
-const getById = (req, res) => {
-    const { id } = req.params;
-    complainDB.get(selectComplaintById, [id], (err, row) => {
-        if (err) {
-            console.error('Could not fetch complaint', err);
-            res.status(500).send('Error fetching complaint');
-        } else {
-            res.json(row);
-        }
-    });
-}
+export const getAllComplaints = (_req, res) => {
+  complaintDB.all(selectComplaint, [], (err, rows) => {
+    if (err) {
+      return sendError(res, 500, 'Failed to fetch complaints', err.message);
+    }
+    return sendSuccess(res, 200, 'Complaints retrieved successfully', rows);
+  });
+};
 
-export { createComplaintTable, createNewComplaint, getAllComplaint, getById };
+export const getComplaintById = (req, res) => {
+  complaintDB.get(selectComplaintById, [req.params.id], (err, row) => {
+    if (err) {
+      return sendError(res, 500, 'Failed to fetch complaint', err.message);
+    }
+    if (!row) {
+      return sendError(res, 404, 'Complaint not found');
+    }
+    return sendSuccess(res, 200, 'Complaint retrieved successfully', row);
+  });
+};

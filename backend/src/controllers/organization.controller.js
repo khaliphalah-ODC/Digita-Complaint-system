@@ -1,53 +1,122 @@
-import complainDB from "../model/connect.js";
-import { Organization, insertOrganization, selectOrganizations, selectOrganizationById } from "../model/organization.model.js";
+import complaintDB from '../model/connect.js';
+import { sendSuccess, sendError } from '../utils/response.js';
+import {
+  Organization,
+  deleteOrganizationById,
+  insertOrganization,
+  selectOrganizations,
+  selectOrganizationById,
+  updateOrganizationById
+} from '../model/organization.model.js';
 
-
-const createOrganizationTable = complainDB.run(Organization, (err) => {
+export const CreateOrganizationTable = () => {
+  complaintDB.run(Organization, (err) => {
     if (err) {
-        console.error('Could not create table', err);
+      console.error('Error creating organization table:', err.message);
     } else {
-        console.log('Table created or already exists');
+      console.log('Organization table created or already exists');
     }
-});
+  });
+};
 
+export const createOrganization = (req, res) => {
+  const {
+    name,
+    organization_type,
+    email,
+    phone = null,
+    address,
+    logo = null,
+    status = 'active'
+  } = req.body;
 
-const createNewOrganization = (req, res) => {
-    const { name, organization_type, email, phone, address, logo, status } = req.body;
-    complainDB.run(insertOrganization, [name, organization_type, email, phone, address, logo, status], (err) => {
-        if (err) {
-            console.error('Could not insert organization', err);
-            res.status(500).send('Error creating organization');
-        } else {
-            console.log('Organization inserted successfully');
-            //res.send('Organization created successfully');
-            res.json({ message: 'Organization created successfully', organization_type, name, email, phone, address, logo, status });
+  if (!name || !organization_type || !email || !address) {
+    return sendError(res, 400, 'name, organization_type, email, and address are required');
+  }
+
+  complaintDB.run(
+    insertOrganization,
+    [name, organization_type, email, phone, address, logo, status],
+    function onCreate(err) {
+      if (err) {
+        return sendError(res, 500, 'Failed to create organization', err.message);
+      }
+
+      complaintDB.get(selectOrganizationById, [this.lastID], (getErr, row) => {
+        if (getErr) {
+          return sendError(res, 500, 'Failed to fetch organization', getErr.message);
         }
-    })
-}
+        return sendSuccess(res, 201, 'Organization created successfully', row);
+      });
+    }
+  );
+};
 
+export const getAllOrganizations = (_req, res) => {
+  complaintDB.all(selectOrganizations, [], (err, rows) => {
+    if (err) {
+      return sendError(res, 500, 'Failed to fetch organizations', err.message);
+    }
+    return sendSuccess(res, 200, 'Organizations retrieved successfully', rows);
+  });
+};
 
-const getAllOrganization = (req, res) => {
-    complainDB.all(selectOrganizations, [], (err, rows) => {
-        if (err) {
-            console.error('Could not fetch organizations', err);
-            res.status(500).send('Error fetching organizations');
-        } else {
-            res.json(rows);
+export const getOrganizationById = (req, res) => {
+  complaintDB.get(selectOrganizationById, [req.params.id], (err, row) => {
+    if (err) {
+      return sendError(res, 500, 'Failed to fetch organization', err.message);
+    }
+    if (!row) {
+      return sendError(res, 404, 'Organization not found');
+    }
+    return sendSuccess(res, 200, 'Organization retrieved successfully', row);
+  });
+};
+
+export const updateOrganization = (req, res) => {
+  const {
+    name,
+    organization_type,
+    email,
+    phone = null,
+    address,
+    logo = null,
+    status = 'active'
+  } = req.body;
+
+  if (!name || !organization_type || !email || !address) {
+    return sendError(res, 400, 'name, organization_type, email, and address are required');
+  }
+
+  complaintDB.run(
+    updateOrganizationById,
+    [name, organization_type, email, phone, address, logo, status, req.params.id],
+    function onUpdate(err) {
+      if (err) {
+        return sendError(res, 500, 'Failed to update organization', err.message);
+      }
+      if (this.changes === 0) {
+        return sendError(res, 404, 'Organization not found');
+      }
+
+      complaintDB.get(selectOrganizationById, [req.params.id], (getErr, row) => {
+        if (getErr) {
+          return sendError(res, 500, 'Failed to fetch updated organization', getErr.message);
         }
-    });
-}
+        return sendSuccess(res, 200, 'Organization updated successfully', row);
+      });
+    }
+  );
+};
 
-const getById = (req, res) => {
-    const { id } = req.params;
-    complainDB.get(selectOrganizationById, [id], (err, row) => {
-        if (err) {
-            console.error('Could not fetch organization', err);
-            res.status(500).send('Error fetching organization');
-        } else {
-            res.json(row);
-        }
-    });
-}
-
-
-export { createOrganizationTable, createNewOrganization, getAllOrganization, getById };
+export const deleteOrganization = (req, res) => {
+  complaintDB.run(deleteOrganizationById, [req.params.id], function onDelete(err) {
+    if (err) {
+      return sendError(res, 500, 'Failed to delete organization', err.message);
+    }
+    if (this.changes === 0) {
+      return sendError(res, 404, 'Organization not found');
+    }
+    return sendSuccess(res, 200, 'Organization deleted successfully', { id: req.params.id });
+  });
+};

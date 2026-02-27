@@ -2,6 +2,7 @@ export const Complaint = `CREATE TABLE IF NOT EXISTS complaint (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     complaint TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    
 )`;
 
 export const insertComplaint = `INSERT INTO complaint (complaint) VALUES (?)`;

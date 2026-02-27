@@ -1,10 +1,14 @@
-import router from 'express';
-import { createNewComplaint, getAllComplaint } from '../controllers/complaint.controller.js';
+import express from 'express';
+import {
+  createComplaint,
+  getAllComplaints,
+  getComplaintById
+} from '../controllers/complaint.controller.js';
 
-const ComplaintRouter = router();
+const router = express.Router();
 
-ComplaintRouter.route('/')
-    .get(getAllComplaint)
-    .post(createNewComplaint)
+router.post('/', createComplaint);
+router.get('/', getAllComplaints);
+router.get('/:id', getComplaintById);
 
-export default ComplaintRouter
+export default router;

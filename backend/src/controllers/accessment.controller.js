@@ -140,5 +140,3 @@ export const deleteAccessment = (req, res) => {
     return sendSuccess(res, 200, 'Accessment deleted successfully', { id: req.params.id });
   });
 };
-
-export const getAccessments = getAllAccessments;

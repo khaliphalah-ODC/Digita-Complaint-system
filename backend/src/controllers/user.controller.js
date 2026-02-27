@@ -134,5 +134,3 @@ export const deleteUser = (req, res) => {
     return sendSuccess(res, 200, 'User deleted successfully', { id: req.params.id });
   });
 };
-
-export const getUsers = getAllUsers;

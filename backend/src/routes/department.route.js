@@ -1,10 +1,18 @@
-import router from 'express';
-import { createNewDepartment, getAllDepartment } from '../controllers/department.controller.js';
+import express from 'express';
+import {
+  createDepartment,
+  deleteDepartment,
+  getAllDepartments,
+  getDepartmentById,
+  updateDepartment
+} from '../controllers/department.controller.js';
 
-const DepartmentRouter = router();
+const router = express.Router();
 
-DepartmentRouter.route('/')
-    .get(getAllDepartment)
-    .post(createNewDepartment)
+router.post('/', createDepartment);
+router.get('/', getAllDepartments);
+router.get('/:id', getDepartmentById);
+router.put('/:id', updateDepartment);
+router.delete('/:id', deleteDepartment);
 
-export default DepartmentRouter;
+export default router;

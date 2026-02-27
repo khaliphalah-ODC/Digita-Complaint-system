@@ -1,10 +1,18 @@
-import router from 'express';
-import { createNewOrganization, getAllOrganization } from '../controllers/organization.controller.js';
+import express from 'express';
+import {
+  createOrganization,
+  deleteOrganization,
+  getAllOrganizations,
+  getOrganizationById,
+  updateOrganization
+} from '../controllers/organization.controller.js';
 
-const OrganizationRouter = router();
+const router = express.Router();
 
-OrganizationRouter.route('/')
-    .get(getAllOrganization)
-    .post(createNewOrganization)
+router.post('/', createOrganization);
+router.get('/', getAllOrganizations);
+router.get('/:id', getOrganizationById);
+router.put('/:id', updateOrganization);
+router.delete('/:id', deleteOrganization);
 
-export default OrganizationRouter 
+export default router;

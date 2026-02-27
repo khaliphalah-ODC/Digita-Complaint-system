@@ -1,15 +1,20 @@
-import router from 'express';
+import express from 'express';
+import {
+  createNotification,
+  deleteNotification,
+  getAllNotifications,
+  getNotificationById,
+  getNotificationsByComplaintId,
+  markNotificationAsRead
+} from '../controllers/notification.controller.js';
 
-import {notice, createNoticeTable, getAllnotifications, getnotificationById, deletecomplainById} from '../controllers/notification.controller.js';
+const router = express.Router();
 
-const notificationRouter = router();
+router.post('/', createNotification);
+router.get('/', getAllNotifications);
+router.get('/complaint/:complaintId', getNotificationsByComplaintId);
+router.get('/:id', getNotificationById);
+router.patch('/:id/read', markNotificationAsRead);
+router.delete('/:id', deleteNotification);
 
-notificationRouter.route('/')
-.get(getAllnotifications)
-.post(createNoticeTable)
-
-notificationRouter.route('/:notificationId')
-.get(getnotificationById)
-.delete(deletecomplainById)
-
-export {notificationRouter};
+export default router;

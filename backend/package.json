@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "smoke": "bash scripts/smoke-test.sh",
+    "release:check": "bash scripts/release-check.sh"
   },
   "keywords": [],
   "author": "",
