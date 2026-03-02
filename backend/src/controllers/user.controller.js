@@ -3,7 +3,6 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import complaintDB from '../model/connect.js';
 import { sendSuccess, sendError } from '../utils/response.js';
-import { encryptPassword } from '../utils/middleware/encryptpassword.js';
 import {
   usersQuery,
   createUserQuery,
@@ -16,9 +15,6 @@ import {
   revokedTokensQuery
 } from '../model/user.model.js';
 
-<<<<<<< HEAD
-
-=======
 const JWT_KEY = process.env.JWT_KEY || process.env.JWT_SECRET || 'evn';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1d';
 
@@ -27,7 +23,6 @@ const sanitizeUser = (user) => {
   const { password, ...safeUser } = user;
   return safeUser;
 };
->>>>>>> standby
 
 export const CreateUsersTable = () => {
   complaintDB.run(usersQuery, (err) => {
@@ -39,9 +34,6 @@ export const CreateUsersTable = () => {
   });
 };
 
-<<<<<<< HEAD
-export const createUser = async (req, res) => {
-=======
 export const CreateRevokedTokensTable = () => {
   complaintDB.run(revokedTokensQuery, (err) => {
     if (err) {
@@ -161,7 +153,6 @@ export const getCurrentUser = (req, res) => {
 };
 
 export const createUser = (req, res) => {
->>>>>>> standby
   const {
     organization_id = null,
     full_name,
@@ -170,25 +161,11 @@ export const createUser = (req, res) => {
     status = 'active',
     role = 'user'
   } = req.body;
-  const { password: hashedPassword } = await encryptPassword(password);
 
   if (!full_name || !email || !password) {
     return sendError(res, 400, 'full_name, email, and password are required');
   }
 
-<<<<<<< HEAD
-  complaintDB.run(
-    createUserQuery,
-    [organization_id, full_name, email, hashedPassword, status, role],
-    function onCreate(err) {
-      if (err) {
-        return sendError(res, 500, 'Failed to create user', err.message);
-      }
-
-      complaintDB.get(fetchUserByIdQuery, [this.lastID], (getErr, row) => {
-        if (getErr) {
-          return sendError(res, 500, 'Failed to fetch user', getErr.message);
-=======
   bcrypt.hash(password, 10).then((hashedPassword) => {
     complaintDB.run(
       createUserQuery,
@@ -196,7 +173,6 @@ export const createUser = (req, res) => {
       function onCreate(err) {
         if (err) {
           return sendError(res, 500, 'Failed to create user', err.message);
->>>>>>> standby
         }
 
         complaintDB.get(fetchUserByIdQuery, [this.lastID], (getErr, row) => {
