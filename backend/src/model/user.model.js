@@ -1,3 +1,4 @@
+// user.model model: defines SQLite schema and SQL queries for this module.
 export const usersQuery = `
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,3 +31,19 @@ WHERE id = ?;
 export const updateUserStatusQuery = `UPDATE users SET status = ? WHERE id = ?;`;
 export const updateUserRoleQuery = `UPDATE users SET role = ? WHERE id = ?;`;
 export const deleteUserQuery = `DELETE FROM users WHERE id = ?;`;
+
+export const revokedTokensQuery = `
+CREATE TABLE IF NOT EXISTS revoked_tokens (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  token TEXT NOT NULL UNIQUE,
+  revoked_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+`;
+
+export const createRevokedTokenQuery = `
+INSERT OR IGNORE INTO revoked_tokens (token) VALUES (?);
+`;
+
+export const fetchRevokedTokenQuery = `
+SELECT id FROM revoked_tokens WHERE token = ?;
+`;

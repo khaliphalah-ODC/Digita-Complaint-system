@@ -1,3 +1,4 @@
+// department.model model: defines SQLite schema and SQL queries for this module.
 export const Department = `CREATE TABLE IF NOT EXISTS department (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     organization_id INTEGER,

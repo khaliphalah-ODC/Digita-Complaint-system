@@ -1,30 +1,94 @@
+// accessment.model model: defines SQLite schema and SQL queries for this module.
+export const VALID_ACCESSMENT_STATUSES = ['pending', 'in_review', 'completed', 'rejected'];
+
 export const accessmentQuery = `
 CREATE TABLE IF NOT EXISTS accessments (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER,
-  is_anonymous INTEGER NOT NULL DEFAULT 0 CHECK(is_anonymous IN (0, 1)),
-  title TEXT NOT NULL,
-  accessment_type TEXT NOT NULL CHECK(accessment_type IN ('type1', 'type2', 'type3')),
-  priority TEXT NOT NULL CHECK(priority IN ('low', 'medium', 'high')),
-  tracking_code TEXT NOT NULL UNIQUE,
+  complaint_id INTEGER NOT NULL,
+  assessor_id INTEGER NOT NULL,
+  findings TEXT NOT NULL,
+  recommendation TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'in_review', 'completed', 'rejected')),
   admin_response TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id)
-   FOREIGN KEY (accessment_type) REFERENCES feedback(id)
-    FOREIGN KEY (accessment_type) REFERENCES complaint(id)
 );
 `;
 
-export const VALID_ACCESSMENT_TYPES = ['type1', 'type2', 'type3'];
-export const VALID_ACCESSMENT_PRIORITIES = ['low', 'medium', 'high'];
-export const fetchAccessmentsQuery = `SELECT * FROM accessments ORDER BY id DESC;`;
-export const createAccessmentQuery = `INSERT INTO accessments (user_id, is_anonymous, title, accessment_type, priority, tracking_code) VALUES (?, ?, ?, ?, ?, ?);`;
-export const fetchAccessmentByIdQuery = `SELECT * FROM accessments WHERE id = ?;`;
-export const fetchAccessmentsByUserIdQuery = `SELECT * FROM accessments WHERE user_id = ?;`;
+export const createAccessmentQuery = `
+INSERT INTO accessments (
+  complaint_id,
+  assessor_id,
+  findings,
+  recommendation,
+  status,
+  admin_response
+)
+VALUES (?, ?, ?, ?, ?, ?);
+`;
+
+export const fetchAccessmentsQuery = `
+SELECT
+  a.*,
+  c.title AS complaint_title,
+  c.user_id AS complaint_user_id,
+  c.status AS complaint_status
+FROM accessments a
+LEFT JOIN complaint c ON c.id = a.complaint_id
+ORDER BY a.id DESC;
+`;
+
+export const fetchAccessmentByIdQuery = `
+SELECT
+  a.*,
+  c.title AS complaint_title,
+  c.user_id AS complaint_user_id,
+  c.status AS complaint_status
+FROM accessments a
+LEFT JOIN complaint c ON c.id = a.complaint_id
+WHERE a.id = ?;
+`;
+
+export const fetchAccessmentsByComplaintIdQuery = `
+SELECT
+  a.*,
+  c.title AS complaint_title,
+  c.user_id AS complaint_user_id,
+  c.status AS complaint_status
+FROM accessments a
+LEFT JOIN complaint c ON c.id = a.complaint_id
+WHERE a.complaint_id = ?
+ORDER BY a.id DESC;
+`;
+
+export const fetchAccessmentsByAssessorIdQuery = `
+SELECT
+  a.*,
+  c.title AS complaint_title,
+  c.user_id AS complaint_user_id,
+  c.status AS complaint_status
+FROM accessments a
+LEFT JOIN complaint c ON c.id = a.complaint_id
+WHERE a.assessor_id = ?
+ORDER BY a.id DESC;
+`;
+
+export const updateAccessmentQuery = `
+UPDATE accessments
+SET
+  findings = ?,
+  recommendation = ?,
+  status = ?,
+  admin_response = ?,
+  updated_at = CURRENT_TIMESTAMP
+WHERE id = ?;
+`;
+
 export const updateAccessmentAdminResponseQuery = `
 UPDATE accessments
 SET admin_response = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?;
 `;
+
 export const deleteAccessmentQuery = `DELETE FROM accessments WHERE id = ?;`;

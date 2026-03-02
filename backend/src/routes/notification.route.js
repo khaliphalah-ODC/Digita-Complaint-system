@@ -1,3 +1,4 @@
+// notification.route routes: maps API endpoints to controller handlers.
 import express from 'express';
 import {
   createNotification,

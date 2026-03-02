@@ -1,3 +1,4 @@
+// escalation.model model: defines SQLite schema and SQL queries for this module.
 export const VALID_ESCALATION_LEVELS = ['level_1', 'level_2', 'level_3'];
 export const VALID_ESCALATION_STATUSES = ['pending', 'in_progress', 'resolved', 'rejected'];
 
