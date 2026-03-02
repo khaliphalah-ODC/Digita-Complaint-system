@@ -1,5 +1,6 @@
 import complaintDB from '../model/connect.js';
 import { sendSuccess, sendError } from '../utils/response.js';
+import { encryptPassword } from '../utils/middleware/encryptpassword.js';
 import {
   usersQuery,
   createUserQuery,
@@ -9,6 +10,8 @@ import {
   updateUserQuery,
   deleteUserQuery
 } from '../model/user.model.js';
+
+
 
 export const CreateUsersTable = () => {
   complaintDB.run(usersQuery, (err) => {
@@ -20,7 +23,7 @@ export const CreateUsersTable = () => {
   });
 };
 
-export const createUser = (req, res) => {
+export const createUser = async (req, res) => {
   const {
     organization_id = null,
     full_name,
@@ -29,6 +32,7 @@ export const createUser = (req, res) => {
     status = 'active',
     role = 'user'
   } = req.body;
+  const { password: hashedPassword } = await encryptPassword(password);
 
   if (!full_name || !email || !password) {
     return sendError(res, 400, 'full_name, email, and password are required');
@@ -36,7 +40,7 @@ export const createUser = (req, res) => {
 
   complaintDB.run(
     createUserQuery,
-    [organization_id, full_name, email, password, status, role],
+    [organization_id, full_name, email, hashedPassword, status, role],
     function onCreate(err) {
       if (err) {
         return sendError(res, 500, 'Failed to create user', err.message);

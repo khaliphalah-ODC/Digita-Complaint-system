@@ -6,7 +6,7 @@ export const Feedback = `
   rating INTEGER CHECK(rating >= 1 AND rating <= 5),
   comment TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (complaint_id) REFERENCES complaints(id),
+  FOREIGN KEY (complaint_id) REFERENCES complaint(id),
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 `

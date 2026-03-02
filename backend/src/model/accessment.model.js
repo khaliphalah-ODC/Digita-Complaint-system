@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS accessments (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id)
+   FOREIGN KEY (accessment_type) REFERENCES feedback(id)
+    FOREIGN KEY (accessment_type) REFERENCES complaint(id)
 );
 `;
 

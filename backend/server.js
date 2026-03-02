@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import './src/model/connect.js';
+import { authKey } from './src/utils/middleware/authkey.js';
 
 // Import routes and controllers
 import userRoutes from './src/routes/user.route.js';
@@ -34,15 +35,15 @@ app.use(cors());
 app.use(express.json());
 
 //route
-app.use('/api/users', userRoutes);
-app.use('/api/accessments', accessmentRoutes);
-app.use('/api/escalations', escalationRoutes);
-app.use('/api/status-logs', statusLogRoutes);
-app.use('/api/feedback', feedbackRoutes);
-app.use('/api/organization', OrganizationRouter);
-app.use('/api/department', DepartmentRouter);
-app.use('/api/notification', notificationRoutes);
-app.use('/api/complaint', complaintRoutes);
+app.use('/api/users', authKey, userRoutes);
+app.use('/api/accessments', authKey, accessmentRoutes);
+app.use('/api/escalations', authKey, escalationRoutes);
+app.use('/api/status-logs', authKey, statusLogRoutes);
+app.use('/api/feedback', authKey, feedbackRoutes);
+app.use('/api/organization', authKey, OrganizationRouter);
+app.use('/api/department', authKey, DepartmentRouter);
+app.use('/api/notification', authKey, notificationRoutes);
+app.use('/api/complaint', authKey, complaintRoutes);
 app.get('/', (req, res) => {
   res.send('Digital Complaint Management System API');
 });
@@ -55,6 +56,8 @@ CreateNotificationsTable();
 CreateOrganizationTable();
 CreateDepartmentTable();
 CreateComplaintTable();
+
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
