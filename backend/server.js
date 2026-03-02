@@ -13,9 +13,10 @@ import OrganizationRouter from './src/routes/organization.route.js';
 import DepartmentRouter from './src/routes/department.route.js';
 import notificationRoutes from './src/routes/notification.route.js';
 import complaintRoutes from './src/routes/complaint.route.js';
+import { authenticateToken } from './src/middleware/auth.middleware.js';
 
 //imported table if not exist
-import { CreateUsersTable } from './src/controllers/user.controller.js';
+import { CreateUsersTable, CreateRevokedTokensTable } from './src/controllers/user.controller.js';
 import { CreateAccessmentsTable } from './src/controllers/accessment.controller.js';
 import { CreateEscalationsTable } from './src/controllers/escalation.controller.js';
 import { CreateStatusLogsTable } from './src/controllers/statusLog.controller.js';
@@ -35,18 +36,22 @@ app.use(express.json());
 
 //route
 app.use('/api/users', userRoutes);
-app.use('/api/accessments', accessmentRoutes);
-app.use('/api/escalations', escalationRoutes);
-app.use('/api/status-logs', statusLogRoutes);
-app.use('/api/feedback', feedbackRoutes);
-app.use('/api/organization', OrganizationRouter);
-app.use('/api/department', DepartmentRouter);
-app.use('/api/notification', notificationRoutes);
+app.use('/api/accessments', authenticateToken, accessmentRoutes);
+app.use('/api/escalations', authenticateToken, escalationRoutes);
+app.use('/api/status-logs', authenticateToken, statusLogRoutes);
+app.use('/api/feedback', authenticateToken, feedbackRoutes);
+app.use('/api/organization', authenticateToken, OrganizationRouter);
+app.use('/api/department', authenticateToken, DepartmentRouter);
+app.use('/api/notification', authenticateToken, notificationRoutes);
 app.use('/api/complaint', complaintRoutes);
 app.get('/', (req, res) => {
   res.send('Digital Complaint Management System API');
 });
+
+//table creation
+
 CreateUsersTable();
+CreateRevokedTokensTable();
 CreateAccessmentsTable();
 CreateEscalationsTable();
 CreateStatusLogsTable();
@@ -55,7 +60,11 @@ CreateNotificationsTable();
 CreateOrganizationTable();
 CreateDepartmentTable();
 CreateComplaintTable();
+
+//env port
 const PORT = process.env.PORT || 5000;
+
+//start server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

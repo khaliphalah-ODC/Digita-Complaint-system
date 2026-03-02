@@ -1,14 +1,20 @@
+// complaint.route routes: maps API endpoints to controller handlers.
 import express from 'express';
 import {
   createComplaint,
+  deleteComplaint,
   getAllComplaints,
-  getComplaintById
+  getComplaintById,
+  updateComplaint
 } from '../controllers/complaint.controller.js';
+import { authenticateToken, optionalAuthenticateToken } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
-router.post('/', createComplaint);
-router.get('/', getAllComplaints);
-router.get('/:id', getComplaintById);
+router.post('/', optionalAuthenticateToken, createComplaint);
+router.get('/', authenticateToken, getAllComplaints);
+router.get('/:id', authenticateToken, getComplaintById);
+router.put('/:id', authenticateToken, updateComplaint);
+router.delete('/:id', authenticateToken, deleteComplaint);
 
 export default router;
