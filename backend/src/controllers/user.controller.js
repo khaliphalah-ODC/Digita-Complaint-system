@@ -50,7 +50,7 @@ export const createUser = async (req, res) => {
         if (getErr) {
           return sendError(res, 500, 'Failed to fetch user', getErr.message);
         }
-        return sendSuccess(res, 201, 'User created successfully', row);
+        return sendSuccess(res, 201, 'User registered successfully', row);
       });
     }
   );
