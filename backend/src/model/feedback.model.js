@@ -1,3 +1,4 @@
+// feedback.model model: defines SQLite schema and SQL queries for this module.
 export const Feedback = `
  Create table if not exists feedback (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -1,3 +1,4 @@
+// organization.controller controller: handles HTTP request/response flow for this module.
 import complaintDB from '../model/connect.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import {

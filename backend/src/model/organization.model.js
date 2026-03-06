@@ -1,3 +1,4 @@
+// organization.model model: defines SQLite schema and SQL queries for this module.
 export const Organization = `CREATE TABLE IF NOT EXISTS organization (
     organization_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,

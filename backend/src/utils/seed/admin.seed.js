@@ -1,10 +1,11 @@
 import bcrypt from "bcrypt";
 import complaintDB from '../../model/connect.js';
 
+//SuperAdmins Creates Tenant's Admin
 const createAdmin = async () => {
-    const hashedPassword = await bcrypt.hash("Admin@123", 10);
+  const hashedPassword = await bcrypt.hash("Admin@123", 10);
 
-    await complaintDB.run(`
+  await complaintDB.run(`
     INSERT INTO users (
       organization_id,
       full_name,
@@ -21,7 +22,8 @@ const createAdmin = async () => {
     )
   `);
 
-    console.log("Admin created");
+
+  console.log("Admin created");
 };
 
 createAdmin();

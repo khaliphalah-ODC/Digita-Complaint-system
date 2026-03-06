@@ -1,3 +1,4 @@
+// statusLog.model model: defines SQLite schema and SQL queries for this module.
 export const statusLogsQuery = `
 CREATE TABLE IF NOT EXISTS status_logs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

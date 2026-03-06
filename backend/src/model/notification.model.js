@@ -1,3 +1,4 @@
+// notification.model model: defines SQLite schema and SQL queries for this module.
 export const notificationsQuery = `
 CREATE TABLE IF NOT EXISTS notifications (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
