@@ -1,6 +1,7 @@
 // escalation.controller controller: handles HTTP request/response flow for this module.
 import complaintDB from '../model/connect.js';
 import { sendSuccess, sendError } from '../utils/response.js';
+import { fetchUserByIdQuery } from '../model/user.model.js';
 import {
   VALID_ESCALATION_LEVELS,
   VALID_ESCALATION_STATUSES,
@@ -15,6 +16,29 @@ import {
   updateEscalationStatusQuery
 } from '../model/escalation.model.js';
 
+const ensureAdminAssignee = (assignedTo, callback) => {
+  if (assignedTo === null || assignedTo === undefined || assignedTo === '') {
+    callback(null, null);
+    return;
+  }
+
+  complaintDB.get(fetchUserByIdQuery, [assignedTo], (userErr, userRow) => {
+    if (userErr) {
+      callback(userErr);
+      return;
+    }
+    if (!userRow) {
+      callback(new Error('Assigned user not found'));
+      return;
+    }
+    if (userRow.role !== 'admin') {
+      callback(new Error('Escalation can only be assigned to an admin user'));
+      return;
+    }
+    callback(null, Number(assignedTo));
+  });
+};
+
 export const CreateEscalationsTable = () => {
   complaintDB.run(escalationsQuery, (err) => {
     if (err) {
@@ -28,7 +52,6 @@ export const CreateEscalationsTable = () => {
 export const createEscalation = (req, res) => {
   const {
     accessment_id,
-    escalated_by,
     assigned_to = null,
     escalation_level = 'level_1',
     reason,
@@ -36,8 +59,8 @@ export const createEscalation = (req, res) => {
     status = 'pending'
   } = req.body;
 
-  if (!accessment_id || !escalated_by || !reason) {
-    return sendError(res, 400, 'accessment_id, escalated_by, and reason are required');
+  if (!accessment_id || !reason) {
+    return sendError(res, 400, 'accessment_id and reason are required');
   }
   if (!VALID_ESCALATION_LEVELS.includes(escalation_level)) {
     return sendError(res, 400, `escalation_level must be one of: ${VALID_ESCALATION_LEVELS.join(', ')}`);
@@ -46,21 +69,27 @@ export const createEscalation = (req, res) => {
     return sendError(res, 400, `status must be one of: ${VALID_ESCALATION_STATUSES.join(', ')}`);
   }
 
-  complaintDB.run(
-    createEscalationQuery,
-    [accessment_id, escalated_by, assigned_to, escalation_level, reason, notes, status],
-    function onCreate(err) {
-      if (err) {
-        return sendError(res, 500, 'Failed to create escalation', err.message);
-      }
-      complaintDB.get(fetchEscalationByIdQuery, [this.lastID], (getErr, row) => {
-        if (getErr) {
-          return sendError(res, 500, 'Failed to fetch escalation', getErr.message);
-        }
-        return sendSuccess(res, 201, 'Escalation created successfully', row);
-      });
+  ensureAdminAssignee(assigned_to, (assigneeErr, normalizedAssignedTo) => {
+    if (assigneeErr) {
+      return sendError(res, 400, 'Invalid escalation assignment', assigneeErr.message);
     }
-  );
+
+    complaintDB.run(
+      createEscalationQuery,
+      [accessment_id, req.user.id, normalizedAssignedTo, escalation_level, reason, notes, status],
+      function onCreate(err) {
+        if (err) {
+          return sendError(res, 500, 'Failed to create escalation', err.message);
+        }
+        complaintDB.get(fetchEscalationByIdQuery, [this.lastID], (getErr, row) => {
+          if (getErr) {
+            return sendError(res, 500, 'Failed to fetch escalation', getErr.message);
+          }
+          return sendSuccess(res, 201, 'Escalation created successfully', row);
+        });
+      }
+    );
+  });
 };
 
 export const getAllEscalations = (_req, res) => {
@@ -127,25 +156,31 @@ export const updateEscalation = (req, res) => {
     return sendError(res, 400, `status must be one of: ${VALID_ESCALATION_STATUSES.join(', ')}`);
   }
 
-  complaintDB.run(
-    updateEscalationQuery,
-    [assigned_to, escalation_level, reason, notes, status, resolved_at, req.params.id],
-    function onUpdate(err) {
-      if (err) {
-        return sendError(res, 500, 'Failed to update escalation', err.message);
-      }
-      if (this.changes === 0) {
-        return sendError(res, 404, 'Escalation not found');
-      }
-
-      complaintDB.get(fetchEscalationByIdQuery, [req.params.id], (getErr, row) => {
-        if (getErr) {
-          return sendError(res, 500, 'Failed to fetch updated escalation', getErr.message);
-        }
-        return sendSuccess(res, 200, 'Escalation updated successfully', row);
-      });
+  ensureAdminAssignee(assigned_to, (assigneeErr, normalizedAssignedTo) => {
+    if (assigneeErr) {
+      return sendError(res, 400, 'Invalid escalation assignment', assigneeErr.message);
     }
-  );
+
+    complaintDB.run(
+      updateEscalationQuery,
+      [normalizedAssignedTo, escalation_level, reason, notes, status, resolved_at, req.params.id],
+      function onUpdate(err) {
+        if (err) {
+          return sendError(res, 500, 'Failed to update escalation', err.message);
+        }
+        if (this.changes === 0) {
+          return sendError(res, 404, 'Escalation not found');
+        }
+
+        complaintDB.get(fetchEscalationByIdQuery, [req.params.id], (getErr, row) => {
+          if (getErr) {
+            return sendError(res, 500, 'Failed to fetch updated escalation', getErr.message);
+          }
+          return sendSuccess(res, 200, 'Escalation updated successfully', row);
+        });
+      }
+    );
+  });
 };
 
 export const updateEscalationStatus = (req, res) => {

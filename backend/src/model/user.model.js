@@ -3,6 +3,7 @@ export const usersQuery = `
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   organization_id INTEGER,
+  department_id INTEGER,
   full_name TEXT NOT NULL,
   email TEXT NOT NULL UNIQUE,
   password TEXT NOT NULL,
@@ -14,12 +15,13 @@ CREATE TABLE IF NOT EXISTS users (
 `;
 export const fetchUsersQuery = `SELECT * FROM users ORDER BY id DESC;`;
 export const fetchUserByEmailQuery = `SELECT * FROM users WHERE email = ?;`;    
-export const createUserQuery = `INSERT INTO users (organization_id, full_name, email, password, status, role) VALUES (?, ?, ?, ?, ?, ?);`;
+export const createUserQuery = `INSERT INTO users (organization_id, department_id, full_name, email, password, status, role) VALUES (?, ?, ?, ?, ?, ?, ?);`;
 export const fetchUserByIdQuery = `SELECT * FROM users WHERE id = ?;`;
 export const updateUserQuery = `
 UPDATE users
 SET
   organization_id = ?,
+  department_id = ?,
   full_name = ?,
   email = ?,
   password = ?,

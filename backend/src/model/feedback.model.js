@@ -15,9 +15,56 @@ export const Feedback = `
 
 
 export const createFeedbackQuery = `INSERT INTO feedback (complaint_id, user_id, rating, comment) VALUES (?, ?, ?, ?);`;
-export const fetchAllFeedbackQuery = `SELECT * FROM feedback ORDER BY id DESC;`;
-export const fetchFeedbackByIdQuery = `SELECT * FROM feedback WHERE id = ?;`;
-export const fetchFeedbackByComplaintIdQuery = `SELECT * FROM feedback WHERE complaint_id = ? ORDER BY created_at DESC;`;
+export const fetchAllFeedbackQuery = `
+SELECT
+  f.*,
+  c.title AS complaint_title,
+  c.tracking_code AS complaint_tracking_code,
+  u.full_name AS user_full_name,
+  u.email AS user_email
+FROM feedback f
+LEFT JOIN complaint c ON c.id = f.complaint_id
+LEFT JOIN users u ON u.id = f.user_id
+ORDER BY f.id DESC;
+`;
+export const fetchFeedbackByIdQuery = `
+SELECT
+  f.*,
+  c.title AS complaint_title,
+  c.tracking_code AS complaint_tracking_code,
+  u.full_name AS user_full_name,
+  u.email AS user_email
+FROM feedback f
+LEFT JOIN complaint c ON c.id = f.complaint_id
+LEFT JOIN users u ON u.id = f.user_id
+WHERE f.id = ?;
+`;
+export const fetchFeedbackByComplaintIdQuery = `
+SELECT
+  f.*,
+  c.title AS complaint_title,
+  c.tracking_code AS complaint_tracking_code,
+  u.full_name AS user_full_name,
+  u.email AS user_email
+FROM feedback f
+LEFT JOIN complaint c ON c.id = f.complaint_id
+LEFT JOIN users u ON u.id = f.user_id
+WHERE f.complaint_id = ?
+ORDER BY f.created_at DESC;
+`;
+export const fetchFeedbackByUserIdQuery = `
+SELECT
+  f.*,
+  c.title AS complaint_title,
+  c.tracking_code AS complaint_tracking_code,
+  u.full_name AS user_full_name,
+  u.email AS user_email
+FROM feedback f
+LEFT JOIN complaint c ON c.id = f.complaint_id
+LEFT JOIN users u ON u.id = f.user_id
+WHERE f.user_id = ?
+ORDER BY f.id DESC;
+`;
 export const updateFeedbackQuery = `
 UPDATE feedback
 SET rating = ?, comment = ?

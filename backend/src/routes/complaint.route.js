@@ -5,6 +5,7 @@ import {
   deleteComplaint,
   getAllComplaints,
   getComplaintById,
+  getComplaintByTrackingCode,
   updateComplaint
 } from '../controllers/complaint.controller.js';
 import { authenticateToken, optionalAuthenticateToken } from '../middleware/auth.middleware.js';
@@ -12,6 +13,7 @@ import { authenticateToken, optionalAuthenticateToken } from '../middleware/auth
 const router = express.Router();
 
 router.post('/', optionalAuthenticateToken, createComplaint);
+router.get('/track/:trackingCode', getComplaintByTrackingCode);
 router.get('/', authenticateToken, getAllComplaints);
 router.get('/:id', authenticateToken, getComplaintById);
 router.put('/:id', authenticateToken, updateComplaint);

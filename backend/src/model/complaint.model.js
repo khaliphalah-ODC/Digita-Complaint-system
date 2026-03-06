@@ -22,8 +22,6 @@ CREATE TABLE IF NOT EXISTS complaint (
 `;
 
 
-
-
 export const insertComplaint = `
 INSERT INTO complaint (
   user_id,
@@ -39,9 +37,86 @@ INSERT INTO complaint (
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 `;
 
-export const selectComplaint = `SELECT * FROM complaint ORDER BY id DESC;`;
-export const selectComplaintById = `SELECT * FROM complaint WHERE id = ?;`;
-export const selectComplaintByUserId = `SELECT * FROM complaint WHERE user_id = ? ORDER BY id DESC;`;
+export const selectComplaint = `
+SELECT
+  c.*,
+  c.complaint AS description,
+  u.full_name AS user_full_name,
+  u.email AS user_email,
+  u.organization_id AS user_organization_id,
+  o.name AS organization_name,
+  o.organization_type AS organization_type,
+  o.email AS organization_email,
+  o.phone AS organization_phone,
+  o.address AS organization_address,
+  reviewer.full_name AS reviewer_name
+FROM complaint c
+LEFT JOIN users u ON u.id = c.user_id
+LEFT JOIN organization o ON o.organization_id = u.organization_id
+LEFT JOIN users reviewer ON reviewer.id = c.reviewed_by
+ORDER BY c.id DESC;
+`;
+
+export const selectComplaintById = `
+SELECT
+  c.*,
+  c.complaint AS description,
+  u.full_name AS user_full_name,
+  u.email AS user_email,
+  u.organization_id AS user_organization_id,
+  o.name AS organization_name,
+  o.organization_type AS organization_type,
+  o.email AS organization_email,
+  o.phone AS organization_phone,
+  o.address AS organization_address,
+  reviewer.full_name AS reviewer_name
+FROM complaint c
+LEFT JOIN users u ON u.id = c.user_id
+LEFT JOIN organization o ON o.organization_id = u.organization_id
+LEFT JOIN users reviewer ON reviewer.id = c.reviewed_by
+WHERE c.id = ?;
+`;
+
+export const selectComplaintByUserId = `
+SELECT
+  c.*,
+  c.complaint AS description,
+  u.full_name AS user_full_name,
+  u.email AS user_email,
+  u.organization_id AS user_organization_id,
+  o.name AS organization_name,
+  o.organization_type AS organization_type,
+  o.email AS organization_email,
+  o.phone AS organization_phone,
+  o.address AS organization_address,
+  reviewer.full_name AS reviewer_name
+FROM complaint c
+LEFT JOIN users u ON u.id = c.user_id
+LEFT JOIN organization o ON o.organization_id = u.organization_id
+LEFT JOIN users reviewer ON reviewer.id = c.reviewed_by
+WHERE c.user_id = ?
+ORDER BY c.id DESC;
+`;
+
+export const selectComplaintByTrackingCode = `
+SELECT
+  c.*,
+  c.complaint AS description,
+  u.full_name AS user_full_name,
+  u.email AS user_email,
+  u.organization_id AS user_organization_id,
+  o.name AS organization_name,
+  o.organization_type AS organization_type,
+  o.email AS organization_email,
+  o.phone AS organization_phone,
+  o.address AS organization_address,
+  reviewer.full_name AS reviewer_name
+FROM complaint c
+LEFT JOIN users u ON u.id = c.user_id
+LEFT JOIN organization o ON o.organization_id = u.organization_id
+LEFT JOIN users reviewer ON reviewer.id = c.reviewed_by
+WHERE c.tracking_code = ?;
+`;
 
 export const updateComplaintById = `
 UPDATE complaint
@@ -53,6 +128,9 @@ SET
   category = ?,
   priority = ?,
   status = ?,
+  admin_response = ?,
+  reviewed_by = ?,
+  reviewed_at = ?,
   updated_at = CURRENT_TIMESTAMP
 WHERE id = ?;
 `;

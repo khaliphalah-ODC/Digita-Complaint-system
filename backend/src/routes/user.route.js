@@ -1,8 +1,5 @@
 // user.route routes: maps API endpoints to controller handlers.
 import express from 'express';
-import { login } from '../utils/middleware/login.js';
-import { validate, registerSchema } from '../utils/middleware/passwordValidation.js';
-
 import {
   createUser,
   deleteUser,
@@ -13,28 +10,24 @@ import {
   loginUser,
   logoutUser,
   registerUser,
-  updateUser
+  updateUser,
+  updateUserRole
 } from '../controllers/user.controller.js';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
-router.post('/', validate(registerSchema), createUser);
-router.post('/login', login);
-
-router.post('/', createUser);
-router.post('/login', login)
-
-router.get('/', getAllUsers);
-router.get('/id/:id', getUserById);
-router.get('/email/:email', getUserByEmail);
-router.put('/:id', updateUser);
-router.delete('/:id', deleteUser);
+router.post('/register', registerUser);
+router.post('/login', loginUser);
+router.get('/me', authenticateToken, getCurrentUser);
+router.post('/logout', authenticateToken, logoutUser);
 
 router.post('/', authenticateToken, authorizeRoles('admin'), createUser);
 router.get('/', authenticateToken, authorizeRoles('admin'), getAllUsers);
 router.get('/id/:id', authenticateToken, authorizeRoles('admin'), getUserById);
 router.get('/email/:email', authenticateToken, authorizeRoles('admin'), getUserByEmail);
 router.put('/:id', authenticateToken, authorizeRoles('admin'), updateUser);
+router.patch('/:id/role', authenticateToken, authorizeRoles('admin'), updateUserRole);
 router.delete('/:id', authenticateToken, authorizeRoles('admin'), deleteUser);
+
 export default router;

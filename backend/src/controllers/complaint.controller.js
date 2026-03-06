@@ -6,12 +6,14 @@ import {
   insertComplaint,
   selectComplaint,
   selectComplaintById,
+  selectComplaintByTrackingCode,
   selectComplaintByUserId,
   updateComplaintById,
   deleteComplaintById,
   VALID_COMPLAINT_PRIORITIES,
   VALID_COMPLAINT_STATUSES
 } from '../model/complaint.model.js';
+import { fetchUserByIdQuery } from '../model/user.model.js';
 
 const runQuery = (sql, params = []) =>
   new Promise((resolve, reject) => {
@@ -29,8 +31,10 @@ const allQuery = (sql, params = []) =>
     });
   });
 
-const generateTrackingCode = () =>
-  `CMP-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+const generateTrackingCode = () => {
+  const serial = String((Date.now() + Math.floor(Math.random() * 1000)) % 1000000).padStart(6, '0');
+  return `TRK-${serial.slice(0, 3)}-${serial.slice(3)}`;
+};
 
 const ensureComplaintTableSchema = async () => {
   const columns = await allQuery('PRAGMA table_info(complaint)');
@@ -44,11 +48,15 @@ const ensureComplaintTableSchema = async () => {
   if (!existing.has('priority')) await runQuery("ALTER TABLE complaint ADD COLUMN priority TEXT NOT NULL DEFAULT 'medium'");
   if (!existing.has('status')) await runQuery("ALTER TABLE complaint ADD COLUMN status TEXT NOT NULL DEFAULT 'submitted'");
   if (!existing.has('tracking_code')) await runQuery('ALTER TABLE complaint ADD COLUMN tracking_code TEXT');
-  if (!existing.has('updated_at')) await runQuery('ALTER TABLE complaint ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP');
+  if (!existing.has('admin_response')) await runQuery('ALTER TABLE complaint ADD COLUMN admin_response TEXT');
+  if (!existing.has('reviewed_by')) await runQuery('ALTER TABLE complaint ADD COLUMN reviewed_by INTEGER');
+  if (!existing.has('reviewed_at')) await runQuery('ALTER TABLE complaint ADD COLUMN reviewed_at DATETIME');
+  if (!existing.has('updated_at')) await runQuery('ALTER TABLE complaint ADD COLUMN updated_at DATETIME');
 
   await runQuery("UPDATE complaint SET title = COALESCE(title, 'Untitled Complaint')");
   await runQuery("UPDATE complaint SET priority = COALESCE(priority, 'medium')");
   await runQuery("UPDATE complaint SET status = COALESCE(status, 'submitted')");
+  await runQuery('UPDATE complaint SET updated_at = COALESCE(updated_at, created_at, CURRENT_TIMESTAMP)');
 
   const rows = await allQuery('SELECT id FROM complaint WHERE tracking_code IS NULL OR tracking_code = ""');
   for (const row of rows) {
@@ -100,36 +108,55 @@ export const createComplaint = (req, res) => {
     return sendError(res, 403, 'Only admin can create a complaint with a custom status');
   }
 
-  const finalUserId = is_anonymous ? null : req.user?.id || null;
-  const finalAnonymousLabel = is_anonymous ? anonymous_label || 'Anonymous Reporter' : null;
-  const trackingCode = generateTrackingCode();
+  const createComplaintRecord = () => {
+    const finalUserId = is_anonymous ? null : req.user?.id || null;
+    const finalAnonymousLabel = is_anonymous ? anonymous_label || 'Anonymous Reporter' : null;
+    const trackingCode = generateTrackingCode();
 
-  complaintDB.run(
-    insertComplaint,
-    [
-      finalUserId,
-      is_anonymous ? 1 : 0,
-      finalAnonymousLabel,
-      title,
-      complaint,
-      category,
-      priority,
-      status,
-      trackingCode
-    ],
-    function onCreate(err) {
-      if (err) {
-        return sendError(res, 500, 'Failed to create complaint', err.message);
-      }
-
-      complaintDB.get(selectComplaintById, [this.lastID], (getErr, row) => {
-        if (getErr) {
-          return sendError(res, 500, 'Failed to fetch complaint', getErr.message);
+    complaintDB.run(
+      insertComplaint,
+      [
+        finalUserId,
+        is_anonymous ? 1 : 0,
+        finalAnonymousLabel,
+        title,
+        complaint,
+        category,
+        priority,
+        status,
+        trackingCode
+      ],
+      function onCreate(err) {
+        if (err) {
+          return sendError(res, 500, 'Failed to create complaint', err.message);
         }
-        return sendSuccess(res, 201, 'Complaint created successfully', row);
-      });
+
+        complaintDB.get(selectComplaintById, [this.lastID], (getErr, row) => {
+          if (getErr) {
+            return sendError(res, 500, 'Failed to fetch complaint', getErr.message);
+          }
+          return sendSuccess(res, 201, 'Complaint created successfully', row);
+        });
+      }
+    );
+  };
+
+  if (is_anonymous) {
+    return createComplaintRecord();
+  }
+
+  complaintDB.get(fetchUserByIdQuery, [req.user.id], (userErr, userRow) => {
+    if (userErr) {
+      return sendError(res, 500, 'Failed to verify complaint author', userErr.message);
     }
-  );
+    if (!userRow) {
+      return sendError(res, 404, 'User not found');
+    }
+    if (!userRow.organization_id) {
+      return sendError(res, 403, 'Create or join an organization before submitting a complaint');
+    }
+    return createComplaintRecord();
+  });
 };
 
 export const getAllComplaints = (req, res) => {
@@ -161,6 +188,18 @@ export const getComplaintById = (req, res) => {
   });
 };
 
+export const getComplaintByTrackingCode = (req, res) => {
+  complaintDB.get(selectComplaintByTrackingCode, [req.params.trackingCode], (err, row) => {
+    if (err) {
+      return sendError(res, 500, 'Failed to fetch complaint by tracking code', err.message);
+    }
+    if (!row) {
+      return sendError(res, 404, 'Complaint not found');
+    }
+    return sendSuccess(res, 200, 'Complaint retrieved successfully', row);
+  });
+};
+
 export const updateComplaint = (req, res) => {
   complaintDB.get(selectComplaintById, [req.params.id], (findErr, existing) => {
     if (findErr) {
@@ -183,7 +222,8 @@ export const updateComplaint = (req, res) => {
       complaint: req.body.complaint || existing.complaint,
       category: req.body.category === undefined ? existing.category : req.body.category,
       priority: req.body.priority || existing.priority,
-      status: req.body.status || existing.status
+      status: req.body.status || existing.status,
+      admin_response: req.body.admin_response === undefined ? existing.admin_response : req.body.admin_response
     };
 
     if (!VALID_COMPLAINT_PRIORITIES.includes(updated.priority)) {
@@ -195,6 +235,14 @@ export const updateComplaint = (req, res) => {
     if (req.user.role !== 'admin' && updated.status !== existing.status) {
       return sendError(res, 403, 'Only admin can update complaint status');
     }
+    if (req.user.role !== 'admin' && req.body.admin_response !== undefined) {
+      return sendError(res, 403, 'Only admin can add a complaint response');
+    }
+
+    const reviewedBy = req.user.role === 'admin' ? req.user.id : existing.reviewed_by;
+    const reviewedAt = req.user.role === 'admin'
+      ? new Date().toISOString().slice(0, 19).replace('T', ' ')
+      : existing.reviewed_at;
 
     complaintDB.run(
       updateComplaintById,
@@ -206,6 +254,9 @@ export const updateComplaint = (req, res) => {
         updated.category,
         updated.priority,
         updated.status,
+        updated.admin_response,
+        reviewedBy,
+        reviewedAt,
         req.params.id
       ],
       function onUpdate(updateErr) {

@@ -1,5 +1,5 @@
 // user.controller controller: handles HTTP request/response flow for this module.
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import complaintDB from '../model/connect.js';
 import { sendSuccess, sendError } from '../utils/response.js';
@@ -10,6 +10,7 @@ import {
   fetchUserByIdQuery,
   fetchUserByEmailQuery,
   updateUserQuery,
+  updateUserRoleQuery,
   deleteUserQuery,
   createRevokedTokenQuery,
   revokedTokensQuery
@@ -29,7 +30,24 @@ export const CreateUsersTable = () => {
     if (err) {
       console.error('Error creating users table:', err.message);
     } else {
-      console.log('Users table created or already exists');
+      complaintDB.all('PRAGMA table_info(users)', [], (schemaErr, columns) => {
+        if (schemaErr) {
+          console.error('Error inspecting users table schema:', schemaErr.message);
+          return;
+        }
+        const hasDepartmentId = (columns || []).some((col) => col.name === 'department_id');
+        if (hasDepartmentId) {
+          console.log('Users table created or already exists');
+          return;
+        }
+        complaintDB.run('ALTER TABLE users ADD COLUMN department_id INTEGER', (alterErr) => {
+          if (alterErr) {
+            console.error('Error migrating users table:', alterErr.message);
+          } else {
+            console.log('Users table migrated successfully (department_id added)');
+          }
+        });
+      });
     }
   });
 };
@@ -47,6 +65,7 @@ export const CreateRevokedTokensTable = () => {
 export const registerUser = (req, res) => {
   const {
     organization_id = null,
+    department_id = null,
     full_name,
     email,
     password,
@@ -71,7 +90,7 @@ export const registerUser = (req, res) => {
 
       complaintDB.run(
         createUserQuery,
-        [organization_id, full_name, email, hashedPassword, status, role],
+        [organization_id, department_id, full_name, email, hashedPassword, status, role],
         function onCreate(createErr) {
           if (createErr) {
             return sendError(res, 500, 'Failed to register user', createErr.message);
@@ -81,8 +100,14 @@ export const registerUser = (req, res) => {
             if (getErr) {
               return sendError(res, 500, 'Failed to fetch registered user', getErr.message);
             }
+            if (!userRow) {
+              return sendError(res, 500, 'Registered user could not be loaded');
+            }
 
             const safeUser = sanitizeUser(userRow);
+            if (!safeUser?.id || !safeUser?.email) {
+              return sendError(res, 500, 'Registered user payload is incomplete');
+            }
             const token = jwt.sign(
               { id: safeUser.id, email: safeUser.email, role: safeUser.role, status: safeUser.status },
               JWT_KEY,
@@ -149,12 +174,21 @@ export const logoutUser = (req, res) => {
 };
 
 export const getCurrentUser = (req, res) => {
-  return sendSuccess(res, 200, 'Current user retrieved successfully', req.user);
+  complaintDB.get(fetchUserByIdQuery, [req.user.id], (err, row) => {
+    if (err) {
+      return sendError(res, 500, 'Failed to fetch current user', err.message);
+    }
+    if (!row) {
+      return sendError(res, 404, 'Current user not found');
+    }
+    return sendSuccess(res, 200, 'Current user retrieved successfully', sanitizeUser(row));
+  });
 };
 
 export const createUser = (req, res) => {
   const {
     organization_id = null,
+    department_id = null,
     full_name,
     email,
     password,
@@ -169,7 +203,7 @@ export const createUser = (req, res) => {
   bcrypt.hash(password, 10).then((hashedPassword) => {
     complaintDB.run(
       createUserQuery,
-      [organization_id, full_name, email, hashedPassword, status, role],
+      [organization_id, department_id, full_name, email, hashedPassword, status, role],
       function onCreate(err) {
         if (err) {
           return sendError(res, 500, 'Failed to create user', err.message);
@@ -228,6 +262,7 @@ export const getUserByEmail = (req, res) => {
 export const updateUser = (req, res) => {
   const {
     organization_id = null,
+    department_id = null,
     full_name,
     email,
     password,
@@ -242,7 +277,7 @@ export const updateUser = (req, res) => {
   bcrypt.hash(password, 10).then((hashedPassword) => {
     complaintDB.run(
       updateUserQuery,
-      [organization_id, full_name, email, hashedPassword, status, role, req.params.id],
+      [organization_id, department_id, full_name, email, hashedPassword, status, role, req.params.id],
       function onUpdate(err) {
         if (err) {
           return sendError(res, 500, 'Failed to update user', err.message);
@@ -274,5 +309,32 @@ export const deleteUser = (req, res) => {
     }
 
     return sendSuccess(res, 200, 'User deleted successfully', { id: req.params.id });
+  });
+};
+
+export const updateUserRole = (req, res) => {
+  const { role } = req.body;
+
+  if (!role) {
+    return sendError(res, 400, 'role is required');
+  }
+  if (!['admin', 'user'].includes(role)) {
+    return sendError(res, 400, 'role must be admin or user');
+  }
+
+  complaintDB.run(updateUserRoleQuery, [role, req.params.id], function onUpdate(err) {
+    if (err) {
+      return sendError(res, 500, 'Failed to update user role', err.message);
+    }
+    if (this.changes === 0) {
+      return sendError(res, 404, 'User not found');
+    }
+
+    complaintDB.get(fetchUserByIdQuery, [req.params.id], (getErr, row) => {
+      if (getErr) {
+        return sendError(res, 500, 'Failed to fetch updated user', getErr.message);
+      }
+      return sendSuccess(res, 200, 'User role updated successfully', sanitizeUser(row));
+    });
   });
 };
