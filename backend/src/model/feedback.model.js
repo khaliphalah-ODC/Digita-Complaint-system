@@ -12,8 +12,6 @@ export const Feedback = `
 );
 `
 
-
-
 export const createFeedbackQuery = `INSERT INTO feedback (complaint_id, user_id, rating, comment) VALUES (?, ?, ?, ?);`;
 export const fetchAllFeedbackQuery = `
 SELECT

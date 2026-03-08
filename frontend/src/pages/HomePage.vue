@@ -90,12 +90,10 @@ const dashboardRoute = computed(() => (session.currentUser?.role === 'admin' ? '
       </section>
     </div>
 
- <div class="flex flex-col min-h-screen">
+  <div class="flex flex-col min-h-screen">
     <div class="flex-1">
-      <!-- page content -->
     </div>
     <Footer />
   </div>
   </div>
-
 </template>
