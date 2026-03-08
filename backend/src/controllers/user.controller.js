@@ -200,31 +200,36 @@ export const createUser = (req, res) => {
     return sendError(res, 400, 'full_name, email, and password are required');
   }
 
-  bcrypt.hash(password, 10).then((hashedPassword) => {
-    complaintDB.run(
-      createUserQuery,
-      [organization_id, department_id, full_name, email, hashedPassword, status, role],
-      function onCreate(err) {
-        if (err) {
-          return sendError(res, 500, 'Failed to create user', err.message);
+  bcrypt.hash(password, 10)
+    .then((hashedPassword) => {
+
+      complaintDB.run(
+        createUserQuery,
+        [organization_id, department_id, full_name, email, hashedPassword, status, role],
+        function (err) {
+
+          if (err) {
+            return sendError(res, 500, 'Failed to create user', err.message);
+          }
+
+          complaintDB.get(fetchUserByIdQuery, [this.lastID], (getErr, row) => {
+
+            if (getErr) {
+              return sendError(res, 500, 'Failed to fetch user', getErr.message);
+            }
+
+            return sendSuccess(res, 201, 'User created successfully', sanitizeUser(row));
+
+          });
+
         }
-        return sendSuccess(res, 201, 'User registered successfully', row);
-      });
-  }
-  );
+      );
 
-
-  complaintDB.get(fetchUserByIdQuery, [this.lastID], (getErr, row) => {
-    if (getErr) {
-      return sendError(res, 500, 'Failed to fetch user', getErr.message);
-    }
-    return sendSuccess(res, 201, 'User created successfully', sanitizeUser(row));
-  });
-}
     })
-    .catch ((hashErr) => sendError(res, 500, 'Failed to process password', hashErr.message));
-
-  });
+    .catch((hashErr) => {
+      return sendError(res, 500, 'Failed to process password', hashErr.message);
+    });
+};
 
 export const getAllUsers = (_req, res) => {
   complaintDB.all(fetchUsersQuery, [], (err, rows) => {
