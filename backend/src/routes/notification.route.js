@@ -1,15 +1,21 @@
-import router from 'express';
+// notification.route routes: maps API endpoints to controller handlers.
+import express from 'express';
+import {
+  createNotification,
+  deleteNotification,
+  getAllNotifications,
+  getNotificationById,
+  getNotificationsByComplaintId,
+  markNotificationAsRead
+} from '../controllers/notification.controller.js';
 
-import {notice, createNoticeTable, getAllnotifications, getnotificationById, deletecomplainById} from '../controllers/notification.controller.js';
+const router = express.Router();
 
-const notificationRoute = router();
+router.post('/', createNotification);
+router.get('/', getAllNotifications);
+router.get('/complaint/:complaintId', getNotificationsByComplaintId);
+router.get('/:id', getNotificationById);
+router.patch('/:id/read', markNotificationAsRead);
+router.delete('/:id', deleteNotification);
 
-noticeRouter.route('/')
-.get(getAllnotifications)
-.post(createNoticeTable)
-
-noticeRouter.route('/:notificationId')
-.get(getnotificationById)
-.delete(deletecomplainById)
-
-export default noticeRouter;
+export default router;

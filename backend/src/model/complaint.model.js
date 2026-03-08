@@ -1,90 +1,138 @@
-export const VALID_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
-export const VALID_STATUSES = ['submitted', 'in_review', 'resolved', 'closed'];
-export const VALID_TARGET_TYPES = ['government', 'business', 'community_panel', 'individual', 'others'];
-export const VALID_CHANNELS = ['web', 'email', 'sms', 'qr'];
+// complaint.model model: defines SQLite schema and SQL queries for this module.
+export const VALID_COMPLAINT_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
+export const VALID_COMPLAINT_STATUSES = ['submitted', 'in_review', 'resolved', 'closed'];
 
-export const complaintsQuery = `
-CREATE TABLE IF NOT EXISTS complaints (
+export const Complaint = `
+CREATE TABLE IF NOT EXISTS complaint (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
-  is_anonymous INTEGER NOT NULL DEFAULT 0,
+  user_id INTEGER,
+  is_anonymous INTEGER NOT NULL DEFAULT 0 CHECK(is_anonymous IN (0, 1)),
   anonymous_label TEXT,
   title TEXT NOT NULL,
-  description TEXT NOT NULL,
+  complaint TEXT NOT NULL,
   category TEXT,
-  target_type TEXT NOT NULL DEFAULT 'others' CHECK(target_type IN ('government', 'business', 'community_panel', 'individual', 'others')),
-  target_name TEXT,
-  target_contact TEXT,
-  source_channel TEXT NOT NULL DEFAULT 'web' CHECK(source_channel IN ('web', 'email', 'sms', 'qr')),
-  classification TEXT,
   priority TEXT NOT NULL DEFAULT 'medium' CHECK(priority IN ('low', 'medium', 'high', 'urgent')),
   status TEXT NOT NULL DEFAULT 'submitted' CHECK(status IN ('submitted', 'in_review', 'resolved', 'closed')),
   tracking_code TEXT NOT NULL UNIQUE,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id)
+
 );
 `;
- 
-export const createComplaintQuery = `
-INSERT INTO complaints (
-  user_id, is_anonymous, anonymous_label, title, description, category, target_type, target_name, target_contact, source_channel, classification, priority, tracking_code
+
+
+export const insertComplaint = `
+INSERT INTO complaint (
+  user_id,
+  is_anonymous,
+  anonymous_label,
+  title,
+  complaint,
+  category,
+  priority,
+  status,
+  tracking_code
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 `;
 
-export const fetchComplaintsQuery = `SELECT * FROM complaints ORDER BY id DESC;`;
-
-export const fetchComplaintByIdQuery = `SELECT * FROM complaints WHERE id = ?;`;
-
-export const fetchComplaintByTrackingCodeQuery = `SELECT * FROM complaints WHERE tracking_code = ?;`;
-
-export const fetchComplaintsByTargetTypeQuery = `
-SELECT * FROM complaints WHERE target_type = ? ORDER BY id DESC;
+export const selectComplaint = `
+SELECT
+  c.*,
+  c.complaint AS description,
+  u.full_name AS user_full_name,
+  u.email AS user_email,
+  u.organization_id AS user_organization_id,
+  o.name AS organization_name,
+  o.organization_type AS organization_type,
+  o.email AS organization_email,
+  o.phone AS organization_phone,
+  o.address AS organization_address,
+  reviewer.full_name AS reviewer_name
+FROM complaint c
+LEFT JOIN users u ON u.id = c.user_id
+LEFT JOIN organization o ON o.organization_id = u.organization_id
+LEFT JOIN users reviewer ON reviewer.id = c.reviewed_by
+ORDER BY c.id DESC;
 `;
 
-export const fetchComplaintStatusCountsByTargetTypeQuery = `
-SELECT status, COUNT(*) AS total
-FROM complaints
-WHERE target_type = ?
-GROUP BY status;
+export const selectComplaintById = `
+SELECT
+  c.*,
+  c.complaint AS description,
+  u.full_name AS user_full_name,
+  u.email AS user_email,
+  u.organization_id AS user_organization_id,
+  o.name AS organization_name,
+  o.organization_type AS organization_type,
+  o.email AS organization_email,
+  o.phone AS organization_phone,
+  o.address AS organization_address,
+  reviewer.full_name AS reviewer_name
+FROM complaint c
+LEFT JOIN users u ON u.id = c.user_id
+LEFT JOIN organization o ON o.organization_id = u.organization_id
+LEFT JOIN users reviewer ON reviewer.id = c.reviewed_by
+WHERE c.id = ?;
 `;
 
-export const fetchComplaintTargetDistributionQuery = `
-SELECT target_type, COUNT(*) AS total
-FROM complaints
-GROUP BY target_type;
+export const selectComplaintByUserId = `
+SELECT
+  c.*,
+  c.complaint AS description,
+  u.full_name AS user_full_name,
+  u.email AS user_email,
+  u.organization_id AS user_organization_id,
+  o.name AS organization_name,
+  o.organization_type AS organization_type,
+  o.email AS organization_email,
+  o.phone AS organization_phone,
+  o.address AS organization_address,
+  reviewer.full_name AS reviewer_name
+FROM complaint c
+LEFT JOIN users u ON u.id = c.user_id
+LEFT JOIN organization o ON o.organization_id = u.organization_id
+LEFT JOIN users reviewer ON reviewer.id = c.reviewed_by
+WHERE c.user_id = ?
+ORDER BY c.id DESC;
 `;
 
-export const fetchComplaintGlobalStatusCountsQuery = `
-SELECT status, COUNT(*) AS total
-FROM complaints
-GROUP BY status;
+export const selectComplaintByTrackingCode = `
+SELECT
+  c.*,
+  c.complaint AS description,
+  u.full_name AS user_full_name,
+  u.email AS user_email,
+  u.organization_id AS user_organization_id,
+  o.name AS organization_name,
+  o.organization_type AS organization_type,
+  o.email AS organization_email,
+  o.phone AS organization_phone,
+  o.address AS organization_address,
+  reviewer.full_name AS reviewer_name
+FROM complaint c
+LEFT JOIN users u ON u.id = c.user_id
+LEFT JOIN organization o ON o.organization_id = u.organization_id
+LEFT JOIN users reviewer ON reviewer.id = c.reviewed_by
+WHERE c.tracking_code = ?;
 `;
 
-export const updateComplaintQuery = `
-UPDATE complaints
+export const updateComplaintById = `
+UPDATE complaint
 SET
-  title = ?,
-  description = ?,
-  category = ?,
   is_anonymous = ?,
   anonymous_label = ?,
-  target_type = ?,
-  target_name = ?,
-  target_contact = ?,
-  source_channel = ?,
-  classification = ?,
+  title = ?,
+  complaint = ?,
+  category = ?,
   priority = ?,
   status = ?,
+  admin_response = ?,
+  reviewed_by = ?,
+  reviewed_at = ?,
   updated_at = CURRENT_TIMESTAMP
 WHERE id = ?;
 `;
 
-export const updateComplaintStatusQuery = `
-UPDATE complaints
-SET status = ?, updated_at = CURRENT_TIMESTAMP
-WHERE id = ?;
-`;
-
-export const deleteComplaintQuery = `DELETE FROM complaints WHERE id = ?;`;
+export const deleteComplaintById = `DELETE FROM complaint WHERE id = ?;`;

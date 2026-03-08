@@ -1,55 +1,40 @@
-// Create table
-export const StatusLog = `
-  CREATE TABLE IF NOT EXISTS status_logs (
-    log_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    complaint_id INTEGER NOT NULL,
-    changed_by INTEGER NOT NULL,
-    old_status TEXT NOT NULL,
-    new_status TEXT NOT NULL,
-
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  )
+// statusLog.model model: defines SQLite schema and SQL queries for this module.
+export const statusLogsQuery = `
+CREATE TABLE IF NOT EXISTS status_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  accessment_id INTEGER NOT NULL,
+  changed_by INTEGER NOT NULL,
+  old_status TEXT,
+  new_status TEXT NOT NULL,
+  notes TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (accessment_id) REFERENCES accessments(id),
+  FOREIGN KEY (changed_by) REFERENCES users(id)
+);
 `;
 
-
-// Insert status log
-export const insertStatusLog = `
-  INSERT INTO status_logs (
-    complaint_id,
-    changed_by,
-    old_status,
-    new_status
-  )
-  VALUES (?, ?, ?, ?)
+export const createStatusLogQuery = `
+INSERT INTO status_logs (accessment_id, changed_by, old_status, new_status, notes)
+VALUES (?, ?, ?, ?, ?);
 `;
 
-
-// Select all status logs
-export const selectStatusLogs = `
-  SELECT * FROM status_logs
+export const fetchAllStatusLogsQuery = `
+SELECT * FROM status_logs ORDER BY id DESC;
 `;
 
-
-// Select logs by complaint ID
-export const selectStatusLogsByComplaintId = `
-  SELECT * FROM status_logs
-  WHERE complaint_id = ?
-  ORDER BY created_at DESC
+export const fetchStatusLogByIdQuery = `
+SELECT * FROM status_logs WHERE id = ?;
 `;
 
-
-// Delete status log by ID
-export const deleteStatusLogById = `
-  DELETE FROM status_logs
-  WHERE log_id = ?
+export const fetchStatusLogsByAccessmentIdQuery = `
+SELECT * FROM status_logs WHERE accessment_id = ? ORDER BY created_at DESC;
 `;
 
-
-// Update status log by ID (
-export const updateStatusLogById = `
-  UPDATE status_logs
-  SET old_status = ?,
-      new_status = ?,
-      changed_by = ?
-  WHERE log_id = ?
+export const updateStatusLogQuery = `
+UPDATE status_logs
+SET old_status = ?, new_status = ?, notes = ?
+WHERE id = ?;
 `;
+
+export const deleteStatusLogByIdQuery = `DELETE FROM status_logs WHERE id = ?;`;
+export const deleteStatusLogsByAccessmentIdQuery = `DELETE FROM status_logs WHERE accessment_id = ?;`;

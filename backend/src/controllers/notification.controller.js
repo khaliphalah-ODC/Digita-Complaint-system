@@ -1,67 +1,107 @@
-import complainDB from '../model/notification.model.js';
+// notification.controller controller: handles HTTP request/response flow for this module.
+import complaintDB from '../model/connect.js';
+import { sendSuccess, sendError } from '../utils/response.js';
+import {
+  notificationsQuery,
+  createNotificationQuery,
+  fetchNotificationsQuery,
+  fetchNotificationByIdQuery,
+  fetchNotificationsByComplaintIdQuery,
+  markNotificationAsReadQuery,
+  deleteNotificationByIdQuery
+} from '../model/notification.model.js';
 
-import {createNotificationTable, userNotice, complaintByID, deletenotification} from `../model/notification.model.js`;
-
-
-
- const notice = complainDB.run(notification, (err) => {
+export const CreateNotificationsTable = () => {
+  complaintDB.run(notificationsQuery, (err) => {
     if (err) {
-        console.error('could not send it notification', err);
+      console.error('Error creating notifications table:', err.message);
     } else {
-        console.log('There is no notification');
+      console.log('Notifications table created or already exists');
     }
-});
+  });
+};
 
-const createNoticeTable = (req, res) => {
-     const {user_id, complaint_id, type, message, is_real, creat_at} = req.body;
+export const createNotification = (req, res) => {
+  const { user_id = null, complaint_id = null, type, message, is_read = 0 } = req.body;
 
-    if(!title) return res.status(400).json({err: 'notice is not define'})
+  if (!type || !message) {
+    return sendError(res, 400, 'type and message are required');
+  }
 
-    complainDB.run(createNotificationTable, [user_id, complaint_id, type, message, is_real, creat_at], (err) => {
-        if (err) {
-            console.error('Could not register notification', err);
-            res.status(500).send('Error sending notification');
-        } else {
-            console.log('Notification sent successfully');
-            res.send('Notification sent');
+  complaintDB.run(
+    createNotificationQuery,
+    [user_id, complaint_id, type, message, is_read ? 1 : 0],
+    function onCreate(err) {
+      if (err) {
+        return sendError(res, 500, 'Failed to create notification', err.message);
+      }
+
+      complaintDB.get(fetchNotificationByIdQuery, [this.lastID], (getErr, row) => {
+        if (getErr) {
+          return sendError(res, 500, 'Failed to fetch notification', getErr.message);
         }
+        return sendSuccess(res, 201, 'Notification created successfully', row);
+      });
+    }
+  );
+};
+
+export const getAllNotifications = (_req, res) => {
+  complaintDB.all(fetchNotificationsQuery, [], (err, rows) => {
+    if (err) {
+      return sendError(res, 500, 'Failed to fetch notifications', err.message);
+    }
+    return sendSuccess(res, 200, 'Notifications retrieved successfully', rows);
+  });
+};
+
+export const getNotificationById = (req, res) => {
+  complaintDB.get(fetchNotificationByIdQuery, [req.params.id], (err, row) => {
+    if (err) {
+      return sendError(res, 500, 'Failed to fetch notification', err.message);
+    }
+    if (!row) {
+      return sendError(res, 404, 'Notification not found');
+    }
+    return sendSuccess(res, 200, 'Notification retrieved successfully', row);
+  });
+};
+
+export const getNotificationsByComplaintId = (req, res) => {
+  complaintDB.all(fetchNotificationsByComplaintIdQuery, [req.params.complaintId], (err, rows) => {
+    if (err) {
+      return sendError(res, 500, 'Failed to fetch notifications', err.message);
+    }
+    return sendSuccess(res, 200, 'Notifications retrieved successfully', rows);
+  });
+};
+
+export const markNotificationAsRead = (req, res) => {
+  complaintDB.run(markNotificationAsReadQuery, [req.params.id], function onUpdate(err) {
+    if (err) {
+      return sendError(res, 500, 'Failed to update notification', err.message);
+    }
+    if (this.changes === 0) {
+      return sendError(res, 404, 'Notification not found');
+    }
+
+    complaintDB.get(fetchNotificationByIdQuery, [req.params.id], (getErr, row) => {
+      if (getErr) {
+        return sendError(res, 500, 'Failed to fetch updated notification', getErr.message);
+      }
+      return sendSuccess(res, 200, 'Notification marked as read', row);
     });
-}
+  });
+};
 
- const getAllnotifications = (req, res) => {
-     complainDB.all(userNotice, [], (err, rows) => {
-        if (err) {
-            console.error('Could not get notification', err);
-            res.status(500).send('Error getting notification');
-        } else {
-            res.json(rows);
-        }
-    });
-}
-
-const getnotificationById = (req, res) => {
-    const {complaintID} = req.params;
-    shopdata.get(complaintByID, [complaintID], (err, rows) => {
-        if (err) {
-            console.error('Could not get notification', err);
-            res.status(500).send('Error getting notification');
-        } else {
-            res.json(rows);
-        }
-    });
-}
-
-const deletecomplainById = (req, res) => {
-    const {deletecomplaintByID} = req.params;
-    shopdata.run(deletenotification, [deletecomplaintByID], function (err) {
-        if (err) {
-            console.error("Error", err.message);
-            res.status(500).send("Error deleting notificaton");
-        } else {
-            console.log(`A notification has been deleted with the ID ${this.lastID}`);
-            res.send(`notification has been deleted successfully`);
-        }
-    }); 
-}
-
-export {notice, createNoticeTable, getAllnotifications, getnotificationById, deletecomplainById}
+export const deleteNotification = (req, res) => {
+  complaintDB.run(deleteNotificationByIdQuery, [req.params.id], function onDelete(err) {
+    if (err) {
+      return sendError(res, 500, 'Failed to delete notification', err.message);
+    }
+    if (this.changes === 0) {
+      return sendError(res, 404, 'Notification not found');
+    }
+    return sendSuccess(res, 200, 'Notification deleted successfully', { id: req.params.id });
+  });
+};
