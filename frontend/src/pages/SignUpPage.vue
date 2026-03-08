@@ -35,7 +35,7 @@ const submit = async () => {
           </RouterLink>
           <RouterLink
             to="/signup"
-            class="rounded-xl bg-blue-600 px-8 py-3 text-lg font-semibold text-white shadow-sm"
+            class="rounded-xl bg-orange-500 px-8 py-3 text-lg font-semibold text-white shadow-sm"
           >
             Sign Up
           </RouterLink>
@@ -51,21 +51,21 @@ const submit = async () => {
           type="text"
           required
           placeholder="Full name"
-          class="w-full rounded-xl border border-slate-300 bg-[#f8fafc] px-4 py-3 text-lg outline-none focus:border-blue-500"
+          class="w-full rounded-xl border border-slate-300 bg-[#f8fafc] px-4 py-3 text-lg outline-none focus:border-orange-300"
         >
         <input
           v-model="signUpForm.email"
           type="email"
           required
           placeholder="Email"
-          class="w-full rounded-xl border border-slate-300 bg-[#f8fafc] px-4 py-3 text-lg outline-none focus:border-blue-500"
+          class="w-full rounded-xl border border-slate-300 bg-[#f8fafc] px-4 py-3 text-lg outline-none focus:border-orange-300"
         >
         <input
           v-model="signUpForm.password"
           type="password"
           required
           placeholder="Password"
-          class="w-full rounded-xl border border-slate-300 bg-[#f8fafc] px-4 py-3 text-lg outline-none focus:border-blue-500"
+          class="w-full rounded-xl border border-slate-300 bg-[#f8fafc] px-4 py-3 text-lg outline-none focus:border-orange-300"
         >
       </div>
 
@@ -74,7 +74,7 @@ const submit = async () => {
       <button
         type="submit"
         :disabled="session.loadingRegister"
-        class="mt-5 w-full rounded-xl bg-blue-600 px-4 py-3 text-lg font-semibold text-white hover:bg-blue-700 disabled:opacity-70"
+        class="mt-5 w-full rounded-xl bg-orange-500 px-4 py-3 text-lg font-semibold text-white hover:bg-orange-600 disabled:opacity-70"
       >
         {{ session.loadingRegister ? 'Creating account...' : 'Sign Up' }}
       </button>

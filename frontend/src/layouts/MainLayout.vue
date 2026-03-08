@@ -28,7 +28,7 @@ onMounted(session.fetchCurrentUser);
       <main class="h-full w-full overflow-y-auto">
         <header class="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur md:px-7">
           <div>
-            <p class="text-xs font-semibold uppercase tracking-wide text-blue-700">{{ isAdmin ? 'Admin Workspace' : 'User Workspace' }}</p>
+            <p class="text-xs font-semibold uppercase tracking-wide text-orange-600">{{ isAdmin ? 'Admin Workspace' : 'User Workspace' }}</p>
             <p class="text-sm text-slate-600">Complaint Management System</p>
           </div>
 
@@ -46,13 +46,13 @@ onMounted(session.fetchCurrentUser);
             >
             <div
               v-else
-              class="h-10 w-10 rounded-full bg-gradient-to-br from-blue-600 to-slate-700 text-center text-sm font-bold leading-10 text-white"
+              class="h-10 w-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-700 text-center text-sm font-bold leading-10 text-white"
             >
               {{ session.userInitials }}
             </div>
 
             <button
-              class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-orange-700 hover:bg-orange-100"
               @click="session.logout"
             >
               Logout

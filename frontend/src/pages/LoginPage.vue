@@ -23,14 +23,12 @@ const submit = async () => {
         <div class="flex items-center gap-3">
           <RouterLink
             to="/signin"
-            class="rounded-xl bg-[#f8fafc] px-8 py-3 text-lg font-semibold text-slate-900 shadow-sm"
-          >
+            class="rounded-xl bg-[#f8fafc] px-8 py-3 text-lg font-semibold text-orange-400 shadow-sm">
             Login
           </RouterLink>
           <RouterLink
             to="/signup"
-            class="rounded-xl px-8 py-3 text-lg font-semibold text-slate-600 transition hover:bg-[#f8fafc] hover:text-slate-900"
-          >
+            class="rounded-xl px-8 py-3 text-lg font-semibold text-orange-500 transition hover:bg-orange-500 hover:text-white">
             Sign Up
           </RouterLink>
         </div>
@@ -52,7 +50,7 @@ const submit = async () => {
           type="password"
           required
           placeholder="Password"
-          class="w-full rounded-xl border border-slate-300 bg-[#f8fafc] px-4 py-3 text-lg outline-none focus:border-blue-500"
+          class="w-full rounded-xl border border-slate-300 bg-[#f8fafc] px-4 py-3 text-lg outline-none focus:border-orange-500"
         >
       </div>
 
@@ -61,7 +59,7 @@ const submit = async () => {
       <button
         type="submit"
         :disabled="session.loadingLogin"
-        class="mt-5 w-full rounded-xl bg-blue-600 px-4 py-3 text-lg font-semibold text-white hover:bg-blue-700 disabled:opacity-70"
+        class="mt-5 w-full rounded-xl bg-orange-500 px-4 py-3 text-lg font-semibold text-white hover:bg-orange-600 disabled:opacity-70"
       >
         {{ session.loadingLogin ? 'Signing in...' : 'Sign In' }}
       </button>
