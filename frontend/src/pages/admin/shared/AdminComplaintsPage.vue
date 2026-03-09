@@ -1,10 +1,12 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import api, { extractApiError, unwrapResponse } from '../../services/api';
-import LiveSupportModal from '../../components/LiveSupportModal.vue';
+import api, { extractApiError, unwrapResponse } from '../../../services/api';
+import LiveSupportModal from '../../../components/LiveSupportModal.vue';
+import { useSessionStore } from '../../../stores/session';
 
 const router = useRouter();
+const session = useSessionStore();
 const loading = ref(false);
 const error = ref('');
 const complaints = ref([]);
@@ -15,6 +17,10 @@ const activeChatComplaintId = ref(null);
 const activeChatTitle = ref('');
 const page = ref(1);
 const pageSize = 8;
+const isOrgAdmin = computed(() => session.currentUser?.role === 'org_admin');
+const complaintsRoutePrefix = computed(() => (isOrgAdmin.value ? '/org-admin/complaints' : '/admin/complaints'));
+const statusOptions = ['submitted', 'in_review', 'resolved', 'closed'];
+const priorityOptions = ['low', 'medium', 'high', 'urgent'];
 
 const ensureSuccess = (payload, fallbackMessage) => {
   if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
@@ -82,27 +88,30 @@ onMounted(fetchComplaints);
 </script>
 
 <template>
-  <section class="space-y-5">
+  <section class="w-full space-y-5">
     <header class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">Admin Complaints</h1>
-        <p class="text-sm text-slate-600">Review and update complaint status and priority.</p>
+        <p class="app-kicker">Case Queue</p>
+        <h1 class="mt-2 text-3xl font-bold text-slate-900">{{ isOrgAdmin ? 'Organization Complaints' : 'Admin Complaints' }}</h1>
+        <p class="text-sm text-slate-600">
+          {{ isOrgAdmin ? 'Review complaints that belong to your organization.' : 'Review and update complaint status and priority.' }}
+        </p>
       </div>
-      <button class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700" @click="fetchComplaints">
+      <button class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700" @click="fetchComplaints">
         Refresh
       </button>
     </header>
 
-    <section class="rounded-2xl border border-slate-200 bg-white p-4">
+    <section class="app-shell-panel rounded-[30px] p-5">
       <div class="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <h2 class="text-lg font-bold text-slate-900">Complaint Queue</h2>
         <div class="flex flex-col gap-2 sm:flex-row">
-          <input v-model="search" placeholder="Search complaint or tracking..." class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-          <select v-model="statusFilter" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+          <input v-model="search" placeholder="Search complaint or tracking..." class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm">
+          <select v-model="statusFilter" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm">
             <option value="all">All status</option>
             <option v-for="status in statusOptions" :key="status" :value="status">{{ status }}</option>
           </select>
-          <select v-model="priorityFilter" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+          <select v-model="priorityFilter" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm">
             <option value="all">All priority</option>
             <option v-for="priority in priorityOptions" :key="priority" :value="priority">{{ priority }}</option>
           </select>
@@ -117,7 +126,7 @@ onMounted(fetchComplaints);
         <article
           v-for="item in paginatedComplaints"
           :key="item.id"
-          class="rounded-xl border border-slate-200 bg-white p-4"
+          class="app-ink-card rounded-[24px] p-4"
         >
           <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div class="space-y-1">
@@ -132,6 +141,7 @@ onMounted(fetchComplaints);
                 Organization: {{ item.organization_name || 'N/A' }}
                 <span v-if="item.organization_type"> ({{ item.organization_type }})</span>
               </p>
+              <p class="text-xs text-slate-500">Department: {{ item.department_name || 'Not specified' }}</p>
               <p v-if="item.organization_email || item.organization_phone" class="text-xs text-slate-500">
                 Contact: {{ item.organization_email || 'N/A' }}<span v-if="item.organization_phone"> | {{ item.organization_phone }}</span>
               </p>
@@ -155,13 +165,13 @@ onMounted(fetchComplaints);
           </div>
 
           <div class="mt-3 flex flex-col gap-2 md:flex-row md:items-center">
-            <button class="rounded bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700" @click="router.push(`/admin/complaints/${item.id}`)">
+            <button class="rounded-full bg-[var(--app-primary)] px-4 py-2 text-xs font-semibold text-white" @click="router.push(`${complaintsRoutePrefix}/${item.id}`)">
               Review & Respond
             </button>
-            <button class="rounded bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-700" @click="openChat(item)">
+            <button class="rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700" @click="openChat(item)">
               Open Chat
             </button>
-            <button class="rounded bg-red-50 px-3 py-2 text-xs font-semibold text-red-700" @click="deleteComplaint(item)">
+            <button class="rounded-full bg-red-50 px-4 py-2 text-xs font-semibold text-red-700" @click="deleteComplaint(item)">
               Delete
             </button>
           </div>
@@ -181,7 +191,7 @@ onMounted(fetchComplaints);
     <LiveSupportModal
       :visible="Boolean(activeChatComplaintId)"
       :complaint-id="activeChatComplaintId"
-      current-role="admin"
+      :current-role="isOrgAdmin ? 'org_admin' : 'super_admin'"
       :title="`Live Chat - ${activeChatTitle}`"
       @close="activeChatComplaintId = null"
     />

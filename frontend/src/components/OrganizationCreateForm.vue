@@ -26,6 +26,8 @@ const form = reactive({
   name: '',
   organization_type: '',
   email: '',
+  admin_full_name: '',
+  admin_email: '',
   phone: '',
   address: '',
   logo: '',
@@ -40,6 +42,8 @@ watch(
     form.name = '';
     form.organization_type = '';
     form.email = '';
+    form.admin_full_name = '';
+    form.admin_email = '';
     form.phone = '';
     form.address = '';
     form.logo = '';
@@ -83,6 +87,8 @@ const onSubmit = () => {
     name: form.name.trim(),
     organization_type: form.organization_type.trim(),
     email: form.email.trim().toLowerCase(),
+    admin_full_name: form.admin_full_name.trim() || null,
+    admin_email: form.admin_email.trim().toLowerCase(),
     phone: form.phone.trim() || null,
     address: form.address.trim(),
     logo: form.logo.trim() || null,
@@ -92,33 +98,34 @@ const onSubmit = () => {
 </script>
 
 <template>
-  <section class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+  <section class="app-shell-panel rounded-[32px] p-5 md:p-6">
     <div class="mb-5 flex items-start justify-between">
       <div>
-        <h2 class="text-4xl font-black text-slate-800">{{ title }}</h2>
+        <p class="app-kicker">Onboarding Form</p>
+        <h2 class="mt-2 text-3xl font-black text-slate-800 md:text-4xl">{{ title }}</h2>
         <p class="text-sm text-slate-500">Fill in the details to onboard a new entity</p>
       </div>
-      <button type="button" class="rounded-lg px-2 py-1 text-xl text-slate-400">...</button>
+      <button type="button" class="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-sm font-semibold text-slate-500">Form</button>
     </div>
 
     <form class="grid grid-cols-1 gap-5 md:grid-cols-[180px,1fr]" @submit.prevent="onSubmit">
       <div class="flex flex-col items-center justify-start gap-3">
-        <div class="flex h-24 w-24 items-center justify-center rounded-full bg-slate-200 text-3xl text-slate-500">
+        <div class="flex h-24 w-24 items-center justify-center rounded-full border border-slate-200 bg-[linear-gradient(180deg,#fff8ef_0%,#f3f0e8_100%)] text-3xl font-black text-[var(--app-primary)]">
           <img v-if="form.logo" :src="form.logo" alt="Organization Logo" class="h-24 w-24 rounded-full object-cover">
           <span v-else>O</span>
         </div>
-        <p class="text-sm text-slate-600">Drag & Drop Logo</p>
+        <p class="text-sm text-slate-600">Logo or identity mark</p>
         <input
           type="file"
           accept="image/*"
-          class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          class="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm"
           @change="onLogoFileChange"
         >
         <input
           v-model="form.logo"
           type="url"
           placeholder="Logo URL (or upload image above)"
-          class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          class="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm"
         >
         <p v-if="uploadError" class="text-xs text-red-600">{{ uploadError }}</p>
       </div>
@@ -129,34 +136,49 @@ const onSubmit = () => {
           v-model="form.name"
           required
           placeholder="Organization Name"
-          class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+          class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]"
         >
 
         <input
           v-model="form.email"
           type="email"
           required
-          placeholder="Email"
-          class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+          placeholder="Organization Email"
+          class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]"
         >
+
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <input
+            v-model="form.admin_full_name"
+            placeholder="Organization Admin Name"
+            class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]"
+          >
+          <input
+            v-model="form.admin_email"
+            type="email"
+            required
+            placeholder="Organization Admin Email"
+            class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]"
+          >
+        </div>
 
         <input
           v-model="form.organization_type"
           required
           placeholder="Organization Type"
-          class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+          class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]"
         >
 
         <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
           <input
             v-model="form.organization_type"
             placeholder="Public Sector / Private Enterprise"
-            class="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+            class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]"
           >
           <input
             v-model="form.phone"
             placeholder="(555) 123-667"
-            class="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+            class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]"
           >
         </div>
 
@@ -164,7 +186,7 @@ const onSubmit = () => {
           v-model="form.address"
           required
           placeholder="Address"
-          class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+          class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]"
         >
 
         <div v-if="showStatus" class="pt-1">
@@ -188,7 +210,7 @@ const onSubmit = () => {
           <button
             :disabled="loading"
             type="submit"
-            class="rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 px-6 py-3 text-base font-bold text-white shadow disabled:opacity-60"
+            class="rounded-full bg-[var(--app-primary)] px-7 py-3 text-base font-bold text-white shadow-[0_16px_32px_rgba(31,77,183,0.24)] disabled:opacity-60"
           >
             {{ loading ? 'Saving...' : 'Create Organization' }}
           </button>

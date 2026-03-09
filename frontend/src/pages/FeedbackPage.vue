@@ -1,8 +1,10 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import api, { extractApiError, unwrapResponse } from '../services/api.js';
 import { useSessionStore } from '../stores/session.js';
 
+const router = useRouter();
 const session = useSessionStore();
 const loading = ref(false);
 const saving = ref(false);
@@ -22,7 +24,7 @@ const ensureSuccess = (payload, fallbackMessage) => {
   return payload.data;
 };
 
-const isAdmin = computed(() => session.currentUser?.role === 'admin');
+const isAdminFamily = computed(() => ['super_admin', 'org_admin'].includes(session.currentUser?.role || ''));
 const feedbackSummary = computed(() => {
   const rows = feedbackRows.value || [];
   const total = rows.length;
@@ -127,17 +129,53 @@ const deleteFeedback = async (row) => {
   }
 };
 
+const returnHome = () => {
+  if (session.currentUser?.role === 'super_admin') {
+    router.push('/admin/dashboard');
+    return;
+  }
+  if (session.currentUser?.role === 'org_admin') {
+    router.push('/org-admin/dashboard');
+    return;
+  }
+  router.push('/');
+};
+
 onMounted(async () => {
+  if (session.currentUser?.role === 'super_admin') {
+    router.replace('/admin/dashboard');
+    return;
+  }
+  if (session.currentUser?.role === 'org_admin') {
+    router.replace('/org-admin/dashboard');
+    return;
+  }
   await Promise.all([fetchComplaints(), fetchFeedback()]);
 });
 </script>
 
 <template>
-  <section class="space-y-5">
+  <section
+    v-if="isAdminFamily"
+    class="w-full rounded-3xl border border-slate-200 bg-white px-6 py-10 text-center shadow-xl md:px-8"
+  >
+    <h1 class="text-3xl font-black tracking-tight text-slate-800">Feedback Is User Only</h1>
+    <p class="mt-2 text-sm text-slate-600">
+      Feedback submission and history are only available to regular users for their own complaint experience.
+    </p>
+    <button
+      class="mt-5 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white"
+      @click="returnHome"
+    >
+      Return to Dashboard
+    </button>
+  </section>
+
+  <section v-else class="space-y-5">
     <header class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
       <div>
         <h1 class="text-2xl font-bold text-slate-900">Feedback</h1>
-        <p class="text-sm text-slate-600">{{ isAdmin ? 'Review all platform feedback and moderate entries.' : 'Share feedback for your complaint experience.' }}</p>
+        <p class="text-sm text-slate-600">Share feedback for your complaint experience.</p>
       </div>
       <button class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700" @click="fetchFeedback">
         Refresh

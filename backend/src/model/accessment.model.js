@@ -5,6 +5,7 @@ export const accessmentQuery = `
 CREATE TABLE IF NOT EXISTS accessments (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   complaint_id INTEGER NOT NULL,
+  organization_id INTEGER,
   assessor_id INTEGER NOT NULL,
   findings TEXT NOT NULL,
   recommendation TEXT,
@@ -12,20 +13,22 @@ CREATE TABLE IF NOT EXISTS accessments (
   admin_response TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id)
+  FOREIGN KEY (organization_id) REFERENCES organization(organization_id),
+  FOREIGN KEY (assessor_id) REFERENCES users(id)
 );
 `;
 
 export const createAccessmentQuery = `
 INSERT INTO accessments (
   complaint_id,
+  organization_id,
   assessor_id,
   findings,
   recommendation,
   status,
   admin_response
 )
-VALUES (?, ?, ?, ?, ?, ?);
+VALUES (?, ?, ?, ?, ?, ?, ?);
 `;
 
 export const fetchAccessmentsQuery = `
@@ -33,7 +36,8 @@ SELECT
   a.*,
   c.title AS complaint_title,
   c.user_id AS complaint_user_id,
-  c.status AS complaint_status
+  c.status AS complaint_status,
+  c.organization_id AS complaint_organization_id
 FROM accessments a
 LEFT JOIN complaint c ON c.id = a.complaint_id
 ORDER BY a.id DESC;
@@ -44,7 +48,8 @@ SELECT
   a.*,
   c.title AS complaint_title,
   c.user_id AS complaint_user_id,
-  c.status AS complaint_status
+  c.status AS complaint_status,
+  c.organization_id AS complaint_organization_id
 FROM accessments a
 LEFT JOIN complaint c ON c.id = a.complaint_id
 WHERE a.id = ?;
@@ -55,7 +60,8 @@ SELECT
   a.*,
   c.title AS complaint_title,
   c.user_id AS complaint_user_id,
-  c.status AS complaint_status
+  c.status AS complaint_status,
+  c.organization_id AS complaint_organization_id
 FROM accessments a
 LEFT JOIN complaint c ON c.id = a.complaint_id
 WHERE a.complaint_id = ?
@@ -67,10 +73,23 @@ SELECT
   a.*,
   c.title AS complaint_title,
   c.user_id AS complaint_user_id,
-  c.status AS complaint_status
+  c.status AS complaint_status,
+  c.organization_id AS complaint_organization_id
 FROM accessments a
 LEFT JOIN complaint c ON c.id = a.complaint_id
 WHERE a.assessor_id = ?
+ORDER BY a.id DESC;
+`;
+export const fetchAccessmentsByOrganizationIdQuery = `
+SELECT
+  a.*,
+  c.title AS complaint_title,
+  c.user_id AS complaint_user_id,
+  c.status AS complaint_status,
+  c.organization_id AS complaint_organization_id
+FROM accessments a
+LEFT JOIN complaint c ON c.id = a.complaint_id
+WHERE a.organization_id = ?
 ORDER BY a.id DESC;
 `;
 

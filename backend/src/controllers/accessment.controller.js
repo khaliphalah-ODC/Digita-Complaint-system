@@ -8,14 +8,16 @@ import {
   fetchAccessmentsQuery,
   fetchAccessmentByIdQuery,
   fetchAccessmentsByComplaintIdQuery,
+  fetchAccessmentsByOrganizationIdQuery,
   fetchAccessmentsByAssessorIdQuery,
   updateAccessmentQuery,
   updateAccessmentAdminResponseQuery,
   deleteAccessmentQuery,
   VALID_ACCESSMENT_STATUSES
 } from '../model/accessment.model.js';
+import { denySuperAdminInternalAccess } from '../utils/tenantScope.js';
 
-const isAdmin = (req) => req.user?.role === 'admin';
+const isOrgAdmin = (req) => req.user?.role === 'org_admin';
 
 const allQuery = (sql, params = []) =>
   new Promise((resolve, reject) => {
@@ -38,6 +40,7 @@ const ensureAccessmentsTableSchema = async () => {
   const existing = new Set(columns.map((col) => col.name));
 
   if (!existing.has('complaint_id')) await runQuery('ALTER TABLE accessments ADD COLUMN complaint_id INTEGER');
+  if (!existing.has('organization_id')) await runQuery('ALTER TABLE accessments ADD COLUMN organization_id INTEGER');
   if (!existing.has('assessor_id')) await runQuery('ALTER TABLE accessments ADD COLUMN assessor_id INTEGER');
   if (!existing.has('findings')) await runQuery('ALTER TABLE accessments ADD COLUMN findings TEXT');
   if (!existing.has('recommendation')) await runQuery('ALTER TABLE accessments ADD COLUMN recommendation TEXT');
@@ -46,7 +49,17 @@ const ensureAccessmentsTableSchema = async () => {
   if (!existing.has('updated_at')) await runQuery('ALTER TABLE accessments ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP');
 
   await runQuery("UPDATE accessments SET status = COALESCE(status, 'pending')");
+  await runQuery(`
+    UPDATE accessments
+    SET organization_id = (
+      SELECT c.organization_id
+      FROM complaint c
+      WHERE c.id = accessments.complaint_id
+    )
+    WHERE organization_id IS NULL AND complaint_id IS NOT NULL
+  `);
   await runQuery('CREATE INDEX IF NOT EXISTS idx_accessments_complaint_id ON accessments(complaint_id)');
+  await runQuery('CREATE INDEX IF NOT EXISTS idx_accessments_organization_id ON accessments(organization_id)');
   await runQuery('CREATE INDEX IF NOT EXISTS idx_accessments_assessor_id ON accessments(assessor_id)');
 };
 
@@ -66,8 +79,11 @@ export const CreateAccessmentsTable = () => {
 };
 
 export const createAccessment = (req, res) => {
-  if (!isAdmin(req)) {
-    return sendError(res, 403, 'Only admin can create accessments');
+  if (denySuperAdminInternalAccess(req, res, 'Super admin cannot manage accessments directly')) {
+    return;
+  }
+  if (!isOrgAdmin(req)) {
+    return sendError(res, 403, 'Only org_admin can create accessments');
   }
 
   const {
@@ -92,10 +108,13 @@ export const createAccessment = (req, res) => {
     if (!complaintRow) {
       return sendError(res, 404, 'Complaint not found');
     }
+    if (String(complaintRow.complaint_organization_id) !== String(req.user.organization_id)) {
+      return sendError(res, 403, 'Access denied');
+    }
 
     complaintDB.run(
       createAccessmentQuery,
-      [complaint_id, req.user.id, findings, recommendation, status, admin_response],
+      [complaint_id, complaintRow.complaint_organization_id, req.user.id, findings, recommendation, status, admin_response],
       function onCreate(err) {
         if (err) {
           return sendError(res, 500, 'Failed to create accessment', err.message);
@@ -113,11 +132,14 @@ export const createAccessment = (req, res) => {
 };
 
 export const getAllAccessments = (req, res) => {
-  if (!isAdmin(req)) {
-    return sendError(res, 403, 'Only admin can view all accessments');
+  if (denySuperAdminInternalAccess(req, res, 'Super admin cannot access accessments directly')) {
+    return;
+  }
+  if (!isOrgAdmin(req)) {
+    return sendError(res, 403, 'Only org_admin can view organization accessments');
   }
 
-  complaintDB.all(fetchAccessmentsQuery, [], (err, rows) => {
+  complaintDB.all(fetchAccessmentsByOrganizationIdQuery, [req.user.organization_id], (err, rows) => {
     if (err) {
       return sendError(res, 500, 'Failed to fetch accessments', err.message);
     }
@@ -134,7 +156,13 @@ export const getAccessmentById = (req, res) => {
       return sendError(res, 404, 'Accessment not found');
     }
 
-    if (!isAdmin(req) && row.complaint_user_id !== req.user.id && row.assessor_id !== req.user.id) {
+    if (req.user.role === 'super_admin') {
+      return sendError(res, 403, 'Super admin cannot access accessments directly');
+    }
+    if (req.user.role === 'org_admin' && String(row.organization_id) !== String(req.user.organization_id)) {
+      return sendError(res, 403, 'Access denied');
+    }
+    if (req.user.role !== 'org_admin' && row.complaint_user_id !== req.user.id && row.assessor_id !== req.user.id) {
       return sendError(res, 403, 'Access denied');
     }
 
@@ -150,7 +178,13 @@ export const getAccessmentsByComplaintId = (req, res) => {
     if (!complaintRow) {
       return sendError(res, 404, 'Complaint not found');
     }
-    if (!isAdmin(req) && complaintRow.user_id !== req.user.id) {
+    if (req.user.role === 'super_admin') {
+      return sendError(res, 403, 'Super admin cannot access accessments directly');
+    }
+    if (req.user.role === 'org_admin' && String(complaintRow.complaint_organization_id) !== String(req.user.organization_id)) {
+      return sendError(res, 403, 'Access denied');
+    }
+    if (req.user.role !== 'org_admin' && complaintRow.user_id !== req.user.id) {
       return sendError(res, 403, 'Access denied');
     }
 
@@ -164,7 +198,18 @@ export const getAccessmentsByComplaintId = (req, res) => {
 };
 
 export const getAccessmentsByUserId = (req, res) => {
-  if (!isAdmin(req) && Number(req.params.userId) !== req.user.id) {
+  if (req.user.role === 'super_admin') {
+    return sendError(res, 403, 'Super admin cannot access accessments directly');
+  }
+  if (req.user.role === 'org_admin') {
+    return complaintDB.all(fetchAccessmentsByOrganizationIdQuery, [req.user.organization_id], (err, rows) => {
+      if (err) {
+        return sendError(res, 500, 'Failed to fetch accessments by organization', err.message);
+      }
+      return sendSuccess(res, 200, 'Accessments retrieved successfully', rows);
+    });
+  }
+  if (Number(req.params.userId) !== req.user.id) {
     return sendError(res, 403, 'Access denied');
   }
 
@@ -177,8 +222,11 @@ export const getAccessmentsByUserId = (req, res) => {
 };
 
 export const updateAccessment = (req, res) => {
-  if (!isAdmin(req)) {
-    return sendError(res, 403, 'Only admin can update accessments');
+  if (denySuperAdminInternalAccess(req, res, 'Super admin cannot manage accessments directly')) {
+    return;
+  }
+  if (!isOrgAdmin(req)) {
+    return sendError(res, 403, 'Only org_admin can update accessments');
   }
 
   complaintDB.get(fetchAccessmentByIdQuery, [req.params.id], (findErr, existing) => {
@@ -187,6 +235,9 @@ export const updateAccessment = (req, res) => {
     }
     if (!existing) {
       return sendError(res, 404, 'Accessment not found');
+    }
+    if (String(existing.organization_id) !== String(req.user.organization_id)) {
+      return sendError(res, 403, 'Access denied');
     }
 
     const findings = req.body.findings || existing.findings;
@@ -218,8 +269,11 @@ export const updateAccessment = (req, res) => {
 };
 
 export const updateAccessmentAdminResponse = (req, res) => {
-  if (!isAdmin(req)) {
-    return sendError(res, 403, 'Only admin can update admin response');
+  if (denySuperAdminInternalAccess(req, res, 'Super admin cannot manage accessments directly')) {
+    return;
+  }
+  if (!isOrgAdmin(req)) {
+    return sendError(res, 403, 'Only org_admin can update admin response');
   }
 
   const { admin_response } = req.body;
@@ -227,38 +281,57 @@ export const updateAccessmentAdminResponse = (req, res) => {
     return sendError(res, 400, 'admin_response is required');
   }
 
-  complaintDB.run(updateAccessmentAdminResponseQuery, [admin_response, req.params.id], function onUpdate(err) {
-    if (err) {
-      return sendError(res, 500, 'Failed to update accessment', err.message);
+  complaintDB.get(fetchAccessmentByIdQuery, [req.params.id], (findErr, existing) => {
+    if (findErr) {
+      return sendError(res, 500, 'Failed to fetch accessment', findErr.message);
     }
-
-    if (this.changes === 0) {
+    if (!existing) {
       return sendError(res, 404, 'Accessment not found');
     }
+    if (String(existing.organization_id) !== String(req.user.organization_id)) {
+      return sendError(res, 403, 'Access denied');
+    }
 
-    complaintDB.get(fetchAccessmentByIdQuery, [req.params.id], (getErr, row) => {
-      if (getErr) {
-        return sendError(res, 500, 'Failed to fetch updated accessment', getErr.message);
+    complaintDB.run(updateAccessmentAdminResponseQuery, [admin_response, req.params.id], function onUpdate(err) {
+      if (err) {
+        return sendError(res, 500, 'Failed to update accessment', err.message);
       }
-      return sendSuccess(res, 200, 'Accessment updated successfully', row);
+
+      complaintDB.get(fetchAccessmentByIdQuery, [req.params.id], (getErr, row) => {
+        if (getErr) {
+          return sendError(res, 500, 'Failed to fetch updated accessment', getErr.message);
+        }
+        return sendSuccess(res, 200, 'Accessment updated successfully', row);
+      });
     });
   });
 };
 
 export const deleteAccessment = (req, res) => {
-  if (!isAdmin(req)) {
-    return sendError(res, 403, 'Only admin can delete accessments');
+  if (denySuperAdminInternalAccess(req, res, 'Super admin cannot manage accessments directly')) {
+    return;
+  }
+  if (!isOrgAdmin(req)) {
+    return sendError(res, 403, 'Only org_admin can delete accessments');
   }
 
-  complaintDB.run(deleteAccessmentQuery, [req.params.id], function onDelete(err) {
-    if (err) {
-      return sendError(res, 500, 'Failed to delete accessment', err.message);
+  complaintDB.get(fetchAccessmentByIdQuery, [req.params.id], (findErr, existing) => {
+    if (findErr) {
+      return sendError(res, 500, 'Failed to fetch accessment', findErr.message);
     }
-
-    if (this.changes === 0) {
+    if (!existing) {
       return sendError(res, 404, 'Accessment not found');
     }
+    if (String(existing.organization_id) !== String(req.user.organization_id)) {
+      return sendError(res, 403, 'Access denied');
+    }
 
-    return sendSuccess(res, 200, 'Accessment deleted successfully', { id: req.params.id });
+    complaintDB.run(deleteAccessmentQuery, [req.params.id], function onDelete(err) {
+      if (err) {
+        return sendError(res, 500, 'Failed to delete accessment', err.message);
+      }
+
+      return sendSuccess(res, 200, 'Accessment deleted successfully', { id: req.params.id });
+    });
   });
 };

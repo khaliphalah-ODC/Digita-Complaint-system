@@ -18,6 +18,7 @@ SELECT
   f.*,
   c.title AS complaint_title,
   c.tracking_code AS complaint_tracking_code,
+  c.organization_id AS complaint_organization_id,
   u.full_name AS user_full_name,
   u.email AS user_email
 FROM feedback f
@@ -30,6 +31,7 @@ SELECT
   f.*,
   c.title AS complaint_title,
   c.tracking_code AS complaint_tracking_code,
+  c.organization_id AS complaint_organization_id,
   u.full_name AS user_full_name,
   u.email AS user_email
 FROM feedback f
@@ -42,6 +44,7 @@ SELECT
   f.*,
   c.title AS complaint_title,
   c.tracking_code AS complaint_tracking_code,
+  c.organization_id AS complaint_organization_id,
   u.full_name AS user_full_name,
   u.email AS user_email
 FROM feedback f
@@ -55,12 +58,27 @@ SELECT
   f.*,
   c.title AS complaint_title,
   c.tracking_code AS complaint_tracking_code,
+  c.organization_id AS complaint_organization_id,
   u.full_name AS user_full_name,
   u.email AS user_email
 FROM feedback f
 LEFT JOIN complaint c ON c.id = f.complaint_id
 LEFT JOIN users u ON u.id = f.user_id
 WHERE f.user_id = ?
+ORDER BY f.id DESC;
+`;
+export const fetchFeedbackByOrganizationIdQuery = `
+SELECT
+  f.*,
+  c.title AS complaint_title,
+  c.tracking_code AS complaint_tracking_code,
+  c.organization_id AS complaint_organization_id,
+  u.full_name AS user_full_name,
+  u.email AS user_email
+FROM feedback f
+LEFT JOIN complaint c ON c.id = f.complaint_id
+LEFT JOIN users u ON u.id = f.user_id
+WHERE c.organization_id = ?
 ORDER BY f.id DESC;
 `;
 export const updateFeedbackQuery = `

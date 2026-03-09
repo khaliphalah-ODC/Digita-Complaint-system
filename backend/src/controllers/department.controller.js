@@ -5,10 +5,14 @@ import {
   Department,
   deleteDepartmentById,
   insertDepartment,
+  selectPublicDepartmentsByOrganizationId,
   selectDepartments,
+  selectDepartmentsByOrganizationId,
   selectDepartmentById,
   updateDepartmentById
 } from '../model/department.model.js';
+import { selectOrganizationById } from '../model/organization.model.js';
+import { denySuperAdminInternalAccess } from '../utils/tenantScope.js';
 
 export const CreateDepartmentTable = () => {
   complaintDB.get(
@@ -95,7 +99,6 @@ export const CreateDepartmentTable = () => {
 
 export const createDepartment = (req, res) => {
   const {
-    organization_id,
     name,
     description = null,
     accessment_id = null,
@@ -103,13 +106,19 @@ export const createDepartment = (req, res) => {
   } = req.body;
   const normalizedAccessmentId = accessment_id ?? assessment_id;
 
-  if (!organization_id || !name) {
+  if (denySuperAdminInternalAccess(req, res, 'Super admin cannot manage departments directly')) {
+    return;
+  }
+  if (req.user?.role !== 'org_admin') {
+    return sendError(res, 403, 'Only org_admin can manage departments');
+  }
+  if (!req.user?.organization_id || !name) {
     return sendError(res, 400, 'organization_id and name are required');
   }
 
   complaintDB.run(
     insertDepartment,
-    [organization_id, name, description, normalizedAccessmentId],
+    [req.user.organization_id, name, description, normalizedAccessmentId],
     function onCreate(err) {
       if (err) {
         return sendError(res, 500, 'Failed to create department', err.message);
@@ -125,8 +134,15 @@ export const createDepartment = (req, res) => {
   );
 };
 
-export const getAllDepartments = (_req, res) => {
-  complaintDB.all(selectDepartments, [], (err, rows) => {
+export const getAllDepartments = (req, res) => {
+  if (denySuperAdminInternalAccess(req, res, 'Super admin cannot access department records directly')) {
+    return;
+  }
+  if (req.user?.role !== 'org_admin') {
+    return sendError(res, 403, 'Only org_admin can access departments');
+  }
+
+  complaintDB.all(selectDepartmentsByOrganizationId, [req.user.organization_id], (err, rows) => {
     if (err) {
       return sendError(res, 500, 'Failed to fetch departments', err.message);
     }
@@ -135,6 +151,13 @@ export const getAllDepartments = (_req, res) => {
 };
 
 export const getDepartmentById = (req, res) => {
+  if (denySuperAdminInternalAccess(req, res, 'Super admin cannot access department records directly')) {
+    return;
+  }
+  if (req.user?.role !== 'org_admin') {
+    return sendError(res, 403, 'Only org_admin can access departments');
+  }
+
   complaintDB.get(selectDepartmentById, [req.params.id], (err, row) => {
     if (err) {
       return sendError(res, 500, 'Failed to fetch department', err.message);
@@ -142,13 +165,42 @@ export const getDepartmentById = (req, res) => {
     if (!row) {
       return sendError(res, 404, 'Department not found');
     }
+    if (String(row.organization_id) !== String(req.user.organization_id)) {
+      return sendError(res, 403, 'Access denied');
+    }
     return sendSuccess(res, 200, 'Department retrieved successfully', row);
+  });
+};
+
+export const getPublicDepartmentsByOrganization = (req, res) => {
+  const organizationId = Number(req.params.organizationId);
+
+  if (!Number.isInteger(organizationId) || organizationId <= 0) {
+    return sendError(res, 400, 'organizationId must be a valid organization id');
+  }
+
+  complaintDB.get(selectOrganizationById, [organizationId], (orgErr, organizationRow) => {
+    if (orgErr) {
+      return sendError(res, 500, 'Failed to validate organization', orgErr.message);
+    }
+    if (!organizationRow) {
+      return sendError(res, 404, 'Organization not found');
+    }
+    if (String(organizationRow.status || '').toLowerCase() !== 'active') {
+      return sendError(res, 400, 'Selected organization is not active');
+    }
+
+    complaintDB.all(selectPublicDepartmentsByOrganizationId, [organizationId], (err, rows) => {
+      if (err) {
+        return sendError(res, 500, 'Failed to fetch departments', err.message);
+      }
+      return sendSuccess(res, 200, 'Departments retrieved successfully', rows);
+    });
   });
 };
 
 export const updateDepartment = (req, res) => {
   const {
-    organization_id,
     name,
     description = null,
     accessment_id = null,
@@ -156,39 +208,70 @@ export const updateDepartment = (req, res) => {
   } = req.body;
   const normalizedAccessmentId = accessment_id ?? assessment_id;
 
-  if (!organization_id || !name) {
+  if (denySuperAdminInternalAccess(req, res, 'Super admin cannot manage departments directly')) {
+    return;
+  }
+  if (req.user?.role !== 'org_admin') {
+    return sendError(res, 403, 'Only org_admin can manage departments');
+  }
+  if (!req.user?.organization_id || !name) {
     return sendError(res, 400, 'organization_id and name are required');
   }
 
-  complaintDB.run(
-    updateDepartmentById,
-    [organization_id, name, description, normalizedAccessmentId, req.params.id],
-    function onUpdate(err) {
-      if (err) {
-        return sendError(res, 500, 'Failed to update department', err.message);
-      }
-      if (this.changes === 0) {
-        return sendError(res, 404, 'Department not found');
-      }
-
-      complaintDB.get(selectDepartmentById, [req.params.id], (getErr, row) => {
-        if (getErr) {
-          return sendError(res, 500, 'Failed to fetch updated department', getErr.message);
-        }
-        return sendSuccess(res, 200, 'Department updated successfully', row);
-      });
+  complaintDB.get(selectDepartmentById, [req.params.id], (findErr, existing) => {
+    if (findErr) {
+      return sendError(res, 500, 'Failed to fetch department', findErr.message);
     }
-  );
+    if (!existing) {
+      return sendError(res, 404, 'Department not found');
+    }
+    if (String(existing.organization_id) !== String(req.user.organization_id)) {
+      return sendError(res, 403, 'Access denied');
+    }
+
+    complaintDB.run(
+      updateDepartmentById,
+      [req.user.organization_id, name, description, normalizedAccessmentId, req.params.id],
+      function onUpdate(err) {
+        if (err) {
+          return sendError(res, 500, 'Failed to update department', err.message);
+        }
+
+        complaintDB.get(selectDepartmentById, [req.params.id], (getErr, row) => {
+          if (getErr) {
+            return sendError(res, 500, 'Failed to fetch updated department', getErr.message);
+          }
+          return sendSuccess(res, 200, 'Department updated successfully', row);
+        });
+      }
+    );
+  });
 };
 
 export const deleteDepartment = (req, res) => {
-  complaintDB.run(deleteDepartmentById, [req.params.id], function onDelete(err) {
-    if (err) {
-      return sendError(res, 500, 'Failed to delete department', err.message);
+  if (denySuperAdminInternalAccess(req, res, 'Super admin cannot manage departments directly')) {
+    return;
+  }
+  if (req.user?.role !== 'org_admin') {
+    return sendError(res, 403, 'Only org_admin can manage departments');
+  }
+
+  complaintDB.get(selectDepartmentById, [req.params.id], (findErr, existing) => {
+    if (findErr) {
+      return sendError(res, 500, 'Failed to fetch department', findErr.message);
     }
-    if (this.changes === 0) {
+    if (!existing) {
       return sendError(res, 404, 'Department not found');
     }
-    return sendSuccess(res, 200, 'Department deleted successfully', { id: req.params.id });
+    if (String(existing.organization_id) !== String(req.user.organization_id)) {
+      return sendError(res, 403, 'Access denied');
+    }
+
+    complaintDB.run(deleteDepartmentById, [req.params.id], function onDelete(err) {
+      if (err) {
+        return sendError(res, 500, 'Failed to delete department', err.message);
+      }
+      return sendSuccess(res, 200, 'Department deleted successfully', { id: req.params.id });
+    });
   });
 };

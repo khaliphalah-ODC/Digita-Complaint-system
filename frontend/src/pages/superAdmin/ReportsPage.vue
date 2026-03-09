@@ -4,9 +4,17 @@ import api, { extractApiError, unwrapResponse } from '../../services/api';
 
 const loading = ref(false);
 const error = ref('');
-
-const escalations = ref([]);
-const feedback = ref([]);
+const escalationStatusCounts = ref({
+  pending: 0,
+  in_progress: 0,
+  resolved: 0,
+  rejected: 0
+});
+const feedbackSummary = ref({
+  total: 0,
+  average: 0,
+  byRating: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+});
 
 const ensureSuccess = (payload, fallbackMessage) => {
   if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
@@ -17,12 +25,10 @@ const fetchReports = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const [escalationRes, feedbackRes] = await Promise.all([
-      api.get('/escalations'),
-      api.get('/feedback')
-    ]);
-    escalations.value = ensureSuccess(unwrapResponse(escalationRes), 'Failed to fetch escalations') || [];
-    feedback.value = ensureSuccess(unwrapResponse(feedbackRes), 'Failed to fetch feedback') || [];
+    const response = await api.get('/organization/global-stats');
+    const stats = ensureSuccess(unwrapResponse(response), 'Failed to load report data');
+    escalationStatusCounts.value = stats.escalationStatusCounts || escalationStatusCounts.value;
+    feedbackSummary.value = stats.feedbackSummary || feedbackSummary.value;
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to load report data');
   } finally {
@@ -30,21 +36,8 @@ const fetchReports = async () => {
   }
 };
 
-const escalationStatusCounts = computed(() => {
-  const counts = {
-    pending: 0,
-    in_progress: 0,
-    resolved: 0,
-    rejected: 0
-  };
-  for (const row of escalations.value) {
-    if (counts[row.status] !== undefined) counts[row.status] += 1;
-  }
-  return counts;
-});
-
 const escalationBars = computed(() => {
-  const counts = escalationStatusCounts.value;
+  const counts = escalationStatusCounts.value || {};
   const max = Math.max(...Object.values(counts), 1);
   return Object.entries(counts).map(([label, value]) => ({
     label,
@@ -53,24 +46,14 @@ const escalationBars = computed(() => {
   }));
 });
 
-const feedbackSummary = computed(() => {
-  const ratings = feedback.value
-    .map((row) => Number(row.rating))
-    .filter((n) => Number.isFinite(n));
-  const total = ratings.length;
-  const avg = total === 0 ? 0 : ratings.reduce((sum, n) => sum + n, 0) / total;
-  const byRating = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-  ratings.forEach((r) => {
-    const rounded = Math.max(1, Math.min(5, Math.round(r)));
-    byRating[rounded] += 1;
-  });
+const feedbackBars = computed(() => {
+  const byRating = feedbackSummary.value?.byRating || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
   const max = Math.max(...Object.values(byRating), 1);
-  const bars = Object.entries(byRating).map(([rating, count]) => ({
+  return Object.entries(byRating).map(([rating, count]) => ({
     label: `${rating}★`,
     value: count,
     width: `${Math.max((count / max) * 100, count > 0 ? 8 : 0)}%`
   }));
-  return { total, average: avg.toFixed(2), bars };
 });
 
 onMounted(fetchReports);
@@ -94,7 +77,7 @@ onMounted(fetchReports);
     <section class="grid grid-cols-1 gap-4 md:grid-cols-2">
       <article class="rounded-2xl border border-slate-200 bg-white p-4">
         <h2 class="text-lg font-bold text-slate-900">Escalation Status Distribution</h2>
-        <p class="text-sm text-slate-600">Total escalations: {{ escalations.length }}</p>
+        <p class="text-sm text-slate-600">Aggregate platform escalation distribution.</p>
         <div class="mt-4 space-y-3">
           <div v-for="bar in escalationBars" :key="bar.label">
             <div class="mb-1 flex items-center justify-between text-xs text-slate-600">
@@ -111,10 +94,10 @@ onMounted(fetchReports);
       <article class="rounded-2xl border border-slate-200 bg-white p-4">
         <h2 class="text-lg font-bold text-slate-900">Feedback Rating Distribution</h2>
         <p class="text-sm text-slate-600">
-          Total feedback: {{ feedbackSummary.total }} | Average rating: {{ feedbackSummary.average }}
+          Total feedback: {{ feedbackSummary.total }} | Average rating: {{ Number(feedbackSummary.average || 0).toFixed(2) }}
         </p>
         <div class="mt-4 space-y-3">
-          <div v-for="bar in feedbackSummary.bars" :key="bar.label">
+          <div v-for="bar in feedbackBars" :key="bar.label">
             <div class="mb-1 flex items-center justify-between text-xs text-slate-600">
               <span>{{ bar.label }}</span>
               <span>{{ bar.value }}</span>
