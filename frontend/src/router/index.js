@@ -23,6 +23,8 @@ import AccessmentManagementPage from '../pages/admin/AccessmentManagementPage.vu
 import EscalationManagementPage from '../pages/admin/EscalationManagementPage.vue';
 import NotificationManagementPage from '../pages/admin/NotificationManagementPage.vue';
 
+
+
 const readRoleFromToken = () => {
   const token = localStorage.getItem('token');
   if (!token) return '';
@@ -62,6 +64,7 @@ const routes = [
     component: SignUpPage,
     meta: { guestOnly: true }
   },
+  
   {
     path: '/',
     component: MainLayout,

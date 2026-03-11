@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useSessionStore } from '../stores/session';
+                                                                                                                                               
 
 const session = useSessionStore();
 const isLoggedIn = computed(() => session.isLoggedIn);
@@ -83,6 +84,67 @@ const dashboardRoute = computed(() => (session.currentUser?.role === 'admin' ? '
           <h2 class="text-4xl font-bold text-slate-900 md:text-3xl">Secure & Anonymous</h2>
           <p class="mt-2 text-lg text-slate-600 md:text-base">Submit safely with optional anonymity.</p>
         </article>
+      </section>
+
+        <!-- Footer -->
+      <section class="w-full"><br><br><br>
+        <div class="bg-black h-auto">
+          <div class="bg-gray-900   flex flex-wrap p-6 justify-center sm:justify-between">
+
+            <!-- Features -->
+            <div class="p-4 w-60 flex flex-col">
+              <p class="text-gray-400"><b>FEATURES</b></p><br>
+              <a href="#"><p class="text-xs leading-tight p-1 decoration-curent text-gray-400 hover:underline hover:scale-102 duration-100 ease-out">AI-Integration</p></a>
+              <a href="#"><p class="text-xs leading-tight p-1 decoration-curent text-gray-400 hover:underline hover:scale-102 duration-100 ease-out">AI-Integration</p></a>
+              <a href="#"><p class="text-xs leading-tight p-1 decoration-curent text-gray-400 hover:underline hover:scale-102 duration-100 ease-out">AI-Integration</p></a>
+            </div>
+
+            <!-- Partners -->
+            <div class="p-4 w-60 flex flex-col">
+              <p class="text-gray-400"><b>SERVICES</b></p><br>
+              <a href="#"><p class="text-xs leading-tight p-1 decoration-curent text-gray-400 hover:underline hover:scale-102 duration-100 ease-out">AI-Integration</p></a>
+              <a href="#"><p class="text-xs leading-tight p-1 decoration-curent text-gray-400 hover:underline hover:scale-102 duration-100 ease-out">AI-Integration</p></a>
+              <a href="#"><p class="text-xs leading-tight p-1 decoration-curent text-gray-400 hover:underline hover:scale-102 duration-100 ease-out">AI-Integration</p></a>
+              <a href="#"><p class="text-xs leading-tight p-1 decoration-curent text-gray-400 hover:underline hover:scale-102 duration-100 ease-out">AI-Integration</p></a>
+              <a href="#"><p class="text-xs leading-tight p-1 decoration-curent text-gray-400 hover:underline hover:scale-102 duration-100 ease-out">AI-Integration</p></a>
+
+            </div>
+
+            <!-- Customers -->
+            <div class="p-4 w-60 flex flex-col">
+              <a href="#" class="text-gray-400"><p><b>CUSTOMERS</b></p></a><br>
+              <a href="#"><p class="text-xs leading-tight p-1 decoration-curent text-gray-400 hover:underline hover:scale-102 duration-100 ease-out">AI-Integration</p></a>
+              <a href="#"><p class="text-xs leading-tight p-1 decoration-curent text-gray-400 hover:underline hover:scale-102 duration-100 ease-out">Automatic Email forwarding</p></a>
+              <a href="#"><p class="text-xs leading-tight p-1 decoration-curent text-gray-400 hover:underline hover:scale-102 duration-100 ease-out">Synchronize complaints</p></a>
+            </div>
+
+            <!-- Partners -->
+            <div class="p-4 w-60 flex flex-col">
+              <p class="p-1 decoration-curent text-gray-400"><b> PARTNERS</b></p><br>
+              <a href="#"><p class="text-xs leading-tight p-1 decoration-curent text-gray-400 hover:underline hover:scale-102 duration-100 ease-out">AI-Integration</p></a>
+              <a href="#"><p class="text-xs leading-tight p-1 decoration-curent text-gray-400 hover:underline hover:scale-102 duration-100 ease-out">Automatic Email forwarding</p></a>
+              <a href="#"><p class="text-xs leading-tight p-1 decoration-curent text-gray-400 hover:underline hover:scale-102 duration-100 ease-out">Synchronize complaints</p></a>
+              <a href="#"><p class="text-xs leading-tight p-1 decoration-curent text-gray-400 hover:underline hover:scale-102 duration-100 ease-out">AI-Integration</p></a>
+              <a href="#"><p class="text-xs leading-tight p-1 decoration-curent text-gray-400 hover:underline hover:scale-102 duration-100 ease-out">Automatic Email forwarding</p></a>
+              <a href="#"><p class="text-xs leading-tight p-1 decoration-curent text-gray-400 hover:underline hover:scale-102 duration-100 ease-out">Synchronize complaints</p></a>
+              <a href="#"><p class="text-xs leading-tight p-1 decoration-curent text-gray-400 hover:underline hover:scale-102 duration-100 ease-out">AI-Integration</p></a>
+              <a href="#"><p class="text-xs leading-tight p-1 decoration-curent text-gray-400 hover:underline hover:scale-102 duration-100 ease-out">Automatic Email forwarding</p></a>
+              <a href="#"><p class="text-xs leading-tight p-1 decoration-curent text-gray-400 hover:underline hover:scale-102 duration-100 ease-out">Synchronize complaints</p></a>
+            </div><br>
+
+            <!-- fi-fa-con -->
+            
+
+          </div>
+          <section class="flex flex-wrap hi-auto">
+              <div class="p-2 mb-6 gap-4 justify-center w-auto flex items-center mx-auto">
+                <a href="#" class="text-blue-600 hover:bg-gray-800 inline-flex p-1 rounded hover:scale-110 duration-300"><i class="fa-brands fa-facebook text-2xl"></i></a>
+                <a href="#" class="text-sky-500 hover:bg-gray-800 inline-flex p-1 rounded hover:scale-110 duration-300"><i class="fa-brands fa-x-twitter text-2xl"></i></a>
+                <a href="#" class="text-pink-500 hover:bg-gray-800 inline-flex p-1 rounded hover:scale-110 duration-300"><i class="fa-brands fa-instagram text-2xl"></i></a>
+                <a href="#" class="text-red-500 hover:bg-gray-800 inline-flex p-1 rounded hover:scale-110 duration-300"><i class="fa-solid fa-envelope text-2xl"></i></a>
+              </div> 
+            </section>
+        </div>
       </section>
     </div>
   </div>
