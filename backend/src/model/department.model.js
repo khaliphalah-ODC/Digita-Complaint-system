@@ -13,6 +13,13 @@ export const Department = `CREATE TABLE IF NOT EXISTS department (
 
 export const insertDepartment = `INSERT INTO department (organization_id, name, description, accessment_id) VALUES (?, ?, ?, ?)`;
 export const selectDepartments = `SELECT * FROM department`;
+export const selectDepartmentsByOrganizationId = `SELECT * FROM department WHERE organization_id = ? ORDER BY id DESC`;
+export const selectPublicDepartmentsByOrganizationId = `
+SELECT id, organization_id, name, description
+FROM department
+WHERE organization_id = ?
+ORDER BY name COLLATE NOCASE ASC, id ASC
+`;
 
 export const selectDepartmentById = `SELECT * FROM department WHERE id = ?`;
 

@@ -16,8 +16,9 @@ defineProps({
 </script>
 
 <template>
-  <section class="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
-    <h2 class="mb-3 text-xl font-bold text-slate-900">Recent Organizations</h2>
+  <section class="app-shell-panel mt-5 rounded-[30px] p-5">
+    <p class="app-kicker">Directory Snapshot</p>
+    <h2 class="mb-3 mt-2 text-2xl font-bold text-slate-900">Recent Organizations</h2>
     <p v-if="loading" class="mb-3 text-sm text-slate-500">Loading organizations...</p>
     <p v-else-if="error" class="mb-3 text-sm text-red-600">{{ error }}</p>
     <p v-else-if="organizations.length === 0" class="mb-3 text-sm text-slate-500">No organizations found.</p>
@@ -26,8 +27,9 @@ defineProps({
         <thead class="text-slate-500">
           <tr>
             <th class="pb-2 pr-4">Name</th>
+            <th class="pb-2 pr-4">Type</th>
             <th class="pb-2 pr-4">Status</th>
-            <th class="pb-2 pr-4">Complaints</th>
+            <th class="pb-2 pr-4">Organization Admin</th>
             <th class="pb-2">Last Active</th>
           </tr>
         </thead>
@@ -38,6 +40,7 @@ defineProps({
             class="border-t border-slate-100"
           >
             <td class="py-2 pr-4">{{ organization.name }}</td>
+            <td class="py-2 pr-4">{{ organization.type || 'Organization' }}</td>
             <td class="py-2 pr-4">
               <span
                 class="rounded-md px-2 py-1 text-xs font-semibold"
@@ -46,7 +49,7 @@ defineProps({
                 {{ organization.status }}
               </span>
             </td>
-            <td class="py-2 pr-4">{{ organization.complaints }}</td>
+            <td class="py-2 pr-4">{{ organization.organization_admin?.full_name || 'Not assigned' }}</td>
             <td class="py-2">{{ organization.lastActive }}</td>
           </tr>
         </tbody>

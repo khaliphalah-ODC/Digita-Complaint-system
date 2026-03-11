@@ -8,9 +8,13 @@ const USERS_API_BASE = import.meta.env.VITE_API_URL || '/users';
 export const useSessionStore = defineStore('session', () => {
   const token = ref(localStorage.getItem('token') || '');
   const currentUser = ref(null);
+  const currentOrganizationName = ref('');
   const errorMessage = ref('');
   const loadingLogin = ref(false);
   const loadingRegister = ref(false);
+  const loadingPasswordChange = ref(false);
+  const loadingForgotPassword = ref(false);
+  const loadingGoogleLogin = ref(false);
   const loadingRecentOrganizations = ref(false);
   const recentOrganizationsError = ref('');
   const loadingDashboard = ref(false);
@@ -37,6 +41,7 @@ export const useSessionStore = defineStore('session', () => {
     totalOrganizations: 0,
     activeOrganizations: 0,
     suspendedOrganizations: 0,
+    unassignedAnonymousComplaints: 0,
     totalComplaints: 0,
     submittedComplaints: 0,
     inReviewComplaints: 0,
@@ -44,7 +49,37 @@ export const useSessionStore = defineStore('session', () => {
     closedComplaints: 0
   });
 
+  const decodeTokenPayload = (rawToken) => {
+    if (!rawToken) return null;
+    const parts = String(rawToken).split('.');
+    if (parts.length !== 3) return null;
+
+    try {
+      const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+      return JSON.parse(atob(padded));
+    } catch (_error) {
+      return null;
+    }
+  };
+
+  const applyAuthPayload = (data) => {
+    token.value = data?.token || '';
+    currentUser.value = data?.user || null;
+    currentOrganizationName.value = '';
+
+    if (token.value) {
+      localStorage.setItem('token', token.value);
+    } else {
+      localStorage.removeItem('token');
+    }
+  };
+
   const isLoggedIn = computed(() => Boolean(token.value));
+  const isSuperAdmin = computed(() => currentUser.value?.role === 'super_admin');
+  const isOrgAdmin = computed(() => currentUser.value?.role === 'org_admin');
+  const isAdminFamily = computed(() => isSuperAdmin.value || isOrgAdmin.value);
+  const mustChangePassword = computed(() => Number(currentUser.value?.must_change_password ?? decodeTokenPayload(token.value)?.must_change_password ?? 0) === 1);
 
   const userInitials = computed(() => {
     if (!currentUser.value?.full_name) return 'U';
@@ -94,9 +129,25 @@ export const useSessionStore = defineStore('session', () => {
     try {
       const response = await api.get(`${USERS_API_BASE}/me`);
       currentUser.value = ensureSuccess(unwrapResponse(response), 'Failed to load profile');
+
+      if (currentUser.value?.organization_id) {
+        try {
+          const orgResponse = await api.get('/organization');
+          const organizations = ensureSuccess(unwrapResponse(orgResponse), 'Failed to load organization');
+          const activeOrganization = (organizations || []).find(
+            (row) => Number(row.organization_id) === Number(currentUser.value?.organization_id)
+          );
+          currentOrganizationName.value = activeOrganization?.name || '';
+        } catch (_orgError) {
+          currentOrganizationName.value = '';
+        }
+      } else {
+        currentOrganizationName.value = '';
+      }
     } catch (_error) {
       token.value = '';
       currentUser.value = null;
+      currentOrganizationName.value = '';
       localStorage.removeItem('token');
     }
   };
@@ -128,9 +179,7 @@ export const useSessionStore = defineStore('session', () => {
         throw lastError || new Error('Login failed');
       }
 
-      token.value = data.token;
-      currentUser.value = data.user;
-      localStorage.setItem('token', token.value);
+      applyAuthPayload(data);
       loginForm.value.password = '';
     } catch (error) {
       errorMessage.value = getReadableError(error, 'Login failed');
@@ -147,9 +196,7 @@ export const useSessionStore = defineStore('session', () => {
       const response = await api.post(`${USERS_API_BASE}/register`, payload, { skipAuth: true });
       const data = ensureSuccess(unwrapResponse(response), 'Sign up failed');
 
-      token.value = data.token;
-      currentUser.value = data.user;
-      localStorage.setItem('token', token.value);
+      applyAuthPayload(data);
       return data;
     } catch (error) {
       errorMessage.value = getReadableError(error, 'Sign up failed');
@@ -167,7 +214,59 @@ export const useSessionStore = defineStore('session', () => {
     } finally {
       token.value = '';
       currentUser.value = null;
+      currentOrganizationName.value = '';
       localStorage.removeItem('token');
+    }
+  };
+
+  const changePassword = async (payload) => {
+    errorMessage.value = '';
+    loadingPasswordChange.value = true;
+
+    try {
+      const response = await api.post(`${USERS_API_BASE}/change-password`, payload);
+      const data = ensureSuccess(unwrapResponse(response), 'Password change failed');
+      applyAuthPayload(data);
+      return data;
+    } catch (error) {
+      errorMessage.value = getReadableError(error, 'Password change failed');
+      throw error;
+    } finally {
+      loadingPasswordChange.value = false;
+    }
+  };
+
+  const forgotPassword = async (payload) => {
+    errorMessage.value = '';
+    loadingForgotPassword.value = true;
+
+    try {
+      const response = await api.post(`${USERS_API_BASE}/forgot-password`, payload, { skipAuth: true });
+      const data = ensureSuccess(unwrapResponse(response), 'Password reset failed');
+      applyAuthPayload(data);
+      return data;
+    } catch (error) {
+      errorMessage.value = getReadableError(error, 'Password reset failed');
+      throw error;
+    } finally {
+      loadingForgotPassword.value = false;
+    }
+  };
+
+  const googleLogin = async (credential) => {
+    errorMessage.value = '';
+    loadingGoogleLogin.value = true;
+
+    try {
+      const response = await api.post(`${USERS_API_BASE}/google-login`, { credential }, { skipAuth: true });
+      const data = ensureSuccess(unwrapResponse(response), 'Google login failed');
+      applyAuthPayload(data);
+      return data;
+    } catch (error) {
+      errorMessage.value = getReadableError(error, 'Google login failed');
+      throw error;
+    } finally {
+      loadingGoogleLogin.value = false;
     }
   };
 
@@ -234,9 +333,12 @@ export const useSessionStore = defineStore('session', () => {
       recentOrganizations.value = (rows || []).slice(0, 10).map((row) => ({
         id: row.organization_id,
         name: row.name || 'Unnamed',
+        email: row.email || '',
+        type: row.organization_type || '',
         status: toUiStatus(row.status),
         complaints: Number(row.complaints_count || row.complaints || 0),
-        lastActive: toUiDate(row)
+        lastActive: toUiDate(row),
+        organization_admin: row.organization_admin || null
       }));
     } catch (error) {
       recentOrganizationsError.value = getReadableError(error, 'Failed to fetch organizations');
@@ -250,6 +352,49 @@ export const useSessionStore = defineStore('session', () => {
     dashboardError.value = '';
 
     try {
+      const activeRole = currentUser.value?.role || decodeTokenPayload(token.value)?.role || '';
+
+      if (activeRole === 'super_admin') {
+        const [orgRes, statsRes] = await Promise.all([
+          api.get('/organization'),
+          api.get('/organization/global-stats')
+        ]);
+
+        const organizations = ensureSuccess(unwrapResponse(orgRes), 'Failed to fetch organizations');
+        const stats = ensureSuccess(unwrapResponse(statsRes), 'Failed to load platform aggregate statistics');
+        const orgRows = organizations || [];
+
+        recentOrganizations.value = orgRows.slice(0, 10).map((row) => ({
+          id: row.organization_id,
+          name: row.name || 'Unnamed',
+          email: row.email || '',
+          type: row.organization_type || '',
+          status: toUiStatus(row.status),
+          complaints: Number(row.complaints_count || 0),
+          lastActive: toUiDate(row),
+          organization_admin: row.organization_admin || null
+        }));
+
+        dashboardStats.value = {
+          totalOrganizations: Number(stats.totalOrganizations || 0),
+          activeOrganizations: Number(stats.activeOrganizations || 0),
+          suspendedOrganizations: Number(stats.suspendedOrganizations || 0),
+          unassignedAnonymousComplaints: Number(stats.unassignedAnonymousComplaints || 0),
+          totalComplaints: Number(stats.totalComplaints || 0),
+          submittedComplaints: Number(stats.submittedComplaints || 0),
+          inReviewComplaints: Number(stats.inReviewComplaints || 0),
+          resolvedComplaints: Number(stats.resolvedComplaints || 0),
+          closedComplaints: Number(stats.closedComplaints || 0)
+        };
+
+        activityFeed.value = (stats.activityFeed || []).slice(0, 12).map((item, index) => ({
+          text: item.text || `Platform activity #${index + 1}`,
+          tone: index % 2 === 0 ? 'bg-blue-100 text-blue-900' : 'bg-slate-100 text-slate-900',
+          date: item.date ? toUiDate({ updated_at: item.date }) : 'N/A'
+        }));
+        return;
+      }
+
       const [orgRes, complaintRes, statusLogRes, escalationRes] = await Promise.all([
         api.get('/organization'),
         api.get('/complaint'),
@@ -277,6 +422,7 @@ export const useSessionStore = defineStore('session', () => {
         totalOrganizations: orgRows.length,
         activeOrganizations: orgRows.filter((row) => String(row.status).toLowerCase() === 'active').length,
         suspendedOrganizations: orgRows.filter((row) => String(row.status).toLowerCase() !== 'active').length,
+        unassignedAnonymousComplaints: 0,
         totalComplaints: complaintRows.length,
         submittedComplaints: complaintRows.filter((row) => row.status === 'submitted').length,
         inReviewComplaints: complaintRows.filter((row) => row.status === 'in_review').length,
@@ -303,9 +449,13 @@ export const useSessionStore = defineStore('session', () => {
     API_ROOT,
     token,
     currentUser,
+    currentOrganizationName,
     errorMessage,
     loadingLogin,
     loadingRegister,
+    loadingPasswordChange,
+    loadingForgotPassword,
+    loadingGoogleLogin,
     loadingRecentOrganizations,
     loadingDashboard,
     recentOrganizationsError,
@@ -314,7 +464,11 @@ export const useSessionStore = defineStore('session', () => {
     recentOrganizations,
     activityFeed,
     dashboardStats,
+    isSuperAdmin,
+    isOrgAdmin,
+    isAdminFamily,
     isLoggedIn,
+    mustChangePassword,
     userInitials,
     apiRequest,
     fetchCurrentUser,
@@ -322,6 +476,9 @@ export const useSessionStore = defineStore('session', () => {
     loadDashboardData,
     login,
     register,
+    googleLogin,
+    forgotPassword,
+    changePassword,
     logout
   };
 });

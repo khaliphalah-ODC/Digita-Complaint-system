@@ -4,9 +4,10 @@ import complaintDB from '../model/connect.js';
 import { fetchRevokedTokenQuery } from '../model/user.model.js';
 import { sendError } from '../utils/response.js';
 
-const JWT_KEY = process.env.JWT_KEY || process.env.JWT_SECRET || 'evn';
+const getJwtSecret = () => process.env.JWT_SECRET_KEY || process.env.JWT_KEY || process.env.JWT_SECRET || 'evn';
 
 export const authenticateToken = (req, res, next) => {
+  const JWT_KEY = getJwtSecret();
   const authHeader = req.headers.authorization || '';
   const [scheme, token] = authHeader.split(' ');
 
@@ -35,6 +36,7 @@ export const authenticateToken = (req, res, next) => {
 };
 
 export const optionalAuthenticateToken = (req, _res, next) => {
+  const JWT_KEY = getJwtSecret();
   const authHeader = req.headers.authorization || '';
   const [scheme, token] = authHeader.split(' ');
 

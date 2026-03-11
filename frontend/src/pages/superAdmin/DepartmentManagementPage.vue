@@ -2,7 +2,9 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import api, { extractApiError, unwrapResponse } from '../../services/api';
 import { useUiToastStore } from '../../stores/uiToast';
+import { useSessionStore } from '../../stores/session';
 
+const session = useSessionStore();
 const loading = ref(false);
 const saving = ref(false);
 const error = ref('');
@@ -14,6 +16,7 @@ const search = ref('');
 const page = ref(1);
 const pageSize = 8;
 const uiToast = useUiToastStore();
+const isOrgAdmin = computed(() => session.currentUser?.role === 'org_admin');
 
 const form = reactive({
   organization_id: '',
@@ -29,7 +32,7 @@ const ensureSuccess = (payload, fallbackMessage) => {
 
 const resetForm = () => {
   editingId.value = null;
-  form.organization_id = '';
+  form.organization_id = isOrgAdmin.value ? String(session.currentUser?.organization_id || '') : '';
   form.name = '';
   form.description = '';
   form.accessment_id = '';
@@ -142,6 +145,10 @@ const goToPage = (nextPage) => {
 };
 
 onMounted(fetchDepartments);
+onMounted(async () => {
+  if (!session.currentUser) await session.fetchCurrentUser();
+  resetForm();
+});
 </script>
 
 <template>
@@ -149,7 +156,9 @@ onMounted(fetchDepartments);
     <header class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
       <div>
         <h1 class="text-2xl font-bold text-slate-900">Department Management</h1>
-        <p class="text-sm text-slate-600">Create, update, and delete departments linked to organizations.</p>
+        <p class="text-sm text-slate-600">
+          {{ isOrgAdmin ? 'Create, update, and delete departments inside your organization.' : 'Create, update, and delete departments linked to organizations.' }}
+        </p>
       </div>
       <button class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700" @click="fetchDepartments">
         Refresh
@@ -158,12 +167,15 @@ onMounted(fetchDepartments);
     <section class="rounded-2xl border border-slate-200 bg-white p-4">
       <h2 class="mb-3 text-lg font-bold text-slate-900">{{ editingId ? 'Edit Department' : 'Create Department' }}</h2>
       <form class="grid grid-cols-1 gap-3 md:grid-cols-2" @submit.prevent="saveDepartment">
-        <select v-model="form.organization_id" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+        <select v-if="!isOrgAdmin" v-model="form.organization_id" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
           <option value="">Select organization</option>
           <option v-for="row in organizations" :key="row.organization_id" :value="String(row.organization_id)">
             {{ row.name }} (#{{ row.organization_id }})
           </option>
         </select>
+        <div v-else class="flex items-center rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+          Organization ID: {{ session.currentUser?.organization_id || 'N/A' }}
+        </div>
         <input v-model="form.name" placeholder="Department name" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
         <textarea v-model="form.description" placeholder="Description (optional)" class="rounded-lg border border-slate-300 px-3 py-2 text-sm md:col-span-2" rows="2" />
         <select v-model="form.accessment_id" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">

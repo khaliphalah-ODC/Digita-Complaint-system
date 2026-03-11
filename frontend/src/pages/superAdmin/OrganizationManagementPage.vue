@@ -7,11 +7,15 @@ import OrganizationCreateForm from '../../components/OrganizationCreateForm.vue'
 const router = useRouter();
 const loading = ref(false);
 const saving = ref(false);
+const triageLoading = ref(false);
+const triageSavingId = ref(null);
 const error = ref('');
 const organizations = ref([]);
+const unassignedComplaints = ref([]);
 const resetKey = ref(0);
 const search = ref('');
 const editingId = ref(null);
+const triageAssignments = ref({});
 
 const editForm = reactive({
   name: '',
@@ -38,6 +42,26 @@ const fetchOrganizations = async () => {
     error.value = extractApiError(requestError, 'Failed to fetch organizations');
   } finally {
     loading.value = false;
+  }
+};
+
+const fetchUnassignedComplaints = async () => {
+  triageLoading.value = true;
+  error.value = '';
+  try {
+    const response = await api.get('/complaint/unassigned');
+    const rows = ensureSuccess(unwrapResponse(response), 'Failed to fetch unassigned complaints') || [];
+    unassignedComplaints.value = rows;
+
+    const nextAssignments = {};
+    for (const row of rows) {
+      nextAssignments[row.id] = '';
+    }
+    triageAssignments.value = nextAssignments;
+  } catch (requestError) {
+    error.value = extractApiError(requestError, 'Failed to fetch unassigned complaints');
+  } finally {
+    triageLoading.value = false;
   }
 };
 
@@ -104,6 +128,27 @@ const deleteOrganization = async (row) => {
   }
 };
 
+const assignComplaint = async (row) => {
+  const organizationId = Number(triageAssignments.value[row.id] || 0);
+  if (!organizationId) {
+    error.value = 'Select an organization before assigning the complaint.';
+    return;
+  }
+
+  triageSavingId.value = row.id;
+  error.value = '';
+  try {
+    await api.patch(`/complaint/${row.id}/assign-organization`, {
+      organization_id: organizationId
+    });
+    await Promise.all([fetchOrganizations(), fetchUnassignedComplaints()]);
+  } catch (requestError) {
+    error.value = extractApiError(requestError, 'Failed to assign complaint');
+  } finally {
+    triageSavingId.value = null;
+  }
+};
+
 const filteredOrganizations = computed(() => {
   const keyword = search.value.trim().toLowerCase();
   if (!keyword) return organizations.value;
@@ -116,27 +161,85 @@ const filteredOrganizations = computed(() => {
   });
 });
 
-onMounted(fetchOrganizations);
+onMounted(async () => {
+  await Promise.all([fetchOrganizations(), fetchUnassignedComplaints()]);
+});
 </script>
 
 <template>
-  <section class="space-y-5">
+  <section class="w-full space-y-5">
     <header class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">Organization Management</h1>
+        <p class="app-kicker">Directory Operations</p>
+        <h1 class="mt-2 text-3xl font-bold text-slate-900">Organization Management</h1>
         <p class="text-sm text-slate-600">Admin CRUD for organization records.</p>
       </div>
-      <button class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700" @click="fetchOrganizations">
+      <button class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700" @click="fetchOrganizations">
         Refresh
       </button>
     </header>
 
     <OrganizationCreateForm :loading="saving" :show-status="true" :reset-key="resetKey" title="Create Organization (Admin)" @submit="createOrganization" />
 
-    <section class="rounded-2xl border border-slate-200 bg-white p-4">
+    <section class="app-shell-panel rounded-[30px] p-5">
+      <div class="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">Unassigned Anonymous Complaints</h2>
+          <p class="text-sm text-slate-600">Triage queue for anonymous complaints that were submitted without an organization.</p>
+        </div>
+        <button class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700" @click="fetchUnassignedComplaints">
+          Refresh Triage
+        </button>
+      </div>
+
+      <p v-if="triageLoading" class="text-sm text-slate-500">Loading unassigned complaints...</p>
+      <p v-else-if="unassignedComplaints.length === 0" class="text-sm text-slate-500">No unassigned anonymous complaints.</p>
+
+      <div v-else class="space-y-3">
+        <article
+          v-for="row in unassignedComplaints"
+          :key="row.id"
+          class="app-ink-card rounded-[24px] p-4"
+        >
+          <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div class="space-y-1">
+              <h3 class="text-base font-bold text-slate-900">{{ row.title || 'Untitled Complaint' }}</h3>
+              <p class="text-sm text-slate-700">{{ row.complaint }}</p>
+              <p class="text-xs text-slate-500">Tracking: {{ row.tracking_code || 'N/A' }}</p>
+              <p class="text-xs text-slate-500">Reporter: {{ row.anonymous_label || 'Anonymous Reporter' }}</p>
+            </div>
+
+            <div class="w-full max-w-sm space-y-2">
+              <select
+                v-model="triageAssignments[row.id]"
+                class="w-full rounded-2xl border border-slate-300 bg-white px-3 py-3 text-sm"
+              >
+                <option value="">Select organization</option>
+                <option
+                  v-for="organization in organizations.filter((item) => String(item.status).toLowerCase() === 'active')"
+                  :key="organization.organization_id"
+                  :value="organization.organization_id"
+                >
+                  {{ organization.name }}
+                </option>
+              </select>
+              <button
+                :disabled="triageSavingId === row.id || !triageAssignments[row.id]"
+                class="rounded-full bg-[var(--app-primary)] px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                @click="assignComplaint(row)"
+              >
+                {{ triageSavingId === row.id ? 'Assigning...' : 'Assign to Organization' }}
+              </button>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="app-shell-panel rounded-[30px] p-5">
       <div class="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <h2 class="text-lg font-bold text-slate-900">Organizations</h2>
-        <input v-model="search" placeholder="Search organization..." class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+        <input v-model="search" placeholder="Search organization..." class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm">
       </div>
 
       <p v-if="loading" class="text-sm text-slate-500">Loading organizations...</p>
@@ -150,8 +253,8 @@ onMounted(fetchOrganizations);
               <th class="pb-2 pr-3">Name</th>
               <th class="pb-2 pr-3">Type</th>
               <th class="pb-2 pr-3">Email</th>
+              <th class="pb-2 pr-3">Organization Admin</th>
               <th class="pb-2 pr-3">Status</th>
-              <th class="pb-2 pr-3">Complaints</th>
               <th class="pb-2">Actions</th>
             </tr>
           </thead>
@@ -161,13 +264,13 @@ onMounted(fetchOrganizations);
                 <td class="py-2 pr-3"><input v-model="editForm.name" class="w-full rounded border border-slate-300 px-2 py-1"></td>
                 <td class="py-2 pr-3"><input v-model="editForm.organization_type" class="w-full rounded border border-slate-300 px-2 py-1"></td>
                 <td class="py-2 pr-3"><input v-model="editForm.email" class="w-full rounded border border-slate-300 px-2 py-1"></td>
+                <td class="py-2 pr-3">{{ row.organization_admin?.full_name || 'Not assigned' }}</td>
                 <td class="py-2 pr-3">
                   <select v-model="editForm.status" class="rounded border border-slate-300 px-2 py-1">
                     <option value="active">active</option>
                     <option value="inactive">inactive</option>
                   </select>
                 </td>
-                <td class="py-2 pr-3">{{ row.complaints_count ?? 0 }}</td>
                 <td class="py-2">
                   <div class="flex gap-2">
                     <button :disabled="saving" class="rounded bg-blue-600 px-2 py-1 text-xs font-semibold text-white" @click="saveEdit(row)">Save</button>
@@ -179,8 +282,8 @@ onMounted(fetchOrganizations);
                 <td class="py-2 pr-3">{{ row.name }}</td>
                 <td class="py-2 pr-3">{{ row.organization_type }}</td>
                 <td class="py-2 pr-3">{{ row.email }}</td>
+                <td class="py-2 pr-3">{{ row.organization_admin?.full_name || 'Not assigned' }}</td>
                 <td class="py-2 pr-3">{{ row.status }}</td>
-                <td class="py-2 pr-3">{{ row.complaints_count ?? 0 }}</td>
                 <td class="py-2">
                   <div class="flex gap-2">
                     <button class="rounded bg-indigo-50 px-2 py-1 text-xs font-semibold text-indigo-700" @click="router.push(`/admin/organizations/${row.organization_id}`)">Details</button>

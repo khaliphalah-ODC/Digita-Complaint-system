@@ -1,14 +1,14 @@
 // complaintMessage.controller controller: handles complaint live-chat HTTP request/response flow.
 import complaintDB from '../model/connect.js';
 import { sendSuccess, sendError } from '../utils/response.js';
+import { selectComplaintById } from '../model/complaint.model.js';
 import {
   complaintMessagesQuery,
   createComplaintMessageQuery,
   fetchComplaintMessageByIdQuery,
   fetchComplaintMessagesByComplaintIdQuery
 } from '../model/complaintMessage.model.js';
-
-const fetchComplaintOwnerQuery = `SELECT id, user_id, is_anonymous FROM complaint WHERE id = ?;`;
+import { denySuperAdminInternalAccess } from '../utils/tenantScope.js';
 
 export const CreateComplaintMessagesTable = () => {
   complaintDB.run(complaintMessagesQuery, (err) => {
@@ -21,7 +21,7 @@ export const CreateComplaintMessagesTable = () => {
 };
 
 const ensureChatAccess = (req, res, complaintId, onAllowed) => {
-  complaintDB.get(fetchComplaintOwnerQuery, [complaintId], (findErr, complaintRow) => {
+  complaintDB.get(selectComplaintById, [complaintId], (findErr, complaintRow) => {
     if (findErr) {
       return sendError(res, 500, 'Failed to validate complaint', findErr.message);
     }
@@ -29,7 +29,13 @@ const ensureChatAccess = (req, res, complaintId, onAllowed) => {
       return sendError(res, 404, 'Complaint not found');
     }
 
-    if (req.user.role === 'admin') {
+    if (req.user.role === 'super_admin') {
+      return sendError(res, 403, 'Super admin cannot access complaint chat directly');
+    }
+    if (req.user.role === 'org_admin') {
+      if (String(complaintRow.complaint_organization_id) !== String(req.user.organization_id)) {
+        return sendError(res, 403, 'Access denied');
+      }
       return onAllowed(complaintRow);
     }
     if (!complaintRow.user_id || complaintRow.user_id !== req.user.id) {
@@ -69,7 +75,7 @@ export const createComplaintMessage = (req, res) => {
   return ensureChatAccess(req, res, complaintId, () => {
     complaintDB.run(
       createComplaintMessageQuery,
-      [complaintId, req.user.id, req.user.role === 'admin' ? 'admin' : 'user', text],
+      [complaintId, req.user.id, req.user.role === 'org_admin' ? 'admin' : 'user', text],
       function onCreate(err) {
         if (err) {
           return sendError(res, 500, 'Failed to create complaint message', err.message);
@@ -84,4 +90,3 @@ export const createComplaintMessage = (req, res) => {
     );
   });
 };
-

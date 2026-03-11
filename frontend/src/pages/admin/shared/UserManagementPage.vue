@@ -1,10 +1,12 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
-import api, { extractApiError, unwrapResponse } from '../../services/api';
-import { useUiToastStore } from '../../stores/uiToast';
+import api, { extractApiError, unwrapResponse } from '../../../services/api';
+import { useUiToastStore } from '../../../stores/uiToast';
+import { useSessionStore } from '../../../stores/session';
 
 const loading = ref(false);
 const saving = ref(false);
+const assigningExisting = ref(false);
 const error = ref('');
 const users = ref([]);
 const editingId = ref(null);
@@ -15,6 +17,7 @@ const statusFilter = ref('all');
 const page = ref(1);
 const pageSize = 10;
 const uiToast = useUiToastStore();
+const session = useSessionStore();
 
 const form = reactive({
   organization_id: '',
@@ -25,6 +28,14 @@ const form = reactive({
   role: 'user',
   status: 'active'
 });
+
+const assignExistingForm = reactive({
+  email: ''
+});
+
+const isSuperAdmin = computed(() => session.currentUser?.role === 'super_admin');
+const isOrgAdmin = computed(() => session.currentUser?.role === 'org_admin');
+const availableRoles = computed(() => (isSuperAdmin.value ? ['super_admin', 'org_admin', 'user'] : ['user']));
 
 const ensureSuccess = (payload, fallbackMessage) => {
   if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
@@ -40,6 +51,19 @@ const resetForm = () => {
   form.password = '';
   form.role = 'user';
   form.status = 'active';
+};
+
+const resetAssignExistingForm = () => {
+  assignExistingForm.email = '';
+};
+
+const normalizeRoleFilters = () => {
+  if (!availableRoles.value.includes(form.role)) {
+    form.role = availableRoles.value[0];
+  }
+  if (roleFilter.value !== 'all' && !availableRoles.value.includes(roleFilter.value)) {
+    roleFilter.value = 'all';
+  }
 };
 
 const fetchUsers = async () => {
@@ -76,12 +100,12 @@ const saveUser = async () => {
   saving.value = true;
   try {
     const payload = {
-      organization_id: form.organization_id === '' ? null : Number(form.organization_id),
+      organization_id: isSuperAdmin.value && form.organization_id !== '' ? Number(form.organization_id) : null,
       department_id: form.department_id === '' ? null : Number(form.department_id),
       full_name: form.full_name.trim(),
       email: form.email.trim().toLowerCase(),
       password: form.password,
-      role: form.role,
+      role: isSuperAdmin.value ? form.role : 'user',
       status: form.status
     };
 
@@ -100,6 +124,29 @@ const saveUser = async () => {
     uiToast.error(error.value);
   } finally {
     saving.value = false;
+  }
+};
+
+const assignExistingUser = async () => {
+  error.value = '';
+  if (!assignExistingForm.email.trim()) {
+    error.value = 'Existing user email is required.';
+    return;
+  }
+
+  assigningExisting.value = true;
+  try {
+    await api.post('/users/assign-existing', {
+      email: assignExistingForm.email.trim().toLowerCase()
+    });
+    uiToast.success('Existing user assigned to your organization.');
+    resetAssignExistingForm();
+    await fetchUsers();
+  } catch (requestError) {
+    error.value = extractApiError(requestError, 'Failed to assign existing user');
+    uiToast.error(error.value);
+  } finally {
+    assigningExisting.value = false;
   }
 };
 
@@ -155,58 +202,85 @@ const goToPage = (nextPage) => {
 };
 
 onMounted(fetchUsers);
+onMounted(normalizeRoleFilters);
 </script>
 
 <template>
-  <section class="space-y-5">
+  <section class="w-full space-y-5">
     <header class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">User Management</h1>
-        <p class="text-sm text-slate-600">Create and maintain user accounts and access roles.</p>
+        <p class="app-kicker">Identity Operations</p>
+        <h1 class="mt-2 text-3xl font-bold text-slate-900">{{ isOrgAdmin ? 'Organization Users' : 'User Management' }}</h1>
+        <p class="text-sm text-slate-600">
+          {{ isOrgAdmin ? 'Create and maintain users inside your organization only.' : 'Create and maintain user accounts and access roles.' }}
+        </p>
       </div>
-      <button class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700" @click="fetchUsers">
+      <button class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700" @click="fetchUsers">
         Refresh
       </button>
     </header>
 
-    <section class="rounded-2xl border border-slate-200 bg-white p-4">
+    <section class="app-shell-panel rounded-[30px] p-5">
       <h2 class="mb-3 text-lg font-bold text-slate-900">{{ editingId ? 'Edit User' : 'Create User' }}</h2>
       <form class="grid grid-cols-1 gap-3 md:grid-cols-2" @submit.prevent="saveUser">
-        <input v-model="form.full_name" placeholder="Full name" class="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500">
-        <input v-model="form.email" type="email" placeholder="Email" class="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500">
-        <input v-model="form.password" type="password" placeholder="Password" class="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500">
-        <input v-model="form.organization_id" placeholder="Organization ID (optional)" class="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500">
-        <input v-model="form.department_id" placeholder="Department ID (optional)" class="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500">
-        <select v-model="form.role" class="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500">
-          <option value="user">user</option>
-          <option value="admin">admin</option>
+        <input v-model="form.full_name" placeholder="Full name" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]">
+        <input v-model="form.email" type="email" placeholder="Email" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]">
+        <input v-model="form.password" type="password" placeholder="Password" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]">
+        <input v-if="isSuperAdmin" v-model="form.organization_id" placeholder="Organization ID (optional)" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]">
+        <input v-model="form.department_id" placeholder="Department ID (optional)" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]">
+        <select v-if="isSuperAdmin" v-model="form.role" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]">
+          <option v-for="role in availableRoles" :key="role" :value="role">{{ role }}</option>
         </select>
-        <select v-model="form.status" class="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500">
+        <div v-else class="flex items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          Role: user
+        </div>
+        <select v-model="form.status" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]">
           <option value="active">active</option>
           <option value="inactive">inactive</option>
         </select>
         <div class="md:col-span-2 flex gap-2">
-          <button type="submit" :disabled="saving" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-70">
+          <button type="submit" :disabled="saving" class="rounded-full bg-[var(--app-primary)] px-5 py-3 text-sm font-semibold text-white hover:bg-[var(--app-primary-ink)] disabled:opacity-70">
             {{ saving ? 'Saving...' : editingId ? 'Update User' : 'Create User' }}
           </button>
-          <button type="button" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700" @click="resetForm">
+          <button type="button" class="rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700" @click="resetForm">
             Clear
           </button>
         </div>
       </form>
     </section>
 
-    <section class="rounded-2xl border border-slate-200 bg-white p-4">
+    <section v-if="isOrgAdmin" class="app-shell-panel rounded-[30px] p-5">
+      <h2 class="mb-2 text-lg font-bold text-slate-900">Assign Existing User</h2>
+      <p class="mb-3 text-sm text-slate-600">
+        Claim a self-signed-up user account into your organization by email address.
+      </p>
+      <form class="grid grid-cols-1 gap-3 md:grid-cols-[1fr,auto]" @submit.prevent="assignExistingUser">
+        <input
+          v-model="assignExistingForm.email"
+          type="email"
+          placeholder="Existing user email"
+          class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]"
+        >
+        <button
+          type="submit"
+          :disabled="assigningExisting"
+          class="rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-70"
+        >
+          {{ assigningExisting ? 'Assigning...' : 'Assign to Organization' }}
+        </button>
+      </form>
+    </section>
+
+    <section class="app-shell-panel rounded-[30px] p-5">
       <div class="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <h2 class="text-lg font-bold text-slate-900">Users</h2>
         <div class="flex flex-col gap-2 sm:flex-row">
-          <input v-model="search" placeholder="Search name/email" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-          <select v-model="roleFilter" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+          <input v-model="search" placeholder="Search name/email" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm">
+          <select v-model="roleFilter" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm">
             <option value="all">All roles</option>
-            <option value="admin">admin</option>
-            <option value="user">user</option>
+            <option v-for="role in availableRoles" :key="role" :value="role">{{ role }}</option>
           </select>
-          <select v-model="statusFilter" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+          <select v-model="statusFilter" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm">
             <option value="all">All statuses</option>
             <option value="active">active</option>
             <option value="inactive">inactive</option>
@@ -237,13 +311,14 @@ onMounted(fetchUsers);
               <td class="py-2 pr-3">{{ row.email }}</td>
               <td class="py-2 pr-3">
                 <select
+                  v-if="isSuperAdmin"
                   class="rounded border border-slate-300 px-2 py-1 text-xs"
                   :value="row.role"
                   @change="updateUserRoleQuick(row, $event.target.value)"
                 >
-                  <option value="user">user</option>
-                  <option value="admin">admin</option>
+                  <option v-for="role in availableRoles" :key="role" :value="role">{{ role }}</option>
                 </select>
+                <span v-else>{{ row.role }}</span>
               </td>
               <td class="py-2 pr-3">{{ row.status }}</td>
               <td class="py-2 pr-3">{{ row.organization_id ?? 'N/A' }}</td>

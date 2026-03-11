@@ -19,6 +19,7 @@ const levelOptions = ['level_1', 'level_2', 'level_3'];
 const page = ref(1);
 const pageSize = 8;
 const uiToast = useUiToastStore();
+const isOrgAdmin = computed(() => session.currentUser?.role === 'org_admin');
 
 const form = reactive({
   accessment_id: '',
@@ -160,7 +161,7 @@ const userNameById = computed(() => {
   return map;
 });
 
-const adminUsers = computed(() => users.value.filter((row) => row.role === 'admin'));
+const adminUsers = computed(() => users.value.filter((row) => row.role === 'org_admin'));
 
 const filteredEscalations = computed(() => {
   const keyword = search.value.trim().toLowerCase();
@@ -196,7 +197,9 @@ onMounted(async () => {
     <header class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
       <div>
         <h1 class="text-2xl font-bold text-slate-900">Escalation Management</h1>
-        <p class="text-sm text-slate-600">Track escalation levels, ownership, and resolution progress.</p>
+        <p class="text-sm text-slate-600">
+          {{ isOrgAdmin ? 'Track escalation levels, ownership, and resolution progress in your organization.' : 'Track escalation levels, ownership, and resolution progress.' }}
+        </p>
       </div>
       <button class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700" @click="fetchEscalations">
         Refresh
