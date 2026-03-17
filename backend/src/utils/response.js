@@ -11,4 +11,4 @@ export const sendError = (res, statusCode, message, error = null) =>
     success: false,
     message,
     error
-  });
+  })

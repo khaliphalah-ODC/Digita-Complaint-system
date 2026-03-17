@@ -33,7 +33,13 @@ import AboutView from '../pages/AboutView.vue';
 import FeaturesPage from '../pages/FeaturesView.vue';
 import TestimonialPage from '../pages/TestimonialPage.vue';
 
+<<<<<<< HEAD
+
+
+const readRoleFromToken = () => {
+=======
 const readAuthClaimsFromToken = () => {
+>>>>>>> 4629cccb5b1cbfdf7b7c17327b20994a0d85fe9e
   const token = localStorage.getItem('token');
   if (!token) return {};
   const parts = token.split('.');
@@ -95,6 +101,7 @@ const routes = [
     component: SignUpPage,
     meta: { guestOnly: true }
   },
+  
   {
     path: '/forgot-password',
     name: 'forgot-password',

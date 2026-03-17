@@ -30,9 +30,16 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { faFacebookF, faGoogle, faInstagram, faLinkedinIn, faXTwitter } from '@fortawesome/free-brands-svg-icons';
 
+<<<<<<< HEAD
+
+import App from './App.vue'
+import router from './router'
+=======
 import App from './App.vue';
 import router from './router';
+>>>>>>> 4629cccb5b1cbfdf7b7c17327b20994a0d85fe9e
 import './asset/main.css';
+import '@fortawesome/fontawesome-free/css/all.min.css'
 
 library.add(
   faBell,

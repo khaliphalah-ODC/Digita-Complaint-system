@@ -1,6 +1,14 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
+
+import { useSessionStore } from '../stores/session';
+                                                                                                                                               
+
+const session = useSessionStore();
+const isLoggedIn = computed(() => session.isLoggedIn);
+const dashboardRoute = computed(() => (session.currentUser?.role === 'admin' ? '/admin/dashboard' : '/team-dashboard'));
+
 import AuthTopNav from '../components/AuthTopNav.vue';
 import AppFooter from '../components/AppFooter.vue';
 
