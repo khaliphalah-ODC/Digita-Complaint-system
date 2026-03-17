@@ -14,6 +14,7 @@ export const useSessionStore = defineStore('session', () => {
   const loadingRegister = ref(false);
   const loadingPasswordChange = ref(false);
   const loadingForgotPassword = ref(false);
+  const loadingRequestResetToken = ref(false);
   const loadingGoogleLogin = ref(false);
   const loadingRecentOrganizations = ref(false);
   const recentOrganizationsError = ref('');
@@ -32,7 +33,7 @@ export const useSessionStore = defineStore('session', () => {
   ]);
 
   const activityFeed = ref([
-    { text: 'New complaint filed by user123', date: '2026-03-02', tone: 'bg-amber-100 text-amber-900' },
+    { text: 'New complaint filed by user123', date: '2026-03-02', tone: 'bg-blue-100 text-blue-900' },
     { text: 'Organization TechStart activated', date: '2026-03-01', tone: 'bg-blue-100 text-blue-900' },
     { text: 'Escalation moved to level_2', date: '2026-02-27', tone: 'bg-slate-100 text-slate-900' }
   ]);
@@ -46,7 +47,21 @@ export const useSessionStore = defineStore('session', () => {
     submittedComplaints: 0,
     inReviewComplaints: 0,
     resolvedComplaints: 0,
-    closedComplaints: 0
+    closedComplaints: 0,
+    complaintsByOrganization: [],
+    escalationStatusCounts: {
+      pending: 0,
+      in_progress: 0,
+      resolved: 0,
+      rejected: 0
+    },
+    feedbackSummary: {
+      total: 0,
+      average: 0,
+      byRating: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+    },
+    complaintMonthlyTrend: [],
+    assessmentMonthlyTrend: []
   });
 
   const decodeTokenPayload = (rawToken) => {
@@ -236,7 +251,22 @@ export const useSessionStore = defineStore('session', () => {
     }
   };
 
-  const forgotPassword = async (payload) => {
+  const requestPasswordResetToken = async (payload) => {
+    errorMessage.value = '';
+    loadingRequestResetToken.value = true;
+
+    try {
+      const response = await api.post(`${USERS_API_BASE}/forgot-password/request`, payload, { skipAuth: true });
+      return ensureSuccess(unwrapResponse(response), 'Failed to request password reset token');
+    } catch (error) {
+      errorMessage.value = getReadableError(error, 'Failed to request password reset token');
+      throw error;
+    } finally {
+      loadingRequestResetToken.value = false;
+    }
+  };
+
+  const completePasswordReset = async (payload) => {
     errorMessage.value = '';
     loadingForgotPassword.value = true;
 
@@ -252,6 +282,8 @@ export const useSessionStore = defineStore('session', () => {
       loadingForgotPassword.value = false;
     }
   };
+
+  const forgotPassword = completePasswordReset;
 
   const googleLogin = async (credential) => {
     errorMessage.value = '';
@@ -297,7 +329,7 @@ export const useSessionStore = defineStore('session', () => {
   const buildActivityFeed = ({ complaints = [], statusLogs = [], escalations = [] }) => {
     const complaintItems = complaints.map((row) => ({
       text: `New complaint: ${row.title || 'Untitled'} (${row.tracking_code || 'no-tracking'})`,
-      tone: 'bg-amber-100 text-amber-900',
+      tone: 'bg-blue-100 text-blue-900',
       when: normalizeDate(row.created_at) || new Date(0)
     }));
 
@@ -384,7 +416,30 @@ export const useSessionStore = defineStore('session', () => {
           submittedComplaints: Number(stats.submittedComplaints || 0),
           inReviewComplaints: Number(stats.inReviewComplaints || 0),
           resolvedComplaints: Number(stats.resolvedComplaints || 0),
-          closedComplaints: Number(stats.closedComplaints || 0)
+          closedComplaints: Number(stats.closedComplaints || 0),
+          complaintsByOrganization: (stats.complaintsByOrganization || []).map((row) => ({
+            label: row.name || 'Unnamed',
+            value: Number(row.complaints || 0)
+          })),
+          escalationStatusCounts: stats.escalationStatusCounts || {
+            pending: 0,
+            in_progress: 0,
+            resolved: 0,
+            rejected: 0
+          },
+          feedbackSummary: stats.feedbackSummary || {
+            total: 0,
+            average: 0,
+            byRating: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+          },
+          complaintMonthlyTrend: (stats.complaintMonthlyTrend || []).map((row) => ({
+            label: row.month || '',
+            value: Number(row.value || 0)
+          })),
+          assessmentMonthlyTrend: (stats.assessmentMonthlyTrend || []).map((row) => ({
+            label: row.month || '',
+            value: Number(row.value || 0)
+          }))
         };
 
         activityFeed.value = (stats.activityFeed || []).slice(0, 12).map((item, index) => ({
@@ -455,6 +510,7 @@ export const useSessionStore = defineStore('session', () => {
     loadingRegister,
     loadingPasswordChange,
     loadingForgotPassword,
+    loadingRequestResetToken,
     loadingGoogleLogin,
     loadingRecentOrganizations,
     loadingDashboard,
@@ -478,6 +534,8 @@ export const useSessionStore = defineStore('session', () => {
     register,
     googleLogin,
     forgotPassword,
+    completePasswordReset,
+    requestPasswordResetToken,
     changePassword,
     logout
   };

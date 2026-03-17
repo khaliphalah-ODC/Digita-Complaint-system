@@ -155,7 +155,7 @@ onMounted(fetchComplaints);
             <div class="flex gap-2">
               <span
                 v-if="needsResponse(item)"
-                class="rounded-md bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800"
+                class="rounded-md bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800"
               >
                 Needs Response
               </span>

@@ -28,8 +28,8 @@ const dashboardRoute = computed(() => {
 const wrapperClass = computed(() => (props.fixed ? 'fixed inset-x-0 top-0 z-40' : ''));
 const shellClass = computed(() => (
   props.fixed
-    ? 'app-shell-panel rounded-[18px] px-4 py-4 sm:px-5 md:px-8'
-    : 'app-shell-panel mb-6 w-full rounded-[18px] px-4 py-4 sm:px-5 md:px-8'
+    ? 'app-shell-panel  px-4 py-4 sm:px-5 md:px-8'
+    : 'app-shell-panel mb-6 w-full  px-4 py-4 sm:px-5 md:px-8'
 ));
 
 const publicLinkClass = (to) => {
@@ -63,7 +63,7 @@ const authLinkClass = (to) => {
       <nav class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div class="min-w-0">
           <p class="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--app-primary)]">Complaint Operations</p>
-          <p class="text-2xl font-black text-slate-900 sm:text-3xl">Complaint <span class="text-[var(--app-accent)]">MS</span></p>
+          <p class="text-2xl font-black text-slate-900 sm:text-3xl">Complaint <span class="text-[var(--app-primary)]">MS</span></p>
           <p class="text-xs font-medium text-slate-500">Submit · Track · Resolve</p>
         </div>
 

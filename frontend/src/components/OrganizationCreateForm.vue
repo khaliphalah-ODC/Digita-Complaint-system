@@ -17,6 +17,10 @@ const props = defineProps({
   resetKey: {
     type: Number,
     default: 0
+  },
+  theme: {
+    type: String,
+    default: 'light'
   }
 });
 
@@ -98,45 +102,45 @@ const onSubmit = () => {
 </script>
 
 <template>
-  <section class="app-shell-panel rounded-[32px] p-5 md:p-6">
+  <section :class="theme === 'dark' ? 'app-dark-panel rounded-[32px] p-5 md:p-6' : 'app-shell-panel rounded-[32px] p-5 md:p-6'">
     <div class="mb-5 flex items-start justify-between">
       <div>
-        <p class="app-kicker">Onboarding Form</p>
-        <h2 class="mt-2 text-3xl font-black text-slate-800 md:text-4xl">{{ title }}</h2>
-        <p class="text-sm text-slate-500">Fill in the details to onboard a new entity</p>
+        <p :class="theme === 'dark' ? 'app-dark-kicker' : 'app-kicker'">Onboarding Form</p>
+        <h2 :class="theme === 'dark' ? 'mt-2 text-3xl font-black text-white md:text-4xl' : 'mt-2 text-3xl font-black text-slate-800 md:text-4xl'">{{ title }}</h2>
+        <p :class="theme === 'dark' ? 'text-sm text-white/58' : 'text-sm text-slate-500'">Fill in the details to onboard a new entity</p>
       </div>
-      <button type="button" class="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-sm font-semibold text-slate-500">Form</button>
+      <button :class="theme === 'dark' ? 'rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm font-semibold text-white/60' : 'rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-sm font-semibold text-slate-500'" type="button">Form</button>
     </div>
 
     <form class="grid grid-cols-1 gap-5 md:grid-cols-[180px,1fr]" @submit.prevent="onSubmit">
       <div class="flex flex-col items-center justify-start gap-3">
-        <div class="flex h-24 w-24 items-center justify-center rounded-full border border-slate-200 bg-[linear-gradient(180deg,#fff8ef_0%,#f3f0e8_100%)] text-3xl font-black text-[var(--app-primary)]">
+        <div :class="theme === 'dark' ? 'flex h-24 w-24 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-3xl font-black text-blue-200' : 'flex h-24 w-24 items-center justify-center rounded-full border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#eaf2ff_100%)] text-3xl font-black text-[var(--app-primary)]'">
           <img v-if="form.logo" :src="form.logo" alt="Organization Logo" class="h-24 w-24 rounded-full object-cover">
           <span v-else>O</span>
         </div>
-        <p class="text-sm text-slate-600">Logo or identity mark</p>
+        <p :class="theme === 'dark' ? 'text-sm text-white/58' : 'text-sm text-slate-600'">Logo or identity mark</p>
         <input
           type="file"
           accept="image/*"
-          class="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm"
+          :class="theme === 'dark' ? 'w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white file:text-white' : 'w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm'"
           @change="onLogoFileChange"
         >
         <input
           v-model="form.logo"
           type="url"
           placeholder="Logo URL (or upload image above)"
-          class="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm"
+          :class="theme === 'dark' ? 'w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white placeholder:text-white/36' : 'w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm'"
         >
         <p v-if="uploadError" class="text-xs text-red-600">{{ uploadError }}</p>
       </div>
 
       <div class="space-y-3">
-        <label class="block text-base font-semibold text-slate-700">Organization Name</label>
+        <label :class="theme === 'dark' ? 'block text-base font-semibold text-white' : 'block text-base font-semibold text-slate-700'">Organization Name</label>
         <input
           v-model="form.name"
           required
           placeholder="Organization Name"
-          class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]"
+          :class="theme === 'dark' ? 'w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-white/36 focus:border-blue-300' : 'w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]'"
         >
 
         <input
@@ -144,21 +148,21 @@ const onSubmit = () => {
           type="email"
           required
           placeholder="Organization Email"
-          class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]"
+          :class="theme === 'dark' ? 'w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-white/36 focus:border-blue-300' : 'w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]'"
         >
 
         <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
           <input
             v-model="form.admin_full_name"
             placeholder="Organization Admin Name"
-            class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]"
+            :class="theme === 'dark' ? 'rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-white/36 focus:border-blue-300' : 'rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]'"
           >
           <input
             v-model="form.admin_email"
             type="email"
             required
             placeholder="Organization Admin Email"
-            class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]"
+            :class="theme === 'dark' ? 'rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-white/36 focus:border-blue-300' : 'rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]'"
           >
         </div>
 
@@ -166,19 +170,19 @@ const onSubmit = () => {
           v-model="form.organization_type"
           required
           placeholder="Organization Type"
-          class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]"
+          :class="theme === 'dark' ? 'w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-white/36 focus:border-blue-300' : 'w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]'"
         >
 
         <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
           <input
             v-model="form.organization_type"
             placeholder="Public Sector / Private Enterprise"
-            class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]"
+            :class="theme === 'dark' ? 'rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-white/36 focus:border-blue-300' : 'rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]'"
           >
           <input
             v-model="form.phone"
             placeholder="(555) 123-667"
-            class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]"
+            :class="theme === 'dark' ? 'rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-white/36 focus:border-blue-300' : 'rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]'"
           >
         </div>
 
@@ -186,13 +190,13 @@ const onSubmit = () => {
           v-model="form.address"
           required
           placeholder="Address"
-          class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]"
+          :class="theme === 'dark' ? 'w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-white/36 focus:border-blue-300' : 'w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]'"
         >
 
         <div v-if="showStatus" class="pt-1">
-          <label class="mb-2 block text-base font-semibold text-slate-700">Status</label>
-          <label class="inline-flex items-center gap-2 text-sm text-slate-700">
-            <span class="relative inline-flex h-6 w-11 items-center rounded-full" :class="form.status === 'active' ? 'bg-blue-500' : 'bg-slate-300'">
+          <label :class="theme === 'dark' ? 'mb-2 block text-base font-semibold text-white' : 'mb-2 block text-base font-semibold text-slate-700'">Status</label>
+          <label :class="theme === 'dark' ? 'inline-flex items-center gap-2 text-sm text-white/72' : 'inline-flex items-center gap-2 text-sm text-slate-700'">
+            <span class="relative inline-flex h-6 w-11 items-center rounded-full" :class="form.status === 'active' ? 'bg-[var(--app-primary)]' : (theme === 'dark' ? 'bg-white/18' : 'bg-slate-300')">
               <input
                 type="checkbox"
                 class="sr-only"
@@ -201,8 +205,8 @@ const onSubmit = () => {
               >
               <span class="inline-block h-5 w-5 transform rounded-full bg-white transition" :class="form.status === 'active' ? 'translate-x-5' : 'translate-x-1'"></span>
             </span>
-            <span :class="form.status === 'active' ? 'font-semibold text-slate-800' : 'text-slate-500'">Active</span>
-            <span :class="form.status === 'inactive' ? 'font-semibold text-slate-800' : 'text-slate-500'">Inactive</span>
+            <span :class="form.status === 'active' ? (theme === 'dark' ? 'font-semibold text-white' : 'font-semibold text-slate-800') : (theme === 'dark' ? 'text-white/44' : 'text-slate-500')">Active</span>
+            <span :class="form.status === 'inactive' ? (theme === 'dark' ? 'font-semibold text-white' : 'font-semibold text-slate-800') : (theme === 'dark' ? 'text-white/44' : 'text-slate-500')">Inactive</span>
           </label>
         </div>
 
@@ -210,7 +214,7 @@ const onSubmit = () => {
           <button
             :disabled="loading"
             type="submit"
-            class="rounded-full bg-[var(--app-primary)] px-7 py-3 text-base font-bold text-white shadow-[0_16px_32px_rgba(31,77,183,0.24)] disabled:opacity-60"
+            :class="theme === 'dark' ? 'rounded-full bg-[linear-gradient(90deg,#163462_0%,#1f4db7_58%,#4f8df7_100%)] px-7 py-3 text-base font-bold text-white shadow-[0_16px_32px_rgba(31,77,183,0.28)] disabled:opacity-60' : 'rounded-full bg-[var(--app-primary)] px-7 py-3 text-base font-bold text-white shadow-[0_16px_32px_rgba(31,77,183,0.24)] disabled:opacity-60'"
           >
             {{ loading ? 'Saving...' : 'Create Organization' }}
           </button>

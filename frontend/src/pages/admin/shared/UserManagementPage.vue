@@ -1,5 +1,6 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
+import { faPenToSquare, faTrashCan } from '@fortawesome/free-solid-svg-icons';
 import api, { extractApiError, unwrapResponse } from '../../../services/api';
 import { useUiToastStore } from '../../../stores/uiToast';
 import { useSessionStore } from '../../../stores/session';
@@ -10,6 +11,7 @@ const assigningExisting = ref(false);
 const error = ref('');
 const users = ref([]);
 const editingId = ref(null);
+const userFormSection = ref(null);
 
 const search = ref('');
 const roleFilter = ref('all');
@@ -35,11 +37,31 @@ const assignExistingForm = reactive({
 
 const isSuperAdmin = computed(() => session.currentUser?.role === 'super_admin');
 const isOrgAdmin = computed(() => session.currentUser?.role === 'org_admin');
-const availableRoles = computed(() => (isSuperAdmin.value ? ['super_admin', 'org_admin', 'user'] : ['user']));
+const isAdminFamily = computed(() => isSuperAdmin.value || isOrgAdmin.value);
+const assignableRoles = computed(() => (isAdminFamily.value ? ['org_admin', 'user'] : ['user']));
+const filterRoles = computed(() => (isSuperAdmin.value ? ['super_admin', ...assignableRoles.value] : assignableRoles.value));
+
+const canManageRow = (row) => {
+  if (!row) return false;
+  if (row.role === 'super_admin') return false;
+  if (isSuperAdmin.value) return true;
+  if (isOrgAdmin.value) {
+    return Number(row.organization_id) === Number(session.currentUser?.organization_id);
+  }
+  return false;
+};
 
 const ensureSuccess = (payload, fallbackMessage) => {
   if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
   return payload.data;
+};
+
+const getUserFormError = (requestError, fallbackMessage) => {
+  const payload = requestError?.response?.data || {};
+  if (Number(requestError?.response?.status) === 409 && payload?.message) {
+    return payload.message;
+  }
+  return extractApiError(requestError, fallbackMessage);
 };
 
 const resetForm = () => {
@@ -49,7 +71,7 @@ const resetForm = () => {
   form.full_name = '';
   form.email = '';
   form.password = '';
-  form.role = 'user';
+  form.role = assignableRoles.value.includes('user') ? 'user' : (assignableRoles.value[0] || 'user');
   form.status = 'active';
 };
 
@@ -58,10 +80,10 @@ const resetAssignExistingForm = () => {
 };
 
 const normalizeRoleFilters = () => {
-  if (!availableRoles.value.includes(form.role)) {
-    form.role = availableRoles.value[0];
+  if (!assignableRoles.value.includes(form.role)) {
+    form.role = assignableRoles.value[0];
   }
-  if (roleFilter.value !== 'all' && !availableRoles.value.includes(roleFilter.value)) {
+  if (roleFilter.value !== 'all' && !filterRoles.value.includes(roleFilter.value)) {
     roleFilter.value = 'all';
   }
 };
@@ -80,14 +102,20 @@ const fetchUsers = async () => {
 };
 
 const startEdit = (row) => {
+  if (!canManageRow(row)) return;
+
   editingId.value = row.id;
   form.organization_id = row.organization_id ?? '';
   form.department_id = row.department_id ?? '';
   form.full_name = row.full_name ?? '';
   form.email = row.email ?? '';
   form.password = '';
-  form.role = row.role ?? 'user';
+  form.role = assignableRoles.value.includes(row.role) ? row.role : 'user';
   form.status = row.status ?? 'active';
+
+  nextTick(() => {
+    userFormSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
 };
 
 const saveUser = async () => {
@@ -105,7 +133,7 @@ const saveUser = async () => {
       full_name: form.full_name.trim(),
       email: form.email.trim().toLowerCase(),
       password: form.password,
-      role: isSuperAdmin.value ? form.role : 'user',
+      role: form.role,
       status: form.status
     };
 
@@ -120,7 +148,7 @@ const saveUser = async () => {
     resetForm();
     await fetchUsers();
   } catch (requestError) {
-    error.value = extractApiError(requestError, 'Failed to save user');
+    error.value = getUserFormError(requestError, editingId.value ? 'Failed to update user' : 'Failed to create user');
     uiToast.error(error.value);
   } finally {
     saving.value = false;
@@ -151,6 +179,12 @@ const assignExistingUser = async () => {
 };
 
 const deleteUser = async (row) => {
+  if (!canManageRow(row)) {
+    error.value = 'This user cannot be deleted from this panel.';
+    uiToast.error(error.value);
+    return;
+  }
+
   const ok = window.confirm(`Delete user "${row.full_name}" (${row.email})?`);
   if (!ok) return;
   error.value = '';
@@ -165,6 +199,7 @@ const deleteUser = async (row) => {
 };
 
 const updateUserRoleQuick = async (row, nextRole) => {
+  if (!canManageRow(row)) return;
   if (!nextRole || row.role === nextRole) return;
   error.value = '';
   try {
@@ -203,6 +238,7 @@ const goToPage = (nextPage) => {
 
 onMounted(fetchUsers);
 onMounted(normalizeRoleFilters);
+watch(assignableRoles, normalizeRoleFilters, { immediate: false });
 </script>
 
 <template>
@@ -212,7 +248,7 @@ onMounted(normalizeRoleFilters);
         <p class="app-kicker">Identity Operations</p>
         <h1 class="mt-2 text-3xl font-bold text-slate-900">{{ isOrgAdmin ? 'Organization Users' : 'User Management' }}</h1>
         <p class="text-sm text-slate-600">
-          {{ isOrgAdmin ? 'Create and maintain users inside your organization only.' : 'Create and maintain user accounts and access roles.' }}
+          {{ isOrgAdmin ? 'Create users in your organization and promote staff to organization admin when needed.' : 'Create and maintain user accounts and organization-level access roles.' }}
         </p>
       </div>
       <button class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700" @click="fetchUsers">
@@ -220,20 +256,17 @@ onMounted(normalizeRoleFilters);
       </button>
     </header>
 
-    <section class="app-shell-panel rounded-[30px] p-5">
+    <section ref="userFormSection" class="app-shell-panel rounded-[30px] p-5">
       <h2 class="mb-3 text-lg font-bold text-slate-900">{{ editingId ? 'Edit User' : 'Create User' }}</h2>
       <form class="grid grid-cols-1 gap-3 md:grid-cols-2" @submit.prevent="saveUser">
         <input v-model="form.full_name" placeholder="Full name" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]">
         <input v-model="form.email" type="email" placeholder="Email" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]">
         <input v-model="form.password" type="password" placeholder="Password" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]">
-        <input v-if="isSuperAdmin" v-model="form.organization_id" placeholder="Organization ID (optional)" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]">
+        <input v-if="isSuperAdmin" v-model="form.organization_id" placeholder="Organization ID" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]">
         <input v-model="form.department_id" placeholder="Department ID (optional)" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]">
-        <select v-if="isSuperAdmin" v-model="form.role" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]">
-          <option v-for="role in availableRoles" :key="role" :value="role">{{ role }}</option>
+        <select v-model="form.role" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]">
+          <option v-for="role in assignableRoles" :key="role" :value="role">{{ role }}</option>
         </select>
-        <div v-else class="flex items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-          Role: user
-        </div>
         <select v-model="form.status" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]">
           <option value="active">active</option>
           <option value="inactive">inactive</option>
@@ -278,7 +311,7 @@ onMounted(normalizeRoleFilters);
           <input v-model="search" placeholder="Search name/email" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm">
           <select v-model="roleFilter" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm">
             <option value="all">All roles</option>
-            <option v-for="role in availableRoles" :key="role" :value="role">{{ role }}</option>
+            <option v-for="role in filterRoles" :key="role" :value="role">{{ role }}</option>
           </select>
           <select v-model="statusFilter" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm">
             <option value="all">All statuses</option>
@@ -311,12 +344,12 @@ onMounted(normalizeRoleFilters);
               <td class="py-2 pr-3">{{ row.email }}</td>
               <td class="py-2 pr-3">
                 <select
-                  v-if="isSuperAdmin"
+                  v-if="canManageRow(row)"
                   class="rounded border border-slate-300 px-2 py-1 text-xs"
                   :value="row.role"
                   @change="updateUserRoleQuick(row, $event.target.value)"
                 >
-                  <option v-for="role in availableRoles" :key="role" :value="role">{{ role }}</option>
+                  <option v-for="role in assignableRoles" :key="role" :value="role">{{ role }}</option>
                 </select>
                 <span v-else>{{ row.role }}</span>
               </td>
@@ -324,9 +357,25 @@ onMounted(normalizeRoleFilters);
               <td class="py-2 pr-3">{{ row.organization_id ?? 'N/A' }}</td>
               <td class="py-2 pr-3">{{ row.department_id ?? 'N/A' }}</td>
               <td class="py-2">
-                <div class="flex gap-2">
-                  <button class="rounded bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700" @click="startEdit(row)">Edit</button>
-                  <button class="rounded bg-red-50 px-2 py-1 text-xs font-semibold text-red-700" @click="deleteUser(row)">Delete</button>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    :disabled="!canManageRow(row)"
+                    class="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    @click="startEdit(row)"
+                  >
+                    <font-awesome-icon :icon="faPenToSquare" class="text-sm" />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    type="button"
+                    :disabled="!canManageRow(row)"
+                    class="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    @click="deleteUser(row)"
+                  >
+                    <font-awesome-icon :icon="faTrashCan" class="text-sm" />
+                    <span>Delete</span>
+                  </button>
                 </div>
               </td>
             </tr>

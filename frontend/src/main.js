@@ -6,6 +6,7 @@ import {
   faBell,
   faBuilding,
   faChartLine,
+  faCircleInfo,
   faClipboardList,
   faComments,
   faEye,
@@ -13,15 +14,19 @@ import {
   faEnvelope,
   faFileCircleCheck,
   faFileLines,
+  faFloppyDisk,
   faGaugeHigh,
   faGear,
   faHouse,
+  faPenToSquare,
   faRightFromBracket,
   faRightToBracket,
   faSitemap,
+  faTrashCan,
   faTriangleExclamation,
   faUserPlus,
-  faUsers
+  faUsers,
+  faXmark
 } from '@fortawesome/free-solid-svg-icons';
 import { faFacebookF, faGoogle, faInstagram, faLinkedinIn, faXTwitter } from '@fortawesome/free-brands-svg-icons';
 
@@ -33,6 +38,7 @@ library.add(
   faBell,
   faBuilding,
   faChartLine,
+  faCircleInfo,
   faClipboardList,
   faComments,
   faEye,
@@ -41,18 +47,22 @@ library.add(
   faFacebookF,
   faFileCircleCheck,
   faFileLines,
+  faFloppyDisk,
   faGaugeHigh,
   faGear,
   faGoogle,
   faHouse,
   faInstagram,
   faLinkedinIn,
+  faPenToSquare,
   faRightFromBracket,
   faRightToBracket,
   faSitemap,
+  faTrashCan,
   faTriangleExclamation,
   faUserPlus,
   faUsers,
+  faXmark,
   faXTwitter
 );
 

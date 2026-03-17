@@ -8,8 +8,14 @@ import SubmitComplaintPage from '../pages/SubmitComplaintPage.vue';
 import TrackComplaintPage from '../pages/TrackComplaintPage.vue';
 import UserDashboardPage from '../pages/UserDashboardPage.vue';
 import OrgAdminDashboardPage from '../pages/orgAdmin/AuthorityDashboardPage.vue';
+import OrgAdminAnalyticsPage from '../pages/orgAdmin/AnalyticsPage.vue';
 import SignUpPage from '../pages/SignUpPage.vue';
 import SuperAdminDashboardPage from '../pages/superAdmin/AdminDashboardPage.vue';
+import SuperAdminAuditLogsPage from '../pages/superAdmin/AuditLogsPage.vue';
+import SuperAdminReportsPage from '../pages/superAdmin/ReportsPage.vue';
+import SuperAdminSettingsPage from '../pages/superAdmin/SettingsPage.vue';
+import SuperAdminTriageQueuePage from '../pages/superAdmin/TriageQueuePage.vue';
+import SuperAdminUserManagementPage from '../pages/superAdmin/UserManagementPage.vue';
 import ResourcePage from '../pages/ResourcePage.vue';
 import OrganizationPage from '../pages/OrganizationPage.vue';
 import SuperAdminOrganizationManagementPage from '../pages/superAdmin/OrganizationManagementPage.vue';
@@ -23,6 +29,9 @@ import OrgAdminAccessmentManagementPage from '../pages/orgAdmin/AccessmentManage
 import OrgAdminEscalationManagementPage from '../pages/orgAdmin/EscalationManagementPage.vue';
 import OrgAdminNotificationManagementPage from '../pages/orgAdmin/NotificationManagementPage.vue';
 import OrgAdminAuditLogsPage from '../pages/orgAdmin/AuditLogsPage.vue';
+import AboutView from '../pages/AboutView.vue';
+import FeaturesPage from '../pages/FeaturesView.vue';
+import TestimonialPage from '../pages/TestimonialPage.vue';
 
 const readAuthClaimsFromToken = () => {
   const token = localStorage.getItem('token');
@@ -49,6 +58,25 @@ const routes = [
     name: 'home',
     component: HomePage
   },
+  {
+    path: '/about',
+    name: 'about',
+    component: AboutView
+  },
+
+  {
+    path: '/testimonial',
+    name: 'testimonial',
+    component: TestimonialPage,
+    meta: { requiresAuth: true }
+  },
+
+  {
+    path: '/features',
+    name: 'features',
+    component: FeaturesPage
+  },
+
   {
     path: '/signin',
     name: 'signin',
@@ -96,15 +124,16 @@ const routes = [
       { path: 'change-password', name: 'change-password', component: ChangePasswordPage, meta: { allowPasswordResetRequired: true } },
 
       { path: 'admin/dashboard', name: 'admin-dashboard', component: SuperAdminDashboardPage, meta: { requiresAdmin: true } },
-      { path: 'admin/users', redirect: '/admin/dashboard' },
+      { path: 'admin/users', name: 'admin-users', component: SuperAdminUserManagementPage, meta: { requiresAdmin: true } },
       { path: 'admin/organizations', name: 'admin-organizations', component: SuperAdminOrganizationManagementPage, meta: { requiresAdmin: true } },
+      { path: 'admin/triage', name: 'admin-triage', component: SuperAdminTriageQueuePage, meta: { requiresAdmin: true } },
       { path: 'admin/organizations/:id', name: 'admin-organization-detail', component: SuperAdminOrganizationDetailPage, meta: { requiresAdmin: true } },
       { path: 'admin/departments', redirect: '/admin/dashboard' },
       { path: 'admin/accessments', redirect: '/admin/dashboard' },
       { path: 'admin/escalations', redirect: '/admin/dashboard' },
-      { path: 'admin/reports', redirect: '/admin/dashboard' },
-      { path: 'admin/audit-logs', redirect: '/admin/dashboard' },
-      { path: 'admin/settings', redirect: '/admin/dashboard' },
+      { path: 'admin/reports', name: 'admin-reports', component: SuperAdminReportsPage, meta: { requiresAdmin: true } },
+      { path: 'admin/audit-logs', name: 'admin-audit-logs', component: SuperAdminAuditLogsPage, meta: { requiresAdmin: true } },
+      { path: 'admin/settings', name: 'admin-settings', component: SuperAdminSettingsPage, meta: { requiresAdmin: true } },
       { path: 'admin/complaints', redirect: '/admin/dashboard' },
       { path: 'admin/complaints/:id', redirect: '/admin/dashboard' },
       { path: 'admin/notifications', redirect: '/admin/dashboard' },
@@ -112,6 +141,7 @@ const routes = [
       { path: 'org-admin/users', name: 'org-admin-users', component: OrgAdminUserManagementPage, meta: { requiresOrgAdmin: true } },
       { path: 'org-admin/complaints', name: 'org-admin-complaints', component: OrgAdminComplaintsPage, meta: { requiresOrgAdmin: true } },
       { path: 'org-admin/complaints/:id', name: 'org-admin-complaint-detail', component: OrgAdminComplaintDetailPage, meta: { requiresOrgAdmin: true } },
+      { path: 'org-admin/analytics', name: 'org-admin-analytics', component: OrgAdminAnalyticsPage, meta: { requiresOrgAdmin: true } },
       { path: 'org-admin/departments', name: 'org-admin-departments', component: OrgAdminDepartmentManagementPage, meta: { requiresOrgAdmin: true } },
       { path: 'org-admin/accessments', name: 'org-admin-accessments', component: OrgAdminAccessmentManagementPage, meta: { requiresOrgAdmin: true } },
       { path: 'org-admin/escalations', name: 'org-admin-escalations', component: OrgAdminEscalationManagementPage, meta: { requiresOrgAdmin: true } },
@@ -125,7 +155,7 @@ const routes = [
       { path: 'status-logs', redirect: '/org-admin/status-logs' },
       { path: 'feedback', name: 'feedback', component: FeedbackPage, meta: { requiresUserOnly: true } },
       { path: 'notifications', redirect: '/org-admin/notifications' },
-      
+
     ]
   }
 ];
@@ -142,15 +172,11 @@ router.beforeEach((to) => {
   const mustChangePassword = Number(claims?.must_change_password || 0) === 1;
   const isAdminRoute = to.path.startsWith('/admin');
   const restrictedSuperAdminPaths = new Set([
-    '/admin/users',
     '/admin/complaints',
     '/admin/departments',
     '/admin/accessments',
     '/admin/escalations',
     '/admin/notifications',
-    '/admin/audit-logs',
-    '/admin/reports',
-    '/admin/settings',
     '/departments',
     '/accessments',
     '/escalations',

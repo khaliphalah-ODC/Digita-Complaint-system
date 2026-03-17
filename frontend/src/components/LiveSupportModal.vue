@@ -125,7 +125,7 @@ onUnmounted(stopPolling);
             v-for="msg in messages"
             :key="msg.id"
             class="max-w-[90%] rounded-lg px-3 py-2 text-sm"
-            :class="msg.sender_role === currentRole ? 'ml-auto bg-blue-100 text-blue-900' : 'bg-violet-100 text-violet-900'"
+            :class="msg.sender_role === currentRole ? 'ml-auto bg-blue-100 text-blue-900' : 'bg-[var(--app-primary-mist)] text-[var(--app-primary-ink)]'"
           >
             <p class="font-semibold">{{ msg.sender_name || (msg.sender_role === 'admin' ? 'Admin' : 'User') }}</p>
             <p>{{ msg.message }}</p>
@@ -137,12 +137,12 @@ onUnmounted(stopPolling);
           <input
             v-model="input"
             placeholder="Type your message..."
-            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-violet-500"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[var(--app-primary)]"
             @keyup.enter="sendMessage"
           >
           <button
             :disabled="sending"
-            class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-60"
+            class="rounded-lg bg-[var(--app-primary)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--app-primary-ink)] disabled:opacity-60"
             @click="sendMessage"
           >
             {{ sending ? 'Sending...' : 'Send' }}
@@ -152,4 +152,3 @@ onUnmounted(stopPolling);
     </section>
   </div>
 </template>
-

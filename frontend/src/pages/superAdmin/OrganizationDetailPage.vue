@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import api, { extractApiError, unwrapResponse } from '../../services/api.js';
+import PageHeader from '../../components/superAdmin/PageHeader.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -63,72 +64,72 @@ onMounted(load);
 </script>
 
 <template>
-  <section class="w-full space-y-5">
-    <header class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-      <div>
-        <p class="app-kicker">Profile View</p>
-        <h1 class="mt-2 text-3xl font-bold text-slate-900">Organization Detail</h1>
-        <p class="text-sm text-slate-600">Organization profile, status, and assigned admin information.</p>
-      </div>
-      <div class="flex flex-wrap gap-2">
-        <button class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700" @click="load">Refresh</button>
-        <button class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700" @click="exportSnapshotPdf">Export Snapshot (PDF)</button>
-        <button class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700" @click="router.push('/admin/organizations')">Back</button>
-      </div>
-    </header>
+  <section class="app-dark-stage w-full space-y-5 rounded-[34px] p-4 sm:p-6">
+    <PageHeader
+      theme="dark"
+      kicker="Profile View"
+      title="Organization Detail"
+      description="Organization profile, status, and assigned admin information."
+    >
+      <template #actions>
+        <button class="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-medium text-white/84" @click="load">Refresh</button>
+        <button class="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-medium text-white/84" @click="exportSnapshotPdf">Export Snapshot (PDF)</button>
+        <button class="rounded-full bg-[var(--app-primary)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--app-primary-ink)]" @click="router.push('/admin/organizations')">Back</button>
+      </template>
+    </PageHeader>
 
-    <p v-if="loading" class="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500">Loading organization detail...</p>
-    <p v-else-if="error" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ error }}</p>
+    <p v-if="loading" class="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/62">Loading organization detail...</p>
+    <p v-else-if="error" class="rounded-2xl border border-red-400/30 bg-red-500/12 px-4 py-3 text-sm text-red-100">{{ error }}</p>
 
     <template v-else-if="organization">
-      <section class="app-shell-panel rounded-[30px] p-6">
+      <section class="app-dark-panel rounded-[30px] p-6 text-white">
         <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div class="flex items-center gap-4">
             <img
               v-if="organization.logo"
               :src="organization.logo"
               alt="Organization Logo"
-              class="h-16 w-16 rounded-full border border-slate-200 object-cover"
+              class="h-16 w-16 rounded-full border border-white/12 object-cover"
             >
-            <div v-else class="flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 text-lg font-bold text-slate-600">ORG</div>
+            <div v-else class="flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-white/[0.08] text-lg font-bold text-blue-100">ORG</div>
             <div>
-              <h2 class="text-2xl font-black text-slate-900">{{ organization.name }}</h2>
+              <h2 class="text-2xl font-black text-white">{{ organization.name }}</h2>
               <div class="mt-1 flex flex-wrap gap-2">
-                <span class="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">ID: {{ organization.organization_id }}</span>
-                <span class="rounded-md bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-700">{{ organization.organization_type }}</span>
-                <span class="rounded-md bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">{{ organization.status }}</span>
+                <span class="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-semibold text-white/84">ID: {{ organization.organization_id }}</span>
+                <span class="rounded-full bg-blue-200 px-3 py-1 text-xs font-semibold text-[var(--app-primary-ink)]">{{ organization.organization_type }}</span>
+                <span class="rounded-full border border-emerald-300/20 bg-emerald-400/15 px-3 py-1 text-xs font-semibold text-emerald-200">{{ organization.status }}</span>
               </div>
             </div>
           </div>
 
-          <article class="app-ink-card rounded-[24px] px-4 py-4 text-right">
-            <p class="text-xs uppercase tracking-wide text-slate-500">Assigned Org Admin</p>
-            <p class="mt-1 text-lg font-bold text-slate-900">{{ organization.organization_admin?.full_name || 'Not assigned' }}</p>
-            <p class="text-xs text-slate-500">{{ organization.organization_admin?.email || 'No admin email' }}</p>
+          <article class="rounded-[24px] border border-white/10 bg-white/[0.05] px-4 py-4 text-right">
+            <p class="text-xs uppercase tracking-wide text-white/46">Assigned Org Admin</p>
+            <p class="mt-1 text-lg font-bold text-white">{{ organization.organization_admin?.full_name || 'Not assigned' }}</p>
+            <p class="text-xs text-white/58">{{ organization.organization_admin?.email || 'No admin email' }}</p>
           </article>
         </div>
       </section>
 
       <section class="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <article class="app-shell-panel rounded-[28px] p-5">
-          <h3 class="text-lg font-bold text-slate-900">Contact & Location</h3>
-          <div class="mt-3 grid grid-cols-1 gap-2 text-sm">
-            <p><span class="font-semibold text-slate-700">Email:</span> {{ organization.email || 'N/A' }}</p>
-            <p><span class="font-semibold text-slate-700">Phone:</span> {{ organization.phone || 'N/A' }}</p>
-            <p><span class="font-semibold text-slate-700">Address:</span> {{ organization.address || 'N/A' }}</p>
-            <a :href="mapUrl" target="_blank" rel="noopener noreferrer" class="inline-block w-max rounded-full bg-blue-50 px-4 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100">
+        <article class="app-dark-panel rounded-[28px] p-5 text-white">
+          <h3 class="text-lg font-bold text-white">Contact & Location</h3>
+          <div class="mt-3 grid grid-cols-1 gap-3 text-sm text-white/74">
+            <p><span class="font-semibold text-white/92">Email:</span> {{ organization.email || 'N/A' }}</p>
+            <p><span class="font-semibold text-white/92">Phone:</span> {{ organization.phone || 'N/A' }}</p>
+            <p><span class="font-semibold text-white/92">Address:</span> {{ organization.address || 'N/A' }}</p>
+            <a :href="mapUrl" target="_blank" rel="noopener noreferrer" class="inline-block w-max rounded-full bg-blue-200 px-4 py-2 text-xs font-semibold text-[var(--app-primary-ink)] hover:bg-white">
               View on Map
             </a>
           </div>
         </article>
 
-        <article class="app-shell-panel rounded-[28px] p-5">
-          <h3 class="text-lg font-bold text-slate-900">Admin Assignment</h3>
-          <div class="mt-3 grid grid-cols-1 gap-2 text-sm">
-            <p><span class="font-semibold text-slate-700">Organization Admin:</span> {{ organization.organization_admin?.full_name || 'Not assigned' }}</p>
-            <p><span class="font-semibold text-slate-700">Admin Email:</span> {{ organization.organization_admin?.email || 'N/A' }}</p>
-            <p><span class="font-semibold text-slate-700">Admin Status:</span> {{ organization.organization_admin?.status || 'N/A' }}</p>
-            <p><span class="font-semibold text-slate-700">Created:</span> {{ organization.created_at || 'N/A' }}</p>
+        <article class="app-dark-panel rounded-[28px] p-5 text-white">
+          <h3 class="text-lg font-bold text-white">Admin Assignment</h3>
+          <div class="mt-3 grid grid-cols-1 gap-3 text-sm text-white/74">
+            <p><span class="font-semibold text-white/92">Organization Admin:</span> {{ organization.organization_admin?.full_name || 'Not assigned' }}</p>
+            <p><span class="font-semibold text-white/92">Admin Email:</span> {{ organization.organization_admin?.email || 'N/A' }}</p>
+            <p><span class="font-semibold text-white/92">Admin Status:</span> {{ organization.organization_admin?.status || 'N/A' }}</p>
+            <p><span class="font-semibold text-white/92">Created:</span> {{ organization.created_at || 'N/A' }}</p>
           </div>
         </article>
       </section>

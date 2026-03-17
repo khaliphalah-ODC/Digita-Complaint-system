@@ -45,13 +45,13 @@ const submitGoogle = async (credential) => {
 </script>
 
 <template>
-  <div class="flex min-h-screen flex-col bg-[linear-gradient(90deg,#5d48f5_0%,#6a56ff_50%,#604cff_100%)]">
+  <div class="app-auth-page flex min-h-screen flex-col">
     <div class="flex flex-1 flex-col px-0 py-0">
       <AuthTopNav fixed />
       <div class="flex flex-1 items-center justify-center px-4 pb-6 pt-24 sm:px-6 sm:pb-10 sm:pt-28 lg:px-10 lg:pt-32">
         <div class="w-full max-w-5xl">
-        <section class="flex w-full flex-col overflow-hidden rounded-[18px] border border-white/20 bg-transparent shadow-[0_28px_90px_rgba(28,18,94,0.3)] sm:min-h-[560px] sm:flex-row">
-        <aside class="relative flex min-h-[360px] flex-col justify-between bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.08))] px-8 py-8 text-white backdrop-blur-sm sm:min-h-[560px] sm:w-[44%] sm:px-10 sm:py-10">
+        <section class="app-auth-shell flex w-full flex-col overflow-hidden rounded-[18px] sm:min-h-[560px] sm:flex-row">
+        <aside class="app-auth-aside relative flex min-h-[360px] flex-col justify-between px-8 py-8 text-white sm:min-h-[560px] sm:w-[44%] sm:px-10 sm:py-10">
           <div class="absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 rounded-full bg-white/8 blur-lg"></div>
           <div>
             <p class="text-base font-semibold text-white/72">Complaint MS</p>
@@ -77,35 +77,35 @@ const submitGoogle = async (credential) => {
           </div>
         </aside>
 
-        <form class="bg-[#fffefe] px-7 py-8 sm:w-[56%] sm:px-10 sm:py-10 lg:px-12 lg:py-12" @submit.prevent="submit">
+        <form class="app-auth-form px-7 py-8 sm:w-[56%] sm:px-10 sm:py-10 lg:px-12 lg:py-12" @submit.prevent="submit">
           <div class="mx-auto max-w-[360px]">
-            <p class="text-[28px] font-black uppercase tracking-[0.04em] text-[#7b73c7]">Sign In</p>
+            <p class="app-auth-title text-[28px] font-black uppercase tracking-[0.04em]">Sign In</p>
 
             <div class="mt-10 space-y-5">
               <label class="block">
-                <span class="mb-2 block text-sm font-medium text-[#8f88b5]">Email</span>
+                <span class="app-auth-label mb-2 block text-sm font-medium">Email</span>
                 <input
                   v-model="form.email"
                   type="email"
                   required
                   placeholder="complaint@gmail.com"
-                  class="w-full rounded-[14px] border-2 border-[#8d7cff] bg-white px-5 py-3.5 text-base text-slate-900 outline-none transition placeholder:text-[#9a93bf] focus:ring-2 focus:ring-[#7a68ff]/15"
+                  class="app-auth-input"
                 >
               </label>
 
               <label class="block">
-                <span class="mb-2 block text-sm font-medium text-[#8f88b5]">Password</span>
+                <span class="app-auth-label mb-2 block text-sm font-medium">Password</span>
                 <div class="relative">
                   <input
                     v-model="form.password"
                     :type="showPassword ? 'text' : 'password'"
                     required
                     placeholder="Password"
-                    class="w-full rounded-[14px] border-2 border-[#e3def4] bg-white px-5 py-3.5 pr-14 text-base text-slate-900 outline-none transition placeholder:text-[#b2aec9] focus:border-[#8d7cff] focus:ring-2 focus:ring-[#7a68ff]/15"
+                    class="app-auth-input app-auth-input-muted pr-14"
                   >
                   <button
                     type="button"
-                    class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-[#ddd7f6] text-sm text-[#7b73c7] transition hover:bg-[#f5f2ff]"
+                    class="app-auth-icon absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-sm transition hover:bg-[var(--app-primary-mist)]"
                     :aria-label="showPassword ? 'Hide password' : 'Show password'"
                     @click="showPassword = !showPassword"
                   >
@@ -115,12 +115,12 @@ const submitGoogle = async (credential) => {
               </label>
             </div>
 
-            <div class="mt-4 flex flex-col gap-3 text-sm text-[#9d97bb] sm:flex-row sm:items-center sm:justify-between">
+            <div class="app-auth-meta mt-4 flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
               <label class="inline-flex items-center gap-2.5">
-                <input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-[#6d5ef7] focus:ring-[#6d5ef7]">
+                <input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-[var(--app-primary)] focus:ring-[var(--app-primary)]">
                 <span>Keep me logged in</span>
               </label>
-              <RouterLink to="/forgot-password" class="font-medium text-[#e0a86b] hover:underline">Forgot Password?</RouterLink>
+              <RouterLink to="/forgot-password" class="font-medium text-[var(--app-primary)] hover:underline">Forgot Password?</RouterLink>
             </div>
 
             <p v-if="session.errorMessage" class="mt-4 rounded-[14px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
@@ -130,29 +130,29 @@ const submitGoogle = async (credential) => {
             <button
               type="submit"
               :disabled="session.loadingLogin || session.loadingGoogleLogin"
-              class="mt-7 w-full rounded-full bg-[linear-gradient(90deg,#7564ff_0%,#6d59ff_100%)] px-6 py-4 text-lg font-semibold text-white shadow-[0_18px_34px_rgba(117,100,255,0.25)] transition hover:opacity-95 disabled:opacity-70"
+              class="app-auth-submit mt-7 w-full rounded-full px-6 py-4 text-lg font-semibold text-white transition hover:opacity-95 disabled:opacity-70"
             >
               {{ session.loadingLogin ? 'Signing in...' : 'Sign In' }}
             </button>
 
             <div class="mt-5">
-              <p class="mb-3 text-center text-sm text-[#b9b4d1]">Or continue with Google</p>
+              <p class="app-auth-meta mb-3 text-center text-sm">Or continue with Google</p>
               <GoogleAuthButton text="continue_with" @credential="submitGoogle" />
             </div>
 
             <div class="mt-10 text-center">
-              <p class="text-sm text-[#b9b4d1]">Community and support channels</p>
+              <p class="app-auth-meta text-sm">Community and support channels</p>
               <div class="mt-5 flex justify-center gap-5 text-white">
-                <a :href="socialLinks.facebook" target="_blank" rel="noreferrer" class="flex h-11 w-11 items-center justify-center rounded-full bg-[#4668b3] shadow-sm transition hover:-translate-y-0.5">
+                <a :href="socialLinks.facebook" target="_blank" rel="noreferrer" class="app-social-chip flex h-11 w-11 items-center justify-center rounded-full transition hover:-translate-y-0.5">
                   <font-awesome-icon :icon="['fab', 'facebook-f']" />
                 </a>
-                <a :href="socialLinks.google" target="_blank" rel="noreferrer" class="flex h-11 w-11 items-center justify-center rounded-full bg-[#ea4335] shadow-sm transition hover:-translate-y-0.5">
+                <a :href="socialLinks.google" target="_blank" rel="noreferrer" class="app-social-chip flex h-11 w-11 items-center justify-center rounded-full transition hover:-translate-y-0.5">
                   <font-awesome-icon :icon="['fab', 'google']" />
                 </a>
-                <a :href="socialLinks.x" target="_blank" rel="noreferrer" class="flex h-11 w-11 items-center justify-center rounded-full bg-[#1d9bf0] shadow-sm transition hover:-translate-y-0.5">
+                <a :href="socialLinks.x" target="_blank" rel="noreferrer" class="app-social-chip flex h-11 w-11 items-center justify-center rounded-full transition hover:-translate-y-0.5">
                   <font-awesome-icon :icon="['fab', 'x-twitter']" />
                 </a>
-                <a :href="socialLinks.linkedin" target="_blank" rel="noreferrer" class="flex h-11 w-11 items-center justify-center rounded-full bg-[#0a66c2] shadow-sm transition hover:-translate-y-0.5">
+                <a :href="socialLinks.linkedin" target="_blank" rel="noreferrer" class="app-social-chip flex h-11 w-11 items-center justify-center rounded-full transition hover:-translate-y-0.5">
                   <font-awesome-icon :icon="['fab', 'linkedin-in']" />
                 </a>
               </div>
@@ -163,6 +163,6 @@ const submitGoogle = async (credential) => {
         </div>
       </div>
     </div>
-    <AppFooter />
+    <!--<AppFooter />-->
   </div>
 </template>

@@ -157,14 +157,14 @@ onMounted(async () => {
 <template>
   <section
     v-if="isAdminFamily"
-    class="w-full rounded-3xl border border-slate-200 bg-white px-6 py-10 text-center shadow-xl md:px-8"
+    class="app-shell-panel w-full rounded-[30px] px-6 py-10 text-center md:px-8"
   >
     <h1 class="text-3xl font-black tracking-tight text-slate-800">Feedback Is User Only</h1>
     <p class="mt-2 text-sm text-slate-600">
       Feedback submission and history are only available to regular users for their own complaint experience.
     </p>
     <button
-      class="mt-5 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white"
+      class="mt-5 rounded-full bg-[var(--app-primary)] px-5 py-3 text-sm font-bold text-white"
       @click="returnHome"
     >
       Return to Dashboard
@@ -174,38 +174,39 @@ onMounted(async () => {
   <section v-else class="space-y-5">
     <header class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">Feedback</h1>
+        <p class="app-kicker">Experience Notes</p>
+        <h1 class="mt-2 text-2xl font-bold text-slate-900">Feedback</h1>
         <p class="text-sm text-slate-600">Share feedback for your complaint experience.</p>
       </div>
-      <button class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700" @click="fetchFeedback">
+      <button class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700" @click="fetchFeedback">
         Refresh
       </button>
     </header>
 
     <section class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-      <article class="rounded-2xl border border-slate-200 bg-white p-4">
+      <article class="app-ink-card rounded-[26px] p-4">
         <p class="text-xs uppercase tracking-wide text-slate-500">Average Rating</p>
-        <p class="mt-2 text-3xl font-black text-amber-600">{{ feedbackSummary.averageRating }}</p>
+        <p class="mt-2 text-3xl font-black text-[var(--app-primary)]">{{ feedbackSummary.averageRating }}</p>
       </article>
-      <article class="rounded-2xl border border-slate-200 bg-white p-4">
+      <article class="app-ink-card rounded-[26px] p-4">
         <p class="text-xs uppercase tracking-wide text-slate-500">Total Feedback</p>
         <p class="mt-2 text-3xl font-black text-slate-900">{{ feedbackSummary.total }}</p>
       </article>
-      <article class="rounded-2xl border border-slate-200 bg-white p-4">
+      <article class="app-ink-card rounded-[26px] p-4">
         <p class="text-xs uppercase tracking-wide text-slate-500">Last 7 Days</p>
-        <p class="mt-2 text-3xl font-black text-blue-700">{{ feedbackSummary.recentCount }}</p>
+        <p class="mt-2 text-3xl font-black text-[var(--app-primary)]">{{ feedbackSummary.recentCount }}</p>
       </article>
     </section>
 
-    <section class="rounded-2xl border border-slate-200 bg-white p-4">
+    <section class="app-shell-panel rounded-[30px] p-4">
       <h2 class="mb-3 text-lg font-bold text-slate-900">{{ editingId ? 'Edit Feedback' : 'Create Feedback' }}</h2>
       <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <select v-model="form.complaint_id" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+        <select v-model="form.complaint_id" class="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm">
           <option value="">Select complaint</option>
           <option v-for="c in complaintOptions" :key="c.id" :value="c.id">{{ c.label }}</option>
         </select>
 
-        <select v-model="form.rating" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+        <select v-model="form.rating" class="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm">
           <option :value="5">5 - Excellent</option>
           <option :value="4">4 - Good</option>
           <option :value="3">3 - Fair</option>
@@ -217,28 +218,28 @@ onMounted(async () => {
           v-model="form.comment"
           rows="3"
           placeholder="Write your feedback"
-          class="rounded-lg border border-slate-300 px-3 py-2 text-sm md:col-span-2"
+          class="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm md:col-span-2"
         />
 
         <div class="flex gap-2 md:col-span-2">
-          <button :disabled="saving" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60" @click="saveFeedback">
+          <button :disabled="saving" class="rounded-full bg-[var(--app-primary)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60" @click="saveFeedback">
             {{ saving ? 'Saving...' : editingId ? 'Update Feedback' : 'Submit Feedback' }}
           </button>
-          <button class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700" @click="resetForm">
+          <button class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700" @click="resetForm">
             Clear
           </button>
         </div>
       </div>
     </section>
 
-    <section class="rounded-2xl border border-slate-200 bg-white p-4">
+    <section class="app-shell-panel rounded-[30px] p-4">
       <h2 class="mb-3 text-lg font-bold text-slate-900">Feedback Records</h2>
       <p v-if="loading" class="text-sm text-slate-500">Loading feedback...</p>
       <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
       <p v-else-if="feedbackRows.length === 0" class="text-sm text-slate-500">No feedback found.</p>
 
       <div v-else class="space-y-3">
-        <article v-for="row in feedbackRows" :key="row.id" class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <article v-for="row in feedbackRows" :key="row.id" class="app-ink-card rounded-[24px] p-4">
           <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
             <div>
               <p class="text-sm font-semibold text-slate-900">{{ row.complaint_title || `Complaint #${row.complaint_id}` }}</p>
@@ -249,9 +250,9 @@ onMounted(async () => {
               </p>
             </div>
             <div class="flex items-center gap-2">
-              <span class="rounded-md bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">Rating: {{ row.rating }}/5</span>
-              <button class="rounded bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700" @click="startEdit(row)">Edit</button>
-              <button class="rounded bg-red-50 px-2 py-1 text-xs font-semibold text-red-700" @click="deleteFeedback(row)">Delete</button>
+              <span class="rounded-md bg-[var(--app-primary-mist)] px-2 py-1 text-xs font-semibold text-[var(--app-primary-ink)]">Rating: {{ row.rating }}/5</span>
+              <button class="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700" @click="startEdit(row)">Edit</button>
+              <button class="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700" @click="deleteFeedback(row)">Delete</button>
             </div>
           </div>
         </article>

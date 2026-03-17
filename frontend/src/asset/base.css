@@ -2,18 +2,25 @@
 @import "tailwindcss";
 
 :root {
-  --app-text-color: #0f172a;
-  --app-muted-color: #475569;
-  --app-surface: #f6f1e8;
-  --app-card: rgba(255, 252, 247, 0.88);
-  --app-card-strong: #fffdf8;
-  --app-line: rgba(15, 23, 42, 0.09);
-  --app-accent: #d97706;
-  --app-accent-soft: #fff1d6;
+  --app-text-color: #10213c;
+  --app-muted-color: #4c628a;
+  --app-surface: #f4f8ff;
+  --app-card: rgba(255, 255, 255, 0.88);
+  --app-card-strong: #ffffff;
+  --app-line: rgba(16, 33, 60, 0.1);
+  --app-accent: #4f8df7;
+  --app-accent-soft: #dce9ff;
   --app-primary: #1f4db7;
-  --app-primary-ink: #173375;
+  --app-primary-ink: #163462;
+  --app-primary-soft: #4f8df7;
+  --app-primary-mist: #e4efff;
   --app-deep: #10213c;
+  --app-deep-ink: #0f1f39;
   --app-shadow: 0 20px 60px rgba(16, 33, 60, 0.12);
+  --org-admin-gradient: linear-gradient(135deg, #0f1f39 0%, #163462 48%, #1f4db7 100%);
+  --org-admin-panel-bg: rgba(255, 255, 255, 0.08);
+  --org-admin-panel-border: rgba(255, 255, 255, 0.25);
+  --org-admin-shadow: 0 30px 80px rgba(15, 23, 42, 0.35);
 }
 
 *,
@@ -42,9 +49,9 @@ body {
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
   background:
-    radial-gradient(circle at top left, rgba(31, 77, 183, 0.14), transparent 28%),
-    radial-gradient(circle at 85% 10%, rgba(217, 119, 6, 0.14), transparent 24%),
-    linear-gradient(180deg, #f8f4ed 0%, #eef1f6 100%);
+    radial-gradient(circle at top left, rgba(31, 77, 183, 0.14), transparent 30%),
+    radial-gradient(circle at 88% 8%, rgba(79, 141, 247, 0.16), transparent 24%),
+    linear-gradient(180deg, #f9fbff 0%, #edf4ff 100%);
 }
 
 h1 {
@@ -90,14 +97,14 @@ a {
 }
 
 .app-shell-panel {
-  background: linear-gradient(180deg, rgba(255, 253, 248, 0.92), rgba(255, 255, 255, 0.8));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(244, 248, 255, 0.84));
   border: 1px solid var(--app-line);
   box-shadow: var(--app-shadow);
   backdrop-filter: blur(16px);
 }
 
 .app-ink-card {
-  background: linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(255, 249, 240, 0.92));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(235, 243, 255, 0.92));
   border: 1px solid rgba(16, 33, 60, 0.08);
   box-shadow: 0 18px 44px rgba(16, 33, 60, 0.08);
 }
@@ -108,4 +115,301 @@ a {
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
+}
+
+.app-dark-page {
+  background:
+    radial-gradient(circle at top right, rgba(79, 141, 247, 0.22), transparent 22%),
+    linear-gradient(180deg, #0a1629 0%, #10213c 38%, #163462 72%, #1f4db7 100%);
+  color: #ffffff;
+}
+
+.app-dark-stage {
+  background:
+    radial-gradient(circle at top right, rgba(120, 178, 255, 0.16), transparent 20%),
+    linear-gradient(180deg, rgba(10, 28, 54, 0.97), rgba(16, 33, 60, 0.96) 44%, rgba(22, 52, 98, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 80px rgba(2, 6, 23, 0.35);
+}
+
+.app-dark-panel {
+  background: linear-gradient(180deg, rgba(14, 33, 61, 0.96), rgba(20, 52, 99, 0.94));
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 18px 48px rgba(2, 6, 23, 0.28);
+}
+
+.app-dark-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.app-dark-kicker {
+  color: #bfd8ff;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.app-footer-panel {
+  background: linear-gradient(135deg, #0f1f39 0%, #163462 48%, #1f4db7 100%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 30px;
+  box-shadow: 0 24px 80px rgba(16, 33, 60, 0.36);
+  color: #ffffff;
+  padding: 1.25rem;
+}
+
+.app-footer-card {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 20px 48px rgba(15, 31, 57, 0.2);
+  color: #ffffff;
+}
+
+.org-admin-shell {
+  background: var(--org-admin-gradient);
+  background-attachment: fixed;
+  color: #ffffff;
+}
+
+.org-admin-gradient-panel {
+  background: rgba(10, 28, 54, 0.9);
+  border-radius: 32px;
+  border: 1px solid var(--org-admin-panel-border);
+  box-shadow: var(--org-admin-shadow);
+  padding: 2rem;
+}
+
+.org-admin-stat-card,
+.org-admin-panel-card {
+  background: var(--org-admin-panel-bg);
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.32);
+  padding: 1.5rem;
+  color: #ffffff;
+}
+
+.org-admin-stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.org-admin-shell .org-admin-panel-card,
+.org-admin-shell .org-admin-gradient-panel,
+.org-admin-shell .app-footer-panel,
+.org-admin-shell .org-admin-card,
+.org-admin-shell .app-shell-panel,
+.org-admin-shell .app-shell-stage,
+.org-admin-shell article,
+.org-admin-shell section {
+  background: var(--org-admin-panel-bg);
+  border: 1px solid var(--org-admin-panel-border);
+  border-radius: 28px;
+  box-shadow: var(--org-admin-shadow);
+  color: #ffffff;
+}
+
+.org-admin-shell .org-admin-gradient-panel,
+.org-admin-shell .org-admin-card {
+  padding: 2rem;
+}
+
+.org-admin-shell input,
+.org-admin-shell select,
+.org-admin-shell textarea {
+  /* background: rgba(255, 255, 255, 0.12); */
+  background: linear-gradient(135deg, #0f1f39 0%, #163462 48%, #1f4db7 100%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 18px;
+  color: #ffffff;
+  padding: 0.85rem 1rem;
+}
+
+.org-admin-shell input:focus,
+.org-admin-shell select:focus,
+.org-admin-shell textarea:focus {
+  /* border-color: rgba(255, 255, 255, 0.6); */
+  border-color: linear-gradient(135deg, #0f1f39 0%, #163462 48%, #1f4db7 100%);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+}
+
+.org-admin-shell button {
+  border-radius: 999px;
+  padding: 0.65rem 1.25rem;
+  border: none;
+  background: #ffffff;
+  color: #0f1f39;
+  font-weight: 600;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.org-admin-shell button:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.org-admin-input,
+.org-admin-select {
+  width: 100%;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  padding: 0.85rem 1rem;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.org-admin-input:focus,
+.org-admin-select:focus {
+  border-color: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+}
+
+.org-admin-btn {
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0f1f39;
+  font-weight: 600;
+  padding: 0.75rem 1.75rem;
+  border: none;
+  transition: background 160ms ease;
+}
+
+.org-admin-btn:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.org-admin-outline-btn {
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  padding: 0.6rem 1.75rem;
+}
+
+.org-admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.org-admin-table th,
+.org-admin-table td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 0.6rem 0.8rem;
+}
+
+.org-admin-table th {
+  font-size: 0.65rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.org-admin-table td {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.org-admin-sidebar {
+  background: var(--org-admin-gradient);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 30px 90px rgba(15, 23, 42, 0.35);
+}
+
+.org-admin-sidebar a {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.org-admin-logout-btn {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  padding: 0.6rem 1.5rem;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.org-admin-shell .org-admin-panel,
+.org-admin-shell .org-admin-card {
+  background: rgba(16, 33, 60, 0.9);
+  border: 1px solid rgba(16, 33, 60, 0.1);
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
+}
+
+.app-auth-page {
+  background:
+    radial-gradient(circle at top right, rgba(120, 178, 255, 0.22), transparent 24%),
+    linear-gradient(135deg, #10213c 0%, #163462 46%, #1f4db7 100%);
+}
+
+.app-auth-shell {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 28px 90px rgba(10, 24, 48, 0.28);
+}
+
+.app-auth-aside {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.08));
+  backdrop-filter: blur(12px);
+}
+
+.app-auth-form {
+  background:linear-gradient(135deg, #0f1f39 0%, #163462 48%, #1f4db7 100%);
+}
+
+.app-auth-title {
+  color: var(--app-primary);
+}
+
+.app-auth-label {
+  color: #5d7398;
+}
+
+.app-auth-meta {
+  color: #7d90b0;
+}
+
+.app-auth-input {
+  width: 100%;
+  border-radius: 14px;
+  border: 2px solid rgba(31, 77, 183, 0.24);
+  background: #ffffff;
+  padding: 0.95rem 1.25rem;
+  font-size: 1rem;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.app-auth-input::placeholder {
+  color: #9aadca;
+}
+
+.app-auth-input:focus {
+  border-color: var(--app-primary);
+  box-shadow: 0 0 0 4px rgba(31, 77, 183, 0.12);
+}
+
+.app-auth-input-muted {
+  border-color: rgba(16, 33, 60, 0.12);
+}
+
+.app-auth-icon {
+  border: 1px solid rgba(31, 77, 183, 0.16);
+  background: #f4f8ff;
+  color: var(--app-primary);
+}
+
+.app-auth-submit {
+  background: linear-gradient(90deg, #163462 0%, #1f4db7 52%, #4f8df7 100%);
+  box-shadow: 0 18px 34px rgba(31, 77, 183, 0.24);
+}
+
+.app-social-chip {
+  background: linear-gradient(135deg, #163462 0%, #1f4db7 100%);
+  box-shadow: 0 10px 20px rgba(16, 33, 60, 0.16);
 }

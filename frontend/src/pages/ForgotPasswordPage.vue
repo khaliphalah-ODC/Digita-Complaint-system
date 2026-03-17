@@ -10,11 +10,36 @@ const session = useSessionStore();
 
 const form = reactive({
   email: '',
+  token: '',
   new_password: '',
   confirm_password: ''
 });
+const tokenRequestMessage = ref('');
+const tokenPreview = ref('');
+const tokenExpiresAt = ref('');
 const showNewPassword = ref(false);
 const showConfirmPassword = ref(false);
+
+const sendResetToken = async () => {
+  session.errorMessage = '';
+  tokenRequestMessage.value = '';
+  tokenPreview.value = '';
+  tokenExpiresAt.value = '';
+
+  if (!form.email.trim()) {
+    session.errorMessage = 'Enter the email associated with your account';
+    return;
+  }
+
+  try {
+    const data = await session.requestPasswordResetToken({ email: form.email.trim().toLowerCase() });
+    tokenRequestMessage.value = 'Reset code sent if the account exists';
+    tokenPreview.value = data?.reset_token_preview || '';
+    tokenExpiresAt.value = data?.expires_at || '';
+  } catch (_error) {
+    // Store already tracks the message.
+  }
+};
 
 const submit = async () => {
   session.errorMessage = '';
@@ -23,10 +48,19 @@ const submit = async () => {
     session.errorMessage = 'Passwords do not match';
     return;
   }
+  if (!form.token.trim()) {
+    session.errorMessage = 'Enter the reset code you received';
+    return;
+  }
+  if (!form.email.trim()) {
+    session.errorMessage = 'Email is required to reset the password';
+    return;
+  }
 
   try {
-    await session.forgotPassword({
-      email: form.email,
+    await session.completePasswordReset({
+      email: form.email.trim().toLowerCase(),
+      token: form.token.trim(),
       new_password: form.new_password
     });
 
@@ -46,13 +80,13 @@ const submit = async () => {
 </script>
 
 <template>
-  <div class="flex min-h-screen flex-col bg-[linear-gradient(90deg,#5d48f5_0%,#6a56ff_50%,#604cff_100%)]">
+  <div class="app-auth-page flex min-h-screen flex-col">
     <div class="flex flex-1 flex-col px-0 py-0">
       <AuthTopNav fixed />
       <div class="flex flex-1 items-center justify-center px-4 pb-6 pt-24 sm:px-6 sm:pb-10 sm:pt-28 lg:px-10 lg:pt-32">
         <div class="w-full max-w-5xl">
-        <section class="flex w-full flex-col overflow-hidden rounded-[18px] border border-white/20 bg-transparent shadow-[0_28px_90px_rgba(28,18,94,0.3)] sm:min-h-[560px] sm:flex-row">
-        <aside class="relative flex min-h-[360px] flex-col justify-between bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.08))] px-8 py-8 text-white backdrop-blur-sm sm:min-h-[560px] sm:w-[44%] sm:px-10 sm:py-10">
+        <section class="app-auth-shell flex w-full flex-col overflow-hidden rounded-[18px] sm:min-h-[560px] sm:flex-row">
+        <aside class="app-auth-aside relative flex min-h-[360px] flex-col justify-between px-8 py-8 text-white sm:min-h-[560px] sm:w-[44%] sm:px-10 sm:py-10">
           <div class="absolute left-1/2 top-1/4 h-20 w-20 -translate-x-1/2 rounded-full bg-white/8 blur-lg"></div>
           <div>
             <p class="text-base font-semibold text-white/72">Complaint MS</p>
@@ -78,35 +112,65 @@ const submit = async () => {
           </div>
         </aside>
 
-        <form class="bg-[#fffefe] px-7 py-8 sm:w-[56%] sm:px-10 sm:py-10 lg:px-12 lg:py-12" @submit.prevent="submit">
+        <form class="app-auth-form px-7 py-8 sm:w-[56%] sm:px-10 sm:py-10 lg:px-12 lg:py-12" @submit.prevent="submit">
           <div class="mx-auto max-w-[360px]">
-            <p class="text-[28px] font-black uppercase tracking-[0.04em] text-[#7b73c7]">Forgot Password</p>
+            <p class="app-auth-title text-[28px] font-black uppercase tracking-[0.04em]">Forgot Password</p>
 
             <div class="mt-10 space-y-5">
               <label class="block">
-                <span class="mb-2 block text-sm font-medium text-[#8f88b5]">Email</span>
+                <span class="app-auth-label mb-2 block text-sm font-medium">Email</span>
+                <div class="flex flex-col gap-2 sm:flex-row">
+                  <input
+                    v-model="form.email"
+                    type="email"
+                    required
+                    placeholder="name@example.com"
+                    class="app-auth-input flex-1"
+                  >
+                  <button
+                    type="button"
+                    class="w-full rounded-full border border-[var(--app-primary)] bg-white px-3 py-2 text-sm font-semibold text-[var(--app-primary)] transition hover:bg-[var(--app-primary)]/10 sm:w-auto"
+                    :disabled="session.loadingRequestResetToken"
+                    @click="sendResetToken"
+                  >
+                    {{ session.loadingRequestResetToken ? 'Sending…' : 'Send reset code' }}
+                  </button>
+                </div>
+              </label>
+              <div class="text-xs text-slate-500">
+                Request a reset code so we can verify your identity before accepting a new password.
+                <span v-if="tokenRequestMessage" class="block text-slate-700">
+                  {{ tokenRequestMessage }}
+                  <span v-if="tokenExpiresAt"> · expires {{ tokenExpiresAt }}</span>
+                </span>
+                <span v-if="tokenPreview" class="block font-mono text-[0.8rem] text-slate-700">
+                  Preview token (dev): {{ tokenPreview }}
+                </span>
+              </div>
+
+              <label class="block">
+                <span class="app-auth-label mb-2 block text-sm font-medium">Reset code</span>
                 <input
-                  v-model="form.email"
-                  type="email"
-                  required
-                  placeholder="name@example.com"
-                  class="w-full rounded-[14px] border-2 border-[#8d7cff] bg-white px-5 py-3.5 text-base text-slate-900 outline-none transition placeholder:text-[#9a93bf] focus:ring-2 focus:ring-[#7a68ff]/15"
+                  v-model="form.token"
+                  type="text"
+                  placeholder="Enter the code from email"
+                  class="app-auth-input"
                 >
               </label>
 
               <label class="block">
-                <span class="mb-2 block text-sm font-medium text-[#8f88b5]">New Password</span>
+                <span class="app-auth-label mb-2 block text-sm font-medium">New Password</span>
                 <div class="relative">
                   <input
                     v-model="form.new_password"
                     :type="showNewPassword ? 'text' : 'password'"
                     required
                     placeholder="Create a new password"
-                    class="w-full rounded-[14px] border-2 border-[#e3def4] bg-white px-5 py-3.5 pr-14 text-base text-slate-900 outline-none transition placeholder:text-[#b2aec9] focus:border-[#8d7cff] focus:ring-2 focus:ring-[#7a68ff]/15"
+                    class="app-auth-input app-auth-input-muted pr-14"
                   >
                   <button
                     type="button"
-                    class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-[#ddd7f6] text-sm text-[#7b73c7] transition hover:bg-[#f5f2ff]"
+                    class="app-auth-icon absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-sm transition hover:bg-[var(--app-primary-mist)]"
                     :aria-label="showNewPassword ? 'Hide new password' : 'Show new password'"
                     @click="showNewPassword = !showNewPassword"
                   >
@@ -116,18 +180,18 @@ const submit = async () => {
               </label>
 
               <label class="block">
-                <span class="mb-2 block text-sm font-medium text-[#8f88b5]">Confirm Password</span>
+                <span class="app-auth-label mb-2 block text-sm font-medium">Confirm Password</span>
                 <div class="relative">
                   <input
                     v-model="form.confirm_password"
                     :type="showConfirmPassword ? 'text' : 'password'"
                     required
                     placeholder="Confirm your new password"
-                    class="w-full rounded-[14px] border-2 border-[#e3def4] bg-white px-5 py-3.5 pr-14 text-base text-slate-900 outline-none transition placeholder:text-[#b2aec9] focus:border-[#8d7cff] focus:ring-2 focus:ring-[#7a68ff]/15"
+                    class="app-auth-input app-auth-input-muted pr-14"
                   >
                   <button
                     type="button"
-                    class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-[#ddd7f6] text-sm text-[#7b73c7] transition hover:bg-[#f5f2ff]"
+                    class="app-auth-icon absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-sm transition hover:bg-[var(--app-primary-mist)]"
                     :aria-label="showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'"
                     @click="showConfirmPassword = !showConfirmPassword"
                   >
@@ -144,7 +208,7 @@ const submit = async () => {
             <button
               type="submit"
               :disabled="session.loadingForgotPassword"
-              class="mt-7 w-full rounded-full bg-[linear-gradient(90deg,#7564ff_0%,#6d59ff_100%)] px-6 py-4 text-lg font-semibold text-white shadow-[0_18px_34px_rgba(117,100,255,0.25)] transition hover:opacity-95 disabled:opacity-70"
+              class="app-auth-submit mt-7 w-full rounded-full px-6 py-4 text-lg font-semibold text-white transition hover:opacity-95 disabled:opacity-70"
             >
               {{ session.loadingForgotPassword ? 'Resetting...' : 'Reset Password' }}
             </button>

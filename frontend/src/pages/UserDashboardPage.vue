@@ -74,58 +74,65 @@ onMounted(fetchComplaints);
       </article>
       <article class="app-ink-card rounded-[28px] p-5">
         <p class="text-xs uppercase tracking-wide text-slate-500">Resolved</p>
-        <p class="mt-2 text-3xl font-black text-emerald-600">{{ loading ? '...' : complaintSummary.resolved }}</p>
+        <p class="mt-2 text-3xl font-black text-[var(--app-primary)]">{{ loading ? '...' : complaintSummary.resolved }}</p>
       </article>
     </section>
 
     <section class="grid grid-cols-1 gap-5 xl:grid-cols-[0.85fr,1.15fr]">
-      <section class="app-shell-panel rounded-[30px] p-5">
-        <h2 class="text-lg font-bold text-slate-900">Quick Actions</h2>
+      <section class="app-footer-panel rounded-[30px] p-5 text-white">
+        <h2 class="text-lg font-bold text-white">Quick Actions</h2>
         <div class="mt-4 grid gap-3">
           <RouterLink to="/submit-complaint" class="rounded-[22px] bg-[var(--app-primary)] px-4 py-3 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(31,77,183,0.2)] hover:-translate-y-0.5 hover:bg-[var(--app-primary-ink)]">
             Submit Complaint
           </RouterLink>
-          <RouterLink to="/track-complaint" class="rounded-[22px] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50">
+          <RouterLink to="/track-complaint" class="rounded-[22px] border border-white/30 bg-white/20 px-4 py-3 text-sm font-semibold text-white hover:bg-white/30">
             Track Complaint
           </RouterLink>
-          <RouterLink to="/feedback" class="rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 hover:bg-emerald-100">
+          <RouterLink to="/feedback" class="rounded-[22px] border border-white/30 bg-white/10 px-4 py-3 text-sm font-semibold text-white hover:bg-white/20">
             Leave Feedback
           </RouterLink>
+          <RouterLink to="/testimonial" class="rounded-[22px] border border-white/30 bg-white/10 px-4 py-3 text-sm font-semibold text-white hover:bg-white/20">
+         Share Your Experience
+        </RouterLink>
         </div>
       </section>
 
-      <section class="app-shell-panel rounded-[30px] p-5">
+      <section class="app-footer-panel rounded-[30px] p-5 text-white">
         <div class="mb-3 flex items-center justify-between">
           <div>
-            <h2 class="text-lg font-bold text-slate-900">Recent Complaints</h2>
-            <p class="text-sm text-slate-600">Only your complaints are listed here.</p>
+            <h2 class="text-lg font-bold text-white">Recent Complaints</h2>
+            <p class="text-sm text-white/80">Only your complaints are listed here.</p>
           </div>
-          <button class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50" @click="fetchComplaints">
+          <button class="rounded-full border border-white/25 bg-white/20 px-4 py-2 text-sm font-medium text-white hover:bg-white/30" @click="fetchComplaints">
             Refresh
           </button>
         </div>
 
-        <p v-if="loading" class="text-sm text-slate-500">Loading complaints...</p>
-        <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
-        <p v-else-if="recentComplaints.length === 0" class="text-sm text-slate-500">No complaints found yet.</p>
+        <p v-if="loading" class="text-sm text-white/70">Loading complaints...</p>
+        <p v-else-if="error" class="text-sm text-red-300">{{ error }}</p>
+        <p v-else-if="recentComplaints.length === 0" class="text-sm text-white/70">No complaints found yet.</p>
 
         <div v-else class="space-y-3">
           <article
             v-for="item in recentComplaints"
             :key="item.id"
-            class="app-ink-card rounded-[24px] p-4"
+            class="app-footer-card rounded-[24px] p-4"
           >
             <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
-                <h3 class="text-base font-bold text-slate-900">{{ item.title || 'Untitled Complaint' }}</h3>
-                <p class="mt-1 text-sm text-slate-700">{{ item.complaint }}</p>
-                <p class="mt-2 text-xs text-slate-500">Tracking: {{ item.tracking_code || 'N/A' }}</p>
-                <p class="text-xs text-slate-500">Organization: {{ item.organization_name || 'Not assigned' }}</p>
-                <p class="text-xs text-slate-500">Department: {{ item.department_name || 'Not specified' }}</p>
+                <h3 class="text-base font-bold text-white">{{ item.title || 'Untitled Complaint' }}</h3>
+                <p class="mt-1 text-sm text-white/80">{{ item.complaint }}</p>
+                <p class="mt-2 text-xs text-white/60">Tracking: {{ item.tracking_code || 'N/A' }}</p>
+                <p class="text-xs text-white/60">Organization: {{ item.organization_name || 'Not assigned' }}</p>
+                <p class="text-xs text-white/60">Department: {{ item.department_name || 'Not specified' }}</p>
               </div>
               <div class="flex gap-2">
-                <span class="rounded-md bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-700">{{ item.priority }}</span>
-                <span class="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{{ item.status }}</span>
+                <span class="rounded-md bg-white/15 px-2 py-1 text-xs font-semibold text-white">
+                  {{ item.priority }}
+                </span>
+                <span class="rounded-md bg-white/15 px-2 py-1 text-xs font-semibold text-white">
+                  {{ item.status }}
+                </span>
               </div>
             </div>
           </article>

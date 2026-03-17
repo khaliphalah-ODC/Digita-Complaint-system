@@ -82,8 +82,8 @@ const isAdminFamily = computed(() => ['super_admin', 'org_admin'].includes(sessi
 
 const priorityClasses = (priority) => {
   if (priority === 'low') return 'bg-slate-500 text-white';
-  if (priority === 'medium') return 'bg-orange-500 text-white';
-  return 'bg-red-500 text-white';
+  if (priority === 'medium') return 'bg-[var(--app-accent-soft)] text-[var(--app-primary-ink)]';
+  return 'bg-[var(--app-primary)] text-white';
 };
 
 const applyOrganizationDefaults = () => {
@@ -262,22 +262,22 @@ watch(selectedOrganizationId, (organizationId) => {
 <template>
   <section
     v-if="isAdminFamily"
-    class="mx-auto w-full max-w-5xl rounded-3xl border border-slate-200 bg-white px-4 py-8 text-center shadow-xl sm:px-6 md:px-8 md:py-10"
+    class="app-shell-panel mx-auto w-full max-w-5xl rounded-[30px] px-4 py-8 text-center sm:px-6 md:px-8 md:py-10"
   >
     <h1 class="text-2xl font-black tracking-tight text-slate-800 sm:text-3xl">Complaint Submission Is User Only</h1>
     <p class="mt-2 text-sm text-slate-600">
       Organization admins review complaints for their organization, and super admins manage organizations only.
     </p>
     <button
-      class="mt-5 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white"
+      class="mt-5 rounded-full bg-[var(--app-primary)] px-5 py-3 text-sm font-bold text-white"
       @click="returnHome"
     >
       Return to Dashboard
     </button>
   </section>
 
-  <section v-else class="w-full rounded-3xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white shadow-xl">
-    <header class="rounded-t-3xl border-b border-slate-200 bg-slate-100/70 px-4 py-5 sm:px-6 md:px-8 md:py-6">
+  <section v-else class="app-shell-panel w-full rounded-[30px]">
+    <header class="rounded-t-[30px] border-b border-slate-200 bg-[var(--app-primary-mist)] px-4 py-5 sm:px-6 md:px-8 md:py-6">
       <h1 class="text-3xl font-black tracking-tight text-slate-800 sm:text-4xl">How can we help you today?</h1>
       <p class="mt-1 text-sm text-slate-600">
         {{ complaintAudienceDescription }}
@@ -286,7 +286,7 @@ watch(selectedOrganizationId, (organizationId) => {
 
     <div class="grid grid-cols-1 gap-5 px-4 py-5 sm:px-6 md:px-8 xl:grid-cols-[1.2fr,0.9fr] xl:items-start">
       <form class="space-y-4" @submit.prevent="submitComplaint">
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+        <div class="app-ink-card rounded-[24px] px-4 py-3">
           <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Complaint Type</p>
           <p class="mt-1 text-sm font-semibold text-slate-800">{{ complaintAudienceLabel }}</p>
           <p class="mt-1 text-xs text-slate-500">{{ complaintAudienceDescription }}</p>
@@ -339,10 +339,10 @@ watch(selectedOrganizationId, (organizationId) => {
           </div>
         </div>
 
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div class="app-ink-card rounded-[24px] p-4">
           <label class="mb-1 block text-xs font-semibold text-slate-700">Route to organization</label>
 
-          <div v-if="hasOrganization" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-emerald-900">
+          <div v-if="hasOrganization" class="rounded-[20px] border border-[var(--app-accent-soft)] bg-[var(--app-primary-mist)] px-3 py-3 text-sm text-[var(--app-primary-ink)]">
             This organization-linked complaint will go directly to your organization:
             <span class="font-semibold">{{ routeSummary }}</span>
           </div>
@@ -376,7 +376,7 @@ watch(selectedOrganizationId, (organizationId) => {
           </template>
         </div>
 
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div class="app-ink-card rounded-[24px] p-4">
           <label class="mb-1 block text-xs font-semibold text-slate-700">Department</label>
           <select
             v-model="form.department_id"
@@ -424,7 +424,7 @@ watch(selectedOrganizationId, (organizationId) => {
           </label>
         </div>
 
-        <p v-if="namedComplaintNeedsLogin" class="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        <p v-if="namedComplaintNeedsLogin" class="rounded-2xl border border-[var(--app-accent-soft)] bg-[var(--app-primary-mist)] px-3 py-2 text-sm text-[var(--app-primary-ink)]">
           Sign in to submit a named complaint, or switch on anonymous mode if you do not want to log in.
         </p>
 
@@ -433,17 +433,17 @@ watch(selectedOrganizationId, (organizationId) => {
         <button
           type="submit"
           :disabled="submitting || namedComplaintNeedsLogin"
-          class="rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-3 text-sm font-bold text-white shadow hover:brightness-110 disabled:opacity-60"
+          class="rounded-xl bg-[linear-gradient(90deg,#163462_0%,#1f4db7_58%,#4f8df7_100%)] px-6 py-3 text-sm font-bold text-white shadow hover:brightness-110 disabled:opacity-60"
         >
           {{ submitting ? 'Submitting...' : 'Submit Complaint' }}
         </button>
       </form>
 
-      <aside class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
-          <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-xl font-black text-white">✓</div>
+      <aside class="app-ink-card rounded-[24px] p-4">
+        <div class="rounded-[22px] border border-slate-200 bg-[var(--app-primary-mist)] p-4 text-center">
+          <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[var(--app-primary)] text-xl font-black text-white">✓</div>
           <p class="mt-2 text-sm font-semibold text-slate-800">Thank you for your feedback!</p>
-          <div class="mt-3 rounded-lg border border-violet-300 bg-white px-3 py-2 text-base font-black tracking-wide text-slate-800">
+          <div class="mt-3 rounded-2xl border border-[var(--app-accent-soft)] bg-white px-3 py-2 text-base font-black tracking-wide text-slate-800">
             {{ activeTrackingCode }}
           </div>
         </div>

@@ -35,7 +35,7 @@ defineProps({
     <section class="grid grid-cols-2 gap-3 md:grid-cols-4">
       <article class="rounded-xl border border-slate-200 bg-white p-3">
         <p class="text-xs uppercase tracking-wide text-slate-500">Submitted</p>
-        <p class="mt-1 text-2xl font-black text-amber-600">{{ loading ? '...' : stats.submittedComplaints }}</p>
+        <p class="mt-1 text-2xl font-black text-blue-700">{{ loading ? '...' : stats.submittedComplaints }}</p>
       </article>
       <article class="rounded-xl border border-slate-200 bg-white p-3">
         <p class="text-xs uppercase tracking-wide text-red-500">In Review</p>

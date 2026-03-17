@@ -1,21 +1,31 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import {
+  faCircleInfo,
+  faFloppyDisk,
+  faPenToSquare,
+  faTrashCan,
+  faXmark
+} from '@fortawesome/free-solid-svg-icons';
 import api, { extractApiError, unwrapResponse } from '../../services/api';
 import OrganizationCreateForm from '../../components/OrganizationCreateForm.vue';
+import PageHeader from '../../components/superAdmin/PageHeader.vue';
 
 const router = useRouter();
 const loading = ref(false);
 const saving = ref(false);
-const triageLoading = ref(false);
-const triageSavingId = ref(null);
 const error = ref('');
 const organizations = ref([]);
-const unassignedComplaints = ref([]);
 const resetKey = ref(0);
 const search = ref('');
 const editingId = ref(null);
-const triageAssignments = ref({});
+const deleteConflict = reactive({
+  visible: false,
+  organizationName: '',
+  blockers: {},
+  message: ''
+});
 
 const editForm = reactive({
   name: '',
@@ -26,6 +36,8 @@ const editForm = reactive({
   logo: '',
   status: 'active'
 });
+
+const normalizeText = (value) => String(value ?? '').trim();
 
 const ensureSuccess = (payload, fallbackMessage) => {
   if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
@@ -45,26 +57,6 @@ const fetchOrganizations = async () => {
   }
 };
 
-const fetchUnassignedComplaints = async () => {
-  triageLoading.value = true;
-  error.value = '';
-  try {
-    const response = await api.get('/complaint/unassigned');
-    const rows = ensureSuccess(unwrapResponse(response), 'Failed to fetch unassigned complaints') || [];
-    unassignedComplaints.value = rows;
-
-    const nextAssignments = {};
-    for (const row of rows) {
-      nextAssignments[row.id] = '';
-    }
-    triageAssignments.value = nextAssignments;
-  } catch (requestError) {
-    error.value = extractApiError(requestError, 'Failed to fetch unassigned complaints');
-  } finally {
-    triageLoading.value = false;
-  }
-};
-
 const createOrganization = async (payload) => {
   saving.value = true;
   error.value = '';
@@ -80,13 +72,13 @@ const createOrganization = async (payload) => {
 };
 
 const startEdit = (row) => {
-  editingId.value = row.organization_id;
-  editForm.name = row.name || '';
-  editForm.organization_type = row.organization_type || '';
-  editForm.email = row.email || '';
-  editForm.phone = row.phone || '';
-  editForm.address = row.address || '';
-  editForm.logo = row.logo || '';
+  editingId.value = Number(row.organization_id);
+  editForm.name = String(row.name || '');
+  editForm.organization_type = String(row.organization_type || '');
+  editForm.email = String(row.email || '');
+  editForm.phone = String(row.phone || '');
+  editForm.address = String(row.address || '');
+  editForm.logo = String(row.logo || '');
   editForm.status = row.status || 'active';
 };
 
@@ -94,17 +86,42 @@ const cancelEdit = () => {
   editingId.value = null;
 };
 
+const closeDeleteConflict = () => {
+  deleteConflict.visible = false;
+  deleteConflict.organizationName = '';
+  deleteConflict.blockers = {};
+  deleteConflict.message = '';
+};
+
+const blockerEntries = computed(() => {
+  const labels = {
+    users: 'Users',
+    departments: 'Departments',
+    complaints: 'Complaints',
+    accessments: 'Assessments',
+    escalations: 'Escalations',
+    notifications: 'Notifications',
+    status_logs: 'Status Logs'
+  };
+
+  return Object.entries(deleteConflict.blockers || {}).map(([key, count]) => ({
+    key,
+    label: labels[key] || key,
+    count: Number(count || 0)
+  }));
+});
+
 const saveEdit = async (row) => {
   saving.value = true;
   error.value = '';
   try {
     await api.put(`/organization/${row.organization_id}`, {
-      name: editForm.name.trim(),
-      organization_type: editForm.organization_type.trim(),
-      email: editForm.email.trim().toLowerCase(),
-      phone: editForm.phone.trim() || null,
-      address: editForm.address.trim(),
-      logo: editForm.logo.trim() || null,
+      name: normalizeText(editForm.name),
+      organization_type: normalizeText(editForm.organization_type),
+      email: normalizeText(editForm.email).toLowerCase(),
+      phone: normalizeText(editForm.phone) || null,
+      address: normalizeText(editForm.address),
+      logo: normalizeText(editForm.logo) || null,
       status: editForm.status
     });
     cancelEdit();
@@ -120,32 +137,20 @@ const deleteOrganization = async (row) => {
   const ok = window.confirm(`Delete organization "${row.name}"?`);
   if (!ok) return;
   error.value = '';
+  closeDeleteConflict();
   try {
     await api.delete(`/organization/${row.organization_id}`);
     await fetchOrganizations();
   } catch (requestError) {
+    const payload = requestError?.response?.data || {};
+    if (Number(requestError?.response?.status) === 409 && payload?.error && typeof payload.error === 'object') {
+      deleteConflict.visible = true;
+      deleteConflict.organizationName = row.name || 'this organization';
+      deleteConflict.blockers = payload.error;
+      deleteConflict.message = payload.message || 'Cannot delete organization while related records still exist.';
+      return;
+    }
     error.value = extractApiError(requestError, 'Failed to delete organization');
-  }
-};
-
-const assignComplaint = async (row) => {
-  const organizationId = Number(triageAssignments.value[row.id] || 0);
-  if (!organizationId) {
-    error.value = 'Select an organization before assigning the complaint.';
-    return;
-  }
-
-  triageSavingId.value = row.id;
-  error.value = '';
-  try {
-    await api.patch(`/complaint/${row.id}/assign-organization`, {
-      organization_id: organizationId
-    });
-    await Promise.all([fetchOrganizations(), fetchUnassignedComplaints()]);
-  } catch (requestError) {
-    error.value = extractApiError(requestError, 'Failed to assign complaint');
-  } finally {
-    triageSavingId.value = null;
   }
 };
 
@@ -161,94 +166,69 @@ const filteredOrganizations = computed(() => {
   });
 });
 
+const managementSummary = computed(() => {
+  const activeOrganizations = organizations.value.filter((row) => String(row.status).toLowerCase() === 'active').length;
+  const inactiveOrganizations = organizations.value.length - activeOrganizations;
+  return {
+    total: organizations.value.length,
+    active: activeOrganizations,
+    inactive: inactiveOrganizations
+  };
+});
+
 onMounted(async () => {
-  await Promise.all([fetchOrganizations(), fetchUnassignedComplaints()]);
+  await fetchOrganizations();
 });
 </script>
 
 <template>
-  <section class="w-full space-y-5">
-    <header class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-      <div>
-        <p class="app-kicker">Directory Operations</p>
-        <h1 class="mt-2 text-3xl font-bold text-slate-900">Organization Management</h1>
-        <p class="text-sm text-slate-600">Admin CRUD for organization records.</p>
-      </div>
-      <button class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700" @click="fetchOrganizations">
-        Refresh
-      </button>
-    </header>
-
-    <OrganizationCreateForm :loading="saving" :show-status="true" :reset-key="resetKey" title="Create Organization (Admin)" @submit="createOrganization" />
-
-    <section class="app-shell-panel rounded-[30px] p-5">
-      <div class="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 class="text-lg font-bold text-slate-900">Unassigned Anonymous Complaints</h2>
-          <p class="text-sm text-slate-600">Triage queue for anonymous complaints that were submitted without an organization.</p>
-        </div>
-        <button class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700" @click="fetchUnassignedComplaints">
-          Refresh Triage
+  <section class="app-dark-stage w-full space-y-5 rounded-[34px] p-4 sm:p-6">
+    <PageHeader
+      theme="dark"
+      kicker="Directory Operations"
+      title="Organization Management"
+      description="Manage organization records, monitor the triage queue, and keep platform directory data clean."
+    >
+      <template #actions>
+        <button class="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-medium text-white/84" @click="fetchOrganizations">
+          Refresh Directory
         </button>
-      </div>
+      </template>
+    </PageHeader>
 
-      <p v-if="triageLoading" class="text-sm text-slate-500">Loading unassigned complaints...</p>
-      <p v-else-if="unassignedComplaints.length === 0" class="text-sm text-slate-500">No unassigned anonymous complaints.</p>
-
-      <div v-else class="space-y-3">
-        <article
-          v-for="row in unassignedComplaints"
-          :key="row.id"
-          class="app-ink-card rounded-[24px] p-4"
-        >
-          <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div class="space-y-1">
-              <h3 class="text-base font-bold text-slate-900">{{ row.title || 'Untitled Complaint' }}</h3>
-              <p class="text-sm text-slate-700">{{ row.complaint }}</p>
-              <p class="text-xs text-slate-500">Tracking: {{ row.tracking_code || 'N/A' }}</p>
-              <p class="text-xs text-slate-500">Reporter: {{ row.anonymous_label || 'Anonymous Reporter' }}</p>
-            </div>
-
-            <div class="w-full max-w-sm space-y-2">
-              <select
-                v-model="triageAssignments[row.id]"
-                class="w-full rounded-2xl border border-slate-300 bg-white px-3 py-3 text-sm"
-              >
-                <option value="">Select organization</option>
-                <option
-                  v-for="organization in organizations.filter((item) => String(item.status).toLowerCase() === 'active')"
-                  :key="organization.organization_id"
-                  :value="organization.organization_id"
-                >
-                  {{ organization.name }}
-                </option>
-              </select>
-              <button
-                :disabled="triageSavingId === row.id || !triageAssignments[row.id]"
-                class="rounded-full bg-[var(--app-primary)] px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
-                @click="assignComplaint(row)"
-              >
-                {{ triageSavingId === row.id ? 'Assigning...' : 'Assign to Organization' }}
-              </button>
-            </div>
-          </div>
-        </article>
-      </div>
+    <section class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <article class="rounded-[26px] border border-white/8 bg-white/[0.04] p-5">
+        <p class="text-xs uppercase tracking-wide text-white/46">Total Organizations</p>
+        <p class="mt-2 text-3xl font-black text-white">{{ managementSummary.total }}</p>
+        <p class="text-sm text-white/58">All organizations in the platform directory.</p>
+      </article>
+      <article class="rounded-[26px] border border-white/8 bg-white/[0.04] p-5">
+        <p class="text-xs uppercase tracking-wide text-white/46">Active</p>
+        <p class="mt-2 text-3xl font-black text-emerald-300">{{ managementSummary.active }}</p>
+        <p class="text-sm text-white/58">Organizations currently able to receive routed complaints.</p>
+      </article>
+      <article class="rounded-[26px] border border-white/8 bg-white/[0.04] p-5">
+        <p class="text-xs uppercase tracking-wide text-white/46">Inactive</p>
+        <p class="mt-2 text-3xl font-black text-white">{{ managementSummary.inactive }}</p>
+        <p class="text-sm text-white/58">Organizations currently suspended or inactive.</p>
+      </article>
     </section>
 
-    <section class="app-shell-panel rounded-[30px] p-5">
+    <OrganizationCreateForm :loading="saving" :show-status="true" :reset-key="resetKey" title="Create Organization (Admin)" theme="dark" @submit="createOrganization" />
+
+    <section class="app-dark-panel rounded-[30px] p-5">
       <div class="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <h2 class="text-lg font-bold text-slate-900">Organizations</h2>
-        <input v-model="search" placeholder="Search organization..." class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm">
+        <h2 class="text-lg font-bold text-white">Organizations</h2>
+        <input v-model="search" placeholder="Search organization..." class="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-white/36">
       </div>
 
-      <p v-if="loading" class="text-sm text-slate-500">Loading organizations...</p>
+      <p v-if="loading" class="text-sm text-white/58">Loading organizations...</p>
       <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
-      <p v-else-if="filteredOrganizations.length === 0" class="text-sm text-slate-500">No organizations found.</p>
+      <p v-else-if="filteredOrganizations.length === 0" class="text-sm text-white/58">No organizations found.</p>
 
       <div v-else class="overflow-x-auto">
         <table class="min-w-full text-left text-sm">
-          <thead class="text-slate-500">
+          <thead class="text-white/46">
             <tr>
               <th class="pb-2 pr-3">Name</th>
               <th class="pb-2 pr-3">Type</th>
@@ -259,22 +239,28 @@ onMounted(async () => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="row in filteredOrganizations" :key="row.organization_id" class="border-t border-slate-100">
-              <template v-if="editingId === row.organization_id">
-                <td class="py-2 pr-3"><input v-model="editForm.name" class="w-full rounded border border-slate-300 px-2 py-1"></td>
-                <td class="py-2 pr-3"><input v-model="editForm.organization_type" class="w-full rounded border border-slate-300 px-2 py-1"></td>
-                <td class="py-2 pr-3"><input v-model="editForm.email" class="w-full rounded border border-slate-300 px-2 py-1"></td>
+            <tr v-for="row in filteredOrganizations" :key="row.organization_id" class="border-t border-white/8 align-top text-white/82">
+              <template v-if="Number(editingId) === Number(row.organization_id)">
+                <td class="py-2 pr-3"><input v-model="editForm.name" class="w-full rounded border border-white/10 bg-white/[0.04] px-2 py-1 text-white"></td>
+                <td class="py-2 pr-3"><input v-model="editForm.organization_type" class="w-full rounded border border-white/10 bg-white/[0.04] px-2 py-1 text-white"></td>
+                <td class="py-2 pr-3"><input v-model="editForm.email" class="w-full rounded border border-white/10 bg-white/[0.04] px-2 py-1 text-white"></td>
                 <td class="py-2 pr-3">{{ row.organization_admin?.full_name || 'Not assigned' }}</td>
                 <td class="py-2 pr-3">
-                  <select v-model="editForm.status" class="rounded border border-slate-300 px-2 py-1">
+                  <select v-model="editForm.status" class="rounded border border-white/10 bg-white/[0.04] px-2 py-1 text-white">
                     <option value="active">active</option>
                     <option value="inactive">inactive</option>
                   </select>
                 </td>
                 <td class="py-2">
-                  <div class="flex gap-2">
-                    <button :disabled="saving" class="rounded bg-blue-600 px-2 py-1 text-xs font-semibold text-white" @click="saveEdit(row)">Save</button>
-                    <button class="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700" @click="cancelEdit">Cancel</button>
+                  <div class="flex items-center gap-2">
+                    <button type="button" :disabled="saving" class="inline-flex items-center gap-2 rounded bg-[var(--app-primary)] px-2.5 py-1.5 text-xs font-semibold text-white" @click="saveEdit(row)">
+                      <font-awesome-icon :icon="faFloppyDisk" class="text-sm" />
+                      <span>Save</span>
+                    </button>
+                    <button type="button" class="inline-flex items-center gap-2 rounded border border-white/10 px-2.5 py-1.5 text-xs font-semibold text-white/78" @click="cancelEdit">
+                      <font-awesome-icon :icon="faXmark" class="text-sm" />
+                      <span>Cancel</span>
+                    </button>
                   </div>
                 </td>
               </template>
@@ -285,10 +271,37 @@ onMounted(async () => {
                 <td class="py-2 pr-3">{{ row.organization_admin?.full_name || 'Not assigned' }}</td>
                 <td class="py-2 pr-3">{{ row.status }}</td>
                 <td class="py-2">
-                  <div class="flex gap-2">
-                    <button class="rounded bg-indigo-50 px-2 py-1 text-xs font-semibold text-indigo-700" @click="router.push(`/admin/organizations/${row.organization_id}`)">Details</button>
-                    <button class="rounded bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700" @click="startEdit(row)">Edit</button>
-                    <button class="rounded bg-red-50 px-2 py-1 text-xs font-semibold text-red-700" @click="deleteOrganization(row)">Delete</button>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      class="inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-3 py-1.5 text-xs font-semibold text-blue-200 transition hover:bg-white/[0.12]"
+                      title="View details"
+                      aria-label="View organization details"
+                      @click="router.push(`/admin/organizations/${row.organization_id}`)"
+                    >
+                      <font-awesome-icon :icon="faCircleInfo" class="text-sm" />
+                      <span>Details</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-3 py-1.5 text-xs font-semibold text-blue-200 transition hover:bg-white/[0.12]"
+                      title="Update organization"
+                      aria-label="Update organization"
+                      @click="startEdit(row)"
+                    >
+                      <font-awesome-icon :icon="faPenToSquare" class="text-sm" />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="inline-flex items-center gap-2 rounded-full bg-red-500/14 px-3 py-1.5 text-xs font-semibold text-red-200 transition hover:bg-red-500/24"
+                      title="Delete organization"
+                      aria-label="Delete organization"
+                      @click="deleteOrganization(row)"
+                    >
+                      <font-awesome-icon :icon="faTrashCan" class="text-sm" />
+                      <span>Delete</span>
+                    </button>
                   </div>
                 </td>
               </template>
@@ -297,5 +310,59 @@ onMounted(async () => {
         </table>
       </div>
     </section>
+
+    <div
+      v-if="deleteConflict.visible"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4"
+      @click.self="closeDeleteConflict"
+    >
+      <section class="w-full max-w-lg rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(14,33,61,0.98),rgba(20,52,99,0.96))] p-6 text-white shadow-[0_30px_90px_rgba(2,6,23,0.45)]">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-[0.74rem] font-bold uppercase tracking-[0.18em] text-blue-200/90">Delete Blocked</p>
+            <h3 class="mt-2 text-2xl font-black text-white">{{ deleteConflict.organizationName }}</h3>
+          </div>
+          <button
+            type="button"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/6 text-white/74 hover:bg-white/10"
+            aria-label="Close delete conflict modal"
+            @click="closeDeleteConflict"
+          >
+            <font-awesome-icon :icon="faXmark" class="text-sm" />
+          </button>
+        </div>
+
+        <p class="mt-4 text-sm leading-6 text-white/72">
+          {{ deleteConflict.message }}
+        </p>
+
+        <div class="mt-5 space-y-3">
+          <article
+            v-for="item in blockerEntries"
+            :key="item.key"
+            class="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.05] px-4 py-3"
+          >
+            <span class="text-sm font-semibold text-white/84">{{ item.label }}</span>
+            <span class="rounded-full bg-blue-200 px-3 py-1 text-xs font-black text-[var(--app-primary-ink)]">
+              {{ item.count }}
+            </span>
+          </article>
+        </div>
+
+        <p class="mt-5 text-sm text-white/60">
+          Reassign or remove the linked records first, or keep the organization inactive instead of deleting it.
+        </p>
+
+        <div class="mt-6 flex justify-end">
+          <button
+            type="button"
+            class="rounded-full bg-[var(--app-primary)] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[var(--app-primary-ink)]"
+            @click="closeDeleteConflict"
+          >
+            Close
+          </button>
+        </div>
+      </section>
+    </div>
   </section>
 </template>
