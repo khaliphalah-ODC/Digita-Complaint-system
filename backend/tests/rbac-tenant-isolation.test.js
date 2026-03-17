@@ -12,15 +12,27 @@ const dbPath = path.join(tempDir, 'tenant-isolation.sqlite');
 process.env.COMPLAINT_DB_PATH = dbPath;
 process.env.JWT_SECRET = 'tenant-test-secret';
 process.env.ORG_ADMIN_DEFAULT_PASSWORD = 'Admin@123';
+process.env.PASSWORD_RESET_PREVIEW = 'true';
+process.env.NODE_ENV = 'test';
 
 const { default: complaintDB } = await import('../src/model/connect.js');
 const {
   assignExistingUserToOrganization,
   CreateUsersTable,
   CreateRevokedTokensTable,
-  getAllUsers
+  CreatePasswordResetTokensTable,
+  createUser,
+  getAllUsers,
+  loginUser,
+  requestPasswordReset,
+  resetPasswordWithToken,
+  updateUserRole
 } = await import('../src/controllers/user.controller.js');
-const { CreateOrganizationTable, getGlobalOrganizationStats } = await import('../src/controllers/organization.controller.js');
+const {
+  CreateOrganizationTable,
+  deleteOrganization,
+  getGlobalOrganizationStats
+} = await import('../src/controllers/organization.controller.js');
 const {
   assignComplaintOrganization,
   createComplaint,
@@ -122,6 +134,7 @@ const invokeVerifyToken = (req) =>
 before(async () => {
   CreateUsersTable();
   CreateRevokedTokensTable();
+  CreatePasswordResetTokensTable();
   CreateOrganizationTable();
   CreateComplaintTable();
   CreateDepartmentTable();
@@ -241,7 +254,7 @@ after(async () => {
   await new Promise((resolve) => complaintDB.close(() => resolve()));
 });
 
-test('super_admin only sees aggregate organization data and is blocked from org-internal records', async () => {
+test('super_admin sees aggregate organization data and can manage the shared user directory only', async () => {
   const statsResponse = await invoke(getGlobalOrganizationStats, {
     user: state.users.superAdmin
   });
@@ -258,7 +271,10 @@ test('super_admin only sees aggregate organization data and is blocked from org-
   const usersResponse = await invoke(getAllUsers, {
     user: state.users.superAdmin
   });
-  assert.equal(usersResponse.status, 403);
+  assert.equal(usersResponse.status, 200);
+  assert.equal(usersResponse.body.success, true);
+  assert.equal(usersResponse.body.data.some((user) => user.email === 'superadmin@example.com'), true);
+  assert.equal(usersResponse.body.data.some((user) => user.email === 'user2@example.com'), true);
 
   const departmentResponse = await invoke(getDepartmentById, {
     user: state.users.superAdmin,
@@ -354,6 +370,71 @@ test('org_admin is limited to records inside their own organization', async () =
     refreshedUsersResponse.body.data.some((user) => user.email === state.users.signupUser.email && Number(user.organization_id) === 1),
     true
   );
+});
+
+test('org_admin cannot create a user with a duplicate email', async () => {
+  const response = await invoke(createUser, {
+    user: state.users.orgAdmin1,
+    body: {
+      full_name: 'Duplicate Email User',
+      email: 'user2@example.com',
+      password: 'Password@123',
+      status: 'active'
+    }
+  });
+
+  assert.equal(response.status, 409);
+  assert.equal(response.body.success, false);
+  assert.equal(response.body.message, 'Email already exists');
+});
+
+test('org_admin can promote a same-organization staff member to org_admin but cannot assign super_admin', async () => {
+  const promoteResponse = await invoke(updateUserRole, {
+    user: state.users.orgAdmin1,
+    params: { id: String(state.users.user1.id) },
+    body: { role: 'org_admin' }
+  });
+
+  assert.equal(promoteResponse.status, 200);
+  assert.equal(promoteResponse.body.success, true);
+  assert.equal(promoteResponse.body.data.role, 'org_admin');
+
+  const forbiddenRoleResponse = await invoke(updateUserRole, {
+    user: state.users.orgAdmin1,
+    params: { id: String(state.users.user1.id) },
+    body: { role: 'super_admin' }
+  });
+
+  assert.equal(forbiddenRoleResponse.status, 400);
+  assert.equal(forbiddenRoleResponse.body.success, false);
+  assert.equal(forbiddenRoleResponse.body.message, 'role must be org_admin or user');
+
+  const crossOrgResponse = await invoke(updateUserRole, {
+    user: state.users.orgAdmin1,
+    params: { id: String(state.users.user2.id) },
+    body: { role: 'org_admin' }
+  });
+
+  assert.equal(crossOrgResponse.status, 403);
+});
+
+test('super_admin can create an organization admin inside a selected organization', async () => {
+  const response = await invoke(createUser, {
+    user: state.users.superAdmin,
+    body: {
+      organization_id: 2,
+      full_name: 'Org Two Backup Admin',
+      email: 'backupadmin@example.com',
+      password: 'Password@123',
+      role: 'org_admin',
+      status: 'active'
+    }
+  });
+
+  assert.equal(response.status, 201);
+  assert.equal(response.body.success, true);
+  assert.equal(Number(response.body.data.organization_id), 2);
+  assert.equal(response.body.data.role, 'org_admin');
 });
 
 test('user only sees their own complaints and notifications while anonymous tracking still works', async () => {
@@ -481,6 +562,53 @@ test('anonymous complaints can be routed directly to an organization or assigned
     orgAdminComplaintList.body.data.some((row) => row.id === unassignedAnonymousResponse.body.data.id),
     true
   );
+});
+
+test('super_admin cannot delete an organization while related records still exist', async () => {
+  const response = await invoke(deleteOrganization, {
+    user: state.users.superAdmin,
+    params: { id: String(state.organizations.org1.organization_id) }
+  });
+
+  assert.equal(response.status, 409);
+  assert.equal(response.body.success, false);
+  assert.match(response.body.message, /Cannot delete organization/i);
+  assert.equal(Number(response.body.error.users) >= 1, true);
+  assert.equal(Number(response.body.error.complaints) >= 1, true);
+});
+
+test('password reset token flow requires valid token and allows login after reset', async () => {
+  const requestResponse = await invoke(requestPasswordReset, {
+    body: { email: 'user1@example.com' }
+  });
+
+  assert.equal(requestResponse.status, 200);
+  const previewToken = requestResponse.body.data?.reset_token_preview;
+  assert.equal(typeof previewToken, 'string');
+
+  const newPassword = 'FreshPass@123';
+  const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+  const resetResponse = await invoke(resetPasswordWithToken, {
+    body: {
+      email: 'user1@example.com',
+      token: previewToken,
+      new_password: hashedNewPassword
+    }
+  });
+
+  assert.equal(resetResponse.status, 200);
+  assert.equal(resetResponse.body.data?.user?.email, 'user1@example.com');
+
+  const loginResponse = await invoke(loginUser, {
+    body: {
+      email: 'user1@example.com',
+      password: newPassword
+    }
+  });
+
+  assert.equal(loginResponse.status, 200);
+  assert.equal(loginResponse.body.data?.user?.email, 'user1@example.com');
 });
 
 test('verifyToken rejects revoked bearer tokens', async () => {

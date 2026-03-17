@@ -30,6 +30,43 @@ const allQuery = (sql, params = []) =>
     });
   });
 
+const buildLastTwelveMonths = () => {
+  const months = [];
+  const now = new Date();
+  now.setUTCDate(1);
+  now.setUTCHours(0, 0, 0, 0);
+
+  for (let index = 11; index >= 0; index -= 1) {
+    const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - index, 1));
+    const key = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+    const label = date.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
+    months.push({ key, label });
+  }
+
+  return months;
+};
+
+const getOrganizationDeleteBlockers = async (organizationId) => {
+  const dependencyQueries = [
+    ['users', 'SELECT COUNT(*) AS count FROM users WHERE organization_id = ?'],
+    ['departments', 'SELECT COUNT(*) AS count FROM department WHERE organization_id = ?'],
+    ['complaints', 'SELECT COUNT(*) AS count FROM complaint WHERE organization_id = ?'],
+    ['accessments', 'SELECT COUNT(*) AS count FROM accessments WHERE organization_id = ?'],
+    ['escalations', 'SELECT COUNT(*) AS count FROM escalations WHERE organization_id = ?'],
+    ['notifications', 'SELECT COUNT(*) AS count FROM notifications WHERE organization_id = ?'],
+    ['status_logs', 'SELECT COUNT(*) AS count FROM status_logs WHERE organization_id = ?']
+  ];
+
+  const counts = await Promise.all(
+    dependencyQueries.map(async ([key, sql]) => {
+      const row = await getQuery(sql, [organizationId]);
+      return [key, Number(row?.count || 0)];
+    })
+  );
+
+  return Object.fromEntries(counts.filter(([, count]) => count > 0));
+};
+
 const getOrgAdminByOrganizationId = (organizationId, callback) => {
   complaintDB.get(
     "SELECT id, full_name, email, role, status, must_change_password, organization_id, created_at FROM users WHERE organization_id = ? AND role = 'org_admin' ORDER BY id ASC LIMIT 1",
@@ -92,7 +129,7 @@ const createOrganizationAdminAccount = (organizationId, payload, callback) => {
       const hashedPassword = await bcrypt.hash(DEFAULT_ORG_ADMIN_PASSWORD, 10);
       complaintDB.run(
         createUserQuery,
-        [organizationId, null, fullName, email, hashedPassword, 1, 'active', 'org_admin'],
+        [organizationId, null, fullName, email, hashedPassword, 1, 1, 'active', 'org_admin'],
         function onCreate(createErr) {
           if (createErr) {
             callback(createErr);
@@ -338,7 +375,7 @@ export const getGlobalOrganizationStats = async (req, res) => {
   }
 
   try {
-    const [organizationStats, complaintStats, escalationStats, feedbackStats, recentOrganizations] = await Promise.all([
+    const [organizationStats, complaintStats, escalationStats, feedbackStats, recentOrganizations, complaintsByOrganization, complaintMonthlyRows, assessmentMonthlyRows] = await Promise.all([
       getQuery(
         `
         SELECT
@@ -385,8 +422,52 @@ export const getGlobalOrganizationStats = async (req, res) => {
         ORDER BY updated_at DESC, organization_id DESC
         LIMIT 8
         `
+      ),
+      allQuery(
+        `
+        SELECT
+          o.organization_id,
+          o.name,
+          COUNT(c.id) AS complaints_count
+        FROM organization o
+        LEFT JOIN complaint c ON c.organization_id = o.organization_id
+        GROUP BY o.organization_id, o.name
+        ORDER BY complaints_count DESC, o.name ASC
+        LIMIT 8
+        `
+      ),
+      allQuery(
+        `
+        SELECT
+          strftime('%Y-%m', created_at) AS month_key,
+          COUNT(*) AS count
+        FROM complaint
+        WHERE created_at >= date('now', 'start of month', '-11 months')
+        GROUP BY strftime('%Y-%m', created_at)
+        ORDER BY month_key ASC
+        `
+      ),
+      allQuery(
+        `
+        SELECT
+          strftime('%Y-%m', COALESCE(updated_at, created_at)) AS month_key,
+          COUNT(*) AS count
+        FROM accessments
+        WHERE status = 'completed'
+          AND COALESCE(updated_at, created_at) >= date('now', 'start of month', '-11 months')
+        GROUP BY strftime('%Y-%m', COALESCE(updated_at, created_at))
+        ORDER BY month_key ASC
+        `
       )
     ]);
+
+    const lastTwelveMonths = buildLastTwelveMonths();
+    const complaintMonthlyMap = new Map(
+      (complaintMonthlyRows || []).map((row) => [row.month_key, Number(row.count || 0)])
+    );
+    const assessmentMonthlyMap = new Map(
+      (assessmentMonthlyRows || []).map((row) => [row.month_key, Number(row.count || 0)])
+    );
 
     const feedbackByRating = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     let feedbackTotal = 0;
@@ -423,6 +504,19 @@ export const getGlobalOrganizationStats = async (req, res) => {
         average: feedbackTotal > 0 ? Number((feedbackWeightedTotal / feedbackTotal).toFixed(2)) : 0,
         byRating: feedbackByRating
       },
+      complaintsByOrganization: complaintsByOrganization.map((row) => ({
+        organization_id: row.organization_id,
+        name: row.name,
+        complaints: Number(row.complaints_count || 0)
+      })),
+      complaintMonthlyTrend: lastTwelveMonths.map((month) => ({
+        month: month.label,
+        value: complaintMonthlyMap.get(month.key) || 0
+      })),
+      assessmentMonthlyTrend: lastTwelveMonths.map((month) => ({
+        month: month.label,
+        value: assessmentMonthlyMap.get(month.key) || 0
+      })),
       activityFeed: recentOrganizations.map((row) => ({
         text: `Organization ${row.name} is ${row.status}`,
         date: row.updated_at || row.created_at || null
@@ -480,14 +574,45 @@ export const deleteOrganization = (req, res) => {
     return sendError(res, 403, 'Only super_admin can delete organizations');
   }
 
-  complaintDB.run(deleteOrganizationById, [req.params.id], function onDelete(err) {
-    if (err) {
-      return sendError(res, 500, 'Failed to delete organization', err.message);
+  complaintDB.get(selectOrganizationById, [req.params.id], async (lookupErr, organizationRow) => {
+    if (lookupErr) {
+      return sendError(res, 500, 'Failed to fetch organization before deletion', lookupErr.message);
     }
-    if (this.changes === 0) {
+    if (!organizationRow) {
       return sendError(res, 404, 'Organization not found');
     }
-    return sendSuccess(res, 200, 'Organization deleted successfully', { id: req.params.id });
+
+    try {
+      const blockers = await getOrganizationDeleteBlockers(req.params.id);
+      if (Object.keys(blockers).length > 0) {
+        return sendError(
+          res,
+          409,
+          'Cannot delete organization while related records still exist. Reassign or remove the linked records first.',
+          blockers
+        );
+      }
+    } catch (blockerErr) {
+      return sendError(res, 500, 'Failed to validate organization dependencies', blockerErr.message);
+    }
+
+    complaintDB.run(deleteOrganizationById, [req.params.id], function onDelete(err) {
+      if (err) {
+        if (String(err.message || '').includes('SQLITE_CONSTRAINT: FOREIGN KEY constraint failed')) {
+          return sendError(
+            res,
+            409,
+            'Cannot delete organization while related records still exist. Reassign or remove the linked records first.',
+            err.message
+          );
+        }
+        return sendError(res, 500, 'Failed to delete organization', err.message);
+      }
+      if (this.changes === 0) {
+        return sendError(res, 404, 'Organization not found');
+      }
+      return sendSuccess(res, 200, 'Organization deleted successfully', { id: req.params.id });
+    });
   });
 };
 

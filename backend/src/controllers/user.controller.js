@@ -1,8 +1,10 @@
 // user.controller controller: handles HTTP request/response flow for this module.
 import bcrypt from 'bcrypt';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import complaintDB from '../model/connect.js';
 import { sendSuccess, sendError } from '../utils/response.js';
+import { sendPasswordResetNotification } from '../utils/notification.js';
+import { logAuditEntry, buildAuditMetadata } from '../utils/audit.js';
 import generateToken from '../middleware/generateToken.js';
 import {
   usersQuery,
@@ -19,17 +21,83 @@ import {
   revokedTokensQuery,
   updateOwnPasswordQuery
 } from '../model/user.model.js';
-
+import {
+  passwordResetTokensQuery,
+  insertPasswordResetTokenQuery,
+  selectActivePasswordResetTokenQuery,
+  consumePasswordResetTokenQuery,
+  invalidatePasswordResetTokensByUserQuery
+} from '../model/passwordReset.model.js';
 const sanitizeUser = (user) => {
   if (!user) return null;
   const { password, ...safeUser } = user;
   return safeUser;
 };
 
+const PASSWORD_RESET_TTL_MS = Number(process.env.PASSWORD_RESET_TTL_MS || 60 * 60 * 1000);
+const hashToken = (token) => createHash('sha256').update(token).digest('hex');
+const previewPasswordResetTokenEnabled = process.env.PASSWORD_RESET_PREVIEW === 'true';
+const buildResetTokenPayload = (token, expiresAt) => {
+  const payload = { expires_at: expiresAt };
+  if (previewPasswordResetTokenEnabled && token) {
+    payload.reset_token_preview = token;
+  }
+  return payload;
+};
+
+const buildRequestMetadata = (req, organizationId = null) => {
+  const headers = req.headers || {};
+  const forwardedFor = headers['x-forwarded-for'];
+  return {
+    organization_id: organizationId,
+    request_path: req.originalUrl || '',
+    request_method: req.method || 'POST',
+    request_ip: forwardedFor?.split(',')[0]?.trim() || req.ip || null,
+    request_user_agent: headers['user-agent'] || null,
+    requested_at: new Date().toISOString()
+  };
+};
+
+const isDuplicateUserEmailError = (error) =>
+  String(error?.message || '').includes('SQLITE_CONSTRAINT: UNIQUE constraint failed: users.email');
+
+const PANEL_ASSIGNABLE_ROLES = ['org_admin', 'user'];
+
 const getGoogleClientId = () =>
   process.env.GOOGLE_CLIENT_ID ||
   process.env.GOOGLE_OAUTH_CLIENT_ID ||
   '';
+
+const isAdminFamilyRole = (role) => role === 'super_admin' || role === 'org_admin';
+
+const normalizePanelRole = (role) => {
+  const normalizedRole = String(role || 'user').trim();
+  return PANEL_ASSIGNABLE_ROLES.includes(normalizedRole) ? normalizedRole : null;
+};
+
+const canAccessUserRecord = (requesterRow, targetRow) => {
+  if (!requesterRow || !targetRow || !isAdminFamilyRole(requesterRow.role)) {
+    return false;
+  }
+
+  if (requesterRow.role === 'super_admin') {
+    return true;
+  }
+
+  return String(requesterRow.organization_id) === String(targetRow.organization_id);
+};
+
+const canManageUserRecord = (requesterRow, targetRow) => {
+  if (!canAccessUserRecord(requesterRow, targetRow)) {
+    return false;
+  }
+
+  if (!PANEL_ASSIGNABLE_ROLES.includes(targetRow.role)) {
+    return false;
+  }
+
+  return true;
+};
 
 const verifyGoogleCredential = async (credential) => {
   const googleClientId = getGoogleClientId();
@@ -46,10 +114,6 @@ const verifyGoogleCredential = async (credential) => {
   if (payload.aud !== googleClientId) {
     throw new Error('Google client mismatch');
   }
-  if (String(payload.email_verified) !== 'true') {
-    throw new Error('Google account email is not verified');
-  }
-
   return payload;
 };
 
@@ -79,46 +143,35 @@ export const CreateUsersTable = () => {
           const hasDepartmentId = (columns || []).some((col) => col.name === 'department_id');
           const hasMustChangePassword = (columns || []).some((col) => col.name === 'must_change_password');
 
-          const maybeFinish = () => {
-            console.log('Users table created or already exists');
+          const columnSteps = [];
+          if (!hasDepartmentId) {
+            columnSteps.push({
+              sql: 'ALTER TABLE users ADD COLUMN department_id INTEGER',
+              errorMessage: 'Error migrating users table (department_id):'
+            });
+          }
+          if (!hasMustChangePassword) {
+            columnSteps.push({
+              sql: 'ALTER TABLE users ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0',
+              errorMessage: 'Error migrating users table (must_change_password):'
+            });
+          }
+          const runStep = (index) => {
+            if (index >= columnSteps.length) {
+              console.log('Users table created or already exists');
+              return;
+            }
+
+            const { sql: stepSql, errorMessage } = columnSteps[index];
+            complaintDB.run(stepSql, (alterErr) => {
+              if (alterErr) {
+                console.error(errorMessage, alterErr.message);
+              }
+              runStep(index + 1);
+            });
           };
 
-          if (!hasDepartmentId) {
-            complaintDB.run('ALTER TABLE users ADD COLUMN department_id INTEGER', (alterErr) => {
-              if (alterErr) {
-                console.error('Error migrating users table (department_id):', alterErr.message);
-              }
-              if (!hasMustChangePassword) {
-                complaintDB.run(
-                  'ALTER TABLE users ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0',
-                  (mustErr) => {
-                    if (mustErr) {
-                      console.error('Error migrating users table (must_change_password):', mustErr.message);
-                    }
-                    maybeFinish();
-                  }
-                );
-              } else {
-                maybeFinish();
-              }
-            });
-            return;
-          }
-
-          if (!hasMustChangePassword) {
-            complaintDB.run(
-              'ALTER TABLE users ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0',
-              (mustErr) => {
-                if (mustErr) {
-                  console.error('Error migrating users table (must_change_password):', mustErr.message);
-                }
-                maybeFinish();
-              }
-            );
-            return;
-          }
-
-          maybeFinish();
+          runStep(0);
         });
       });
     };
@@ -203,6 +256,110 @@ export const CreateRevokedTokensTable = () => {
     } else {
       console.log('Revoked tokens table created or already exists');
     }
+  });
+};
+
+export const CreatePasswordResetTokensTable = () => {
+  complaintDB.run(passwordResetTokensQuery, (err) => {
+    if (err) {
+      console.error('Error creating password_reset_tokens table:', err.message);
+    } else {
+      console.log('Password reset tokens table created or already exists');
+    }
+  });
+};
+
+export const requestPasswordReset = (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  if (!email) {
+    return sendError(res, 400, 'email is required');
+  }
+
+  complaintDB.get(fetchUserByEmailQuery, [email], (findErr, userRow) => {
+    if (findErr) {
+      return sendError(res, 500, 'Failed to process password reset request', findErr.message);
+    }
+    if (!userRow) {
+      return sendSuccess(res, 200, 'Password reset instructions will be sent if the account exists');
+    }
+
+    const rawToken = randomUUID();
+    const hashedToken = hashToken(rawToken);
+    const expiresAt = new Date(Date.now() + PASSWORD_RESET_TTL_MS).toISOString();
+
+    complaintDB.serialize(() => {
+      complaintDB.run(invalidatePasswordResetTokensByUserQuery, [userRow.id], (invalidateErr) => {
+        if (invalidateErr) {
+          console.error('Failed to invalidate existing reset tokens:', invalidateErr.message);
+        }
+      });
+      complaintDB.run(insertPasswordResetTokenQuery, [userRow.id, hashedToken, expiresAt], (insertErr) => {
+        if (insertErr) {
+          return sendError(res, 500, 'Failed to generate password reset token', insertErr.message);
+        }
+
+        const metadata = buildRequestMetadata(req, userRow.organization_id || null);
+        void sendPasswordResetNotification({ email, token: rawToken, expiresAt, metadata });
+        if (previewPasswordResetTokenEnabled) {
+          console.log(`Password reset token for ${email}: ${rawToken}`);
+        }
+
+        return sendSuccess(res, 200, 'Password reset instructions sent', buildResetTokenPayload(rawToken, expiresAt));
+      });
+    });
+  });
+};
+
+export const resetPasswordWithToken = (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  const token = String(req.body?.token || '').trim();
+  const newPassword = req.body?.new_password;
+
+  if (!email || !token || !newPassword) {
+    return sendError(res, 400, 'email, token, and new_password are required');
+  }
+
+  const hashedToken = hashToken(token);
+  const now = new Date().toISOString();
+
+  complaintDB.get(selectActivePasswordResetTokenQuery, [hashedToken, now], (tokenErr, tokenRow) => {
+    if (tokenErr) {
+      return sendError(res, 500, 'Failed to verify reset token', tokenErr.message);
+    }
+    if (!tokenRow) {
+      return sendError(res, 400, 'Invalid or expired reset token');
+    }
+
+    complaintDB.get(fetchUserByIdQuery, [tokenRow.user_id], (userErr, userRow) => {
+      if (userErr) {
+        return sendError(res, 500, 'Failed to load user for password reset', userErr.message);
+      }
+      if (!userRow || String(userRow.email).toLowerCase() !== email) {
+        return sendError(res, 403, 'Invalid reset details');
+      }
+
+      complaintDB.run(updateOwnPasswordQuery, [newPassword, userRow.id], (updateErr) => {
+        if (updateErr) {
+          return sendError(res, 500, 'Failed to update password', updateErr.message);
+        }
+
+        complaintDB.run(consumePasswordResetTokenQuery, [tokenRow.id], (consumeErr) => {
+          if (consumeErr) {
+            console.error('Failed to mark reset token as consumed:', consumeErr.message);
+          }
+
+          const finalize = async () => {
+            const safeUser = sanitizeUser(userRow);
+            const authToken = await generateToken(userRow.id);
+            return sendSuccess(res, 200, 'Password reset successfully', { user: safeUser, token: authToken });
+          };
+
+          finalize().catch((finalErr) =>
+            sendError(res, 500, 'Password reset but failed to generate token', finalErr.message)
+          );
+        });
+      });
+    });
   });
 };
 
@@ -396,7 +553,7 @@ export const loginWithGoogle = async (req, res) => {
 
     complaintDB.run(
       createUserQuery,
-      [null, null, fullName, email, placeholderPassword, 0, 'active', 'user'],
+      [null, null, fullName, email, placeholderPassword, 1, 0, 'active', 'user'],
       function onCreate(createErr) {
         if (createErr) {
           return sendError(res, 500, 'Failed to create Google user', createErr.message);
@@ -449,8 +606,9 @@ export const createUser = (req, res) => {
     status = 'active',
     role = 'user'
   } = req.body;
+  const normalizedEmail = String(email || '').trim().toLowerCase();
 
-  if (!full_name || !email || !password) {
+  if (!full_name || !normalizedEmail || !password) {
     return sendError(res, 400, 'full_name, email, and password are required');
   }
 
@@ -462,35 +620,64 @@ export const createUser = (req, res) => {
       return sendError(res, 404, 'Requester not found');
     }
 
-    const isOrgAdmin = requesterRow.role === 'org_admin';
-
-    if (!isOrgAdmin) {
-      return sendError(res, 403, 'Only org_admin can create users');
+    if (!isAdminFamilyRole(requesterRow.role)) {
+      return sendError(res, 403, 'Only admins can create users');
     }
 
-    const finalOrganizationId = requesterRow.organization_id;
-    const finalRole = 'user';
+    const finalRole = normalizePanelRole(role);
+    if (!finalRole) {
+      return sendError(res, 400, 'role must be org_admin or user');
+    }
+
+    const finalOrganizationId =
+      requesterRow.role === 'super_admin'
+        ? (organization_id === null || organization_id === '' ? null : Number(organization_id))
+        : requesterRow.organization_id;
 
     if (!finalOrganizationId) {
       return sendError(res, 400, 'organization_id is required');
     }
 
-    complaintDB.run(
-      createUserQuery,
-      [finalOrganizationId, department_id, full_name, email, password, 0, status, finalRole],
-      function onCreate(err) {
-        if (err) {
-          return sendError(res, 500, 'Failed to create user', err.message);
-        }
-
-        complaintDB.get(fetchUserByIdQuery, [this.lastID], (getErr, row) => {
-          if (getErr) {
-            return sendError(res, 500, 'Failed to fetch user', getErr.message);
-          }
-          return sendSuccess(res, 201, 'User created successfully', sanitizeUser(row));
-        });
+    complaintDB.get(fetchUserByEmailQuery, [normalizedEmail], (emailErr, existingUser) => {
+      if (emailErr) {
+        return sendError(res, 500, 'Failed to verify user email', emailErr.message);
       }
-    );
+      if (existingUser) {
+        return sendError(res, 409, 'Email already exists');
+      }
+
+      complaintDB.run(
+        createUserQuery,
+        [finalOrganizationId, department_id, full_name, normalizedEmail, password, 0, status, finalRole],
+        function onCreate(err) {
+          if (err) {
+            if (isDuplicateUserEmailError(err)) {
+              return sendError(res, 409, 'Email already exists');
+            }
+            return sendError(res, 500, 'Failed to create user', err.message);
+          }
+
+          complaintDB.get(fetchUserByIdQuery, [this.lastID], (getErr, row) => {
+            if (getErr) {
+              return sendError(res, 500, 'Failed to fetch user', getErr.message);
+            }
+            const auditMeta = buildAuditMetadata(req);
+            auditMeta.target_email = row.email;
+            auditMeta.assigned_role = row.role;
+            auditMeta.organization_id = row.organization_id;
+            void logAuditEntry(req, {
+              action: 'create_user',
+              targetTable: 'users',
+              targetId: row.id,
+              metadata: auditMeta
+            }).catch((_) => {
+              console.error('Failed to record audit log for user creation');
+            });
+            return sendSuccess(res, 201, 'User created successfully', sanitizeUser(row));
+          });
+        }
+      );
+    });
   });
 };
 
@@ -501,6 +688,16 @@ export const getAllUsers = (req, res) => {
     }
     if (!requesterRow) {
       return sendError(res, 404, 'Requester not found');
+    }
+
+    if (requesterRow.role === 'super_admin') {
+      complaintDB.all(fetchUsersQuery, [], (err, rows) => {
+        if (err) {
+          return sendError(res, 500, 'Failed to fetch users', err.message);
+        }
+        return sendSuccess(res, 200, 'Users retrieved successfully', rows.map(sanitizeUser));
+      });
+      return;
     }
 
     if (requesterRow.role === 'org_admin') {
@@ -533,10 +730,7 @@ export const getUserById = (req, res) => {
       if (!row) {
         return sendError(res, 404, 'User not found');
       }
-      if (requesterRow.role !== 'org_admin') {
-        return sendError(res, 403, 'Access denied');
-      }
-      if (String(requesterRow.organization_id) !== String(row.organization_id)) {
+      if (!canAccessUserRecord(requesterRow, row)) {
         return sendError(res, 403, 'Access denied');
       }
       return sendSuccess(res, 200, 'User retrieved successfully', sanitizeUser(row));
@@ -560,10 +754,7 @@ export const getUserByEmail = (req, res) => {
       if (!row) {
         return sendError(res, 404, 'User not found');
       }
-      if (requesterRow.role !== 'org_admin') {
-        return sendError(res, 403, 'Access denied');
-      }
-      if (String(requesterRow.organization_id) !== String(row.organization_id)) {
+      if (!canAccessUserRecord(requesterRow, row)) {
         return sendError(res, 403, 'Access denied');
       }
       return sendSuccess(res, 200, 'User retrieved successfully', sanitizeUser(row));
@@ -581,8 +772,9 @@ export const updateUser = (req, res) => {
     status = 'active',
     role = 'user'
   } = req.body;
+  const normalizedEmail = String(email || '').trim().toLowerCase();
 
-  if (!full_name || !email || !password) {
+  if (!full_name || !normalizedEmail || !password) {
     return sendError(res, 400, 'full_name, email, and password are required');
   }
 
@@ -602,40 +794,71 @@ export const updateUser = (req, res) => {
         return sendError(res, 404, 'User not found');
       }
 
-      const isOrgAdmin = requesterRow.role === 'org_admin';
-      if (!isOrgAdmin) {
+      if (!isAdminFamilyRole(requesterRow.role)) {
         return sendError(res, 403, 'Access denied');
       }
-      if (String(requesterRow.organization_id) !== String(targetRow.organization_id)) {
+      if (!canManageUserRecord(requesterRow, targetRow)) {
         return sendError(res, 403, 'Access denied');
       }
-      if (targetRow.role !== 'user') {
-        return sendError(res, 403, 'org_admin can only update users with role "user"');
+
+      const finalRole = normalizePanelRole(role);
+      if (!finalRole) {
+        return sendError(res, 400, 'role must be org_admin or user');
       }
 
-      const finalRole = 'user';
-      const finalOrganizationId = requesterRow.organization_id;
+      const finalOrganizationId =
+        requesterRow.role === 'super_admin'
+          ? (organization_id === null || organization_id === '' ? targetRow.organization_id : Number(organization_id))
+          : requesterRow.organization_id;
 
-      complaintDB.run(
-        updateUserQuery,
-        [finalOrganizationId, department_id, full_name, email, password, 0, status, finalRole, req.params.id],
-        function onUpdate(err) {
-          if (err) {
-            return sendError(res, 500, 'Failed to update user', err.message);
-          }
+      if (!finalOrganizationId) {
+        return sendError(res, 400, 'organization_id is required');
+      }
 
-          if (this.changes === 0) {
-            return sendError(res, 404, 'User not found');
-          }
-
-          complaintDB.get(fetchUserByIdQuery, [req.params.id], (getErr, row) => {
-            if (getErr) {
-              return sendError(res, 500, 'Failed to fetch updated user', getErr.message);
-            }
-            return sendSuccess(res, 200, 'User updated successfully', sanitizeUser(row));
-          });
+      complaintDB.get(fetchUserByEmailQuery, [normalizedEmail], (emailErr, existingUser) => {
+        if (emailErr) {
+          return sendError(res, 500, 'Failed to verify user email', emailErr.message);
         }
-      );
+        if (existingUser && Number(existingUser.id) !== Number(req.params.id)) {
+          return sendError(res, 409, 'Email already exists');
+        }
+
+        complaintDB.run(
+          updateUserQuery,
+          [finalOrganizationId, department_id, full_name, normalizedEmail, password, 0, status, finalRole, req.params.id],
+          function onUpdate(err) {
+            if (err) {
+              if (isDuplicateUserEmailError(err)) {
+                return sendError(res, 409, 'Email already exists');
+              }
+              return sendError(res, 500, 'Failed to update user', err.message);
+            }
+
+            if (this.changes === 0) {
+              return sendError(res, 404, 'User not found');
+            }
+
+            complaintDB.get(fetchUserByIdQuery, [req.params.id], (getErr, row) => {
+              if (getErr) {
+                return sendError(res, 500, 'Failed to fetch updated user', getErr.message);
+              }
+              const auditMeta = buildAuditMetadata(req);
+              auditMeta.target_email = row.email;
+              auditMeta.assigned_role = row.role;
+              auditMeta.organization_id = row.organization_id;
+              void logAuditEntry(req, {
+                action: 'update_user',
+                targetTable: 'users',
+                targetId: row.id,
+                metadata: auditMeta
+              }).catch((_) => {
+                console.error('Failed to record audit log for user update');
+              });
+              return sendSuccess(res, 200, 'User updated successfully', sanitizeUser(row));
+            });
+          }
+        );
+      });
     });
   });
 };
@@ -648,8 +871,8 @@ export const deleteUser = (req, res) => {
     if (!requesterRow) {
       return sendError(res, 404, 'Requester not found');
     }
-    if (requesterRow.role !== 'org_admin') {
-      return sendError(res, 403, 'Only org_admin can delete users');
+    if (!isAdminFamilyRole(requesterRow.role)) {
+      return sendError(res, 403, 'Only admins can delete users');
     }
 
     complaintDB.get(fetchUserByIdQuery, [req.params.id], (targetErr, targetRow) => {
@@ -659,11 +882,8 @@ export const deleteUser = (req, res) => {
       if (!targetRow) {
         return sendError(res, 404, 'User not found');
       }
-      if (String(targetRow.organization_id) !== String(requesterRow.organization_id)) {
+      if (!canManageUserRecord(requesterRow, targetRow)) {
         return sendError(res, 403, 'Access denied');
-      }
-      if (targetRow.role !== 'user') {
-        return sendError(res, 403, 'org_admin can only delete users with role "user"');
       }
 
       complaintDB.run(deleteUserQuery, [req.params.id], function onDelete(err) {
@@ -671,6 +891,16 @@ export const deleteUser = (req, res) => {
           return sendError(res, 500, 'Failed to delete user', err.message);
         }
 
+        const auditMeta = buildAuditMetadata(req);
+        auditMeta.target_id = req.params.id;
+        void logAuditEntry(req, {
+          action: 'delete_user',
+          targetTable: 'users',
+          targetId: Number(req.params.id),
+          metadata: auditMeta
+        }).catch((_) => {
+          console.error('Failed to record audit log for user deletion');
+        });
         return sendSuccess(res, 200, 'User deleted successfully', { id: req.params.id });
       });
     });
@@ -678,32 +908,53 @@ export const deleteUser = (req, res) => {
 };
 
 export const updateUserRole = (req, res) => {
-  if (req.user?.role === 'super_admin') {
-    return sendError(res, 403, 'Super admin cannot manage user roles directly');
-  }
-
   const { role } = req.body;
-
   if (!role) {
     return sendError(res, 400, 'role is required');
   }
-  if (!['super_admin', 'org_admin', 'user'].includes(role)) {
-    return sendError(res, 400, 'role must be super_admin, org_admin, or user');
+  const normalizedRole = normalizePanelRole(role);
+
+  if (!normalizedRole) {
+    return sendError(res, 400, 'role must be org_admin or user');
   }
 
-  complaintDB.run(updateUserRoleQuery, [role, req.params.id], function onUpdate(err) {
-    if (err) {
-      return sendError(res, 500, 'Failed to update user role', err.message);
+  complaintDB.get(fetchUserByIdQuery, [req.user.id], (requesterErr, requesterRow) => {
+    if (requesterErr) {
+      return sendError(res, 500, 'Failed to fetch requester', requesterErr.message);
     }
-    if (this.changes === 0) {
-      return sendError(res, 404, 'User not found');
+    if (!requesterRow) {
+      return sendError(res, 404, 'Requester not found');
+    }
+    if (!isAdminFamilyRole(requesterRow.role)) {
+      return sendError(res, 403, 'Access denied');
     }
 
-    complaintDB.get(fetchUserByIdQuery, [req.params.id], (getErr, row) => {
-      if (getErr) {
-        return sendError(res, 500, 'Failed to fetch updated user', getErr.message);
+    complaintDB.get(fetchUserByIdQuery, [req.params.id], (targetErr, targetRow) => {
+      if (targetErr) {
+        return sendError(res, 500, 'Failed to fetch target user', targetErr.message);
       }
-      return sendSuccess(res, 200, 'User role updated successfully', sanitizeUser(row));
+      if (!targetRow) {
+        return sendError(res, 404, 'User not found');
+      }
+      if (!canManageUserRecord(requesterRow, targetRow)) {
+        return sendError(res, 403, 'Access denied');
+      }
+
+      complaintDB.run(updateUserRoleQuery, [normalizedRole, req.params.id], function onUpdate(err) {
+        if (err) {
+          return sendError(res, 500, 'Failed to update user role', err.message);
+        }
+        if (this.changes === 0) {
+          return sendError(res, 404, 'User not found');
+        }
+
+        complaintDB.get(fetchUserByIdQuery, [req.params.id], (getErr, row) => {
+          if (getErr) {
+            return sendError(res, 500, 'Failed to fetch updated user', getErr.message);
+          }
+          return sendSuccess(res, 200, 'User role updated successfully', sanitizeUser(row));
+        });
+      });
     });
   });
 };
@@ -761,6 +1012,17 @@ export const assignExistingUserToOrganization = (req, res) => {
             if (getErr) {
               return sendError(res, 500, 'User assigned but failed to reload user', getErr.message);
             }
+            const auditMeta = buildAuditMetadata(req);
+            auditMeta.target_email = updatedRow.email;
+            auditMeta.organization_id = updatedRow.organization_id;
+            void logAuditEntry(req, {
+              action: 'assign_user_to_organization',
+              targetTable: 'users',
+              targetId: updatedRow.id,
+              metadata: auditMeta
+            }).catch((_) => {
+              console.error('Failed to record audit log for user assignment');
+            });
             return sendSuccess(res, 200, 'Existing user assigned to organization successfully', sanitizeUser(updatedRow));
           });
         }

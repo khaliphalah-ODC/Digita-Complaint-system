@@ -17,12 +17,18 @@ import DepartmentRouter from './src/routes/department.route.js';
 import notificationRoutes from './src/routes/notification.route.js';
 import complaintRoutes from './src/routes/complaint.route.js';
 import complaintMessageRoutes from './src/routes/complaintMessage.route.js';
+import testimonialRoutes from './src/routes/testimonial.route.js';
 import verifyToken from './src/middleware/verifyToken.js';
 import { getPublicOrganizationOptions } from './src/controllers/organization.controller.js';
 import { getPublicDepartmentsByOrganization } from './src/controllers/department.controller.js';
 
 //imported table if not exist
-import { CreateUsersTable, CreateRevokedTokensTable } from './src/controllers/user.controller.js';
+import {
+  CreateUsersTable,
+  CreateRevokedTokensTable,
+  CreatePasswordResetTokensTable
+} from './src/controllers/user.controller.js';
+import { CreateAuditLogsTable } from './src/controllers/audit.controller.js';
 import { CreateAccessmentsTable } from './src/controllers/accessment.controller.js';
 import { CreateEscalationsTable } from './src/controllers/escalation.controller.js';
 import { CreateStatusLogsTable } from './src/controllers/statusLog.controller.js';
@@ -32,6 +38,7 @@ import { CreateComplaintTable } from './src/controllers/complaint.controller.js'
 import { CreateFeedbackTable } from './src/controllers/feedback.controller.js';
 import { CreateNotificationsTable } from './src/controllers/notification.controller.js';
 import { CreateComplaintMessagesTable } from './src/controllers/complaintMessage.controller.js';
+import { CreateTestimonialsTable } from './src/controllers/testimonial.controller.js';
 
 //app
 const app = express();
@@ -51,6 +58,7 @@ app.use('/api/department', verifyToken, DepartmentRouter);
 app.use('/api/notification', verifyToken, notificationRoutes);
 app.use('/api/complaint', complaintRoutes);
 app.use('/api/complaint-messages', verifyToken, complaintMessageRoutes);
+app.use('/api/testimonials', testimonialRoutes);
 app.get('/api/public/organizations', getPublicOrganizationOptions);
 app.get('/api/public/organizations/:organizationId/departments', getPublicDepartmentsByOrganization);
 
@@ -79,6 +87,10 @@ export const initializeDatabase = () => {
   CreateDepartmentTable();
   CreateComplaintTable();
   CreateComplaintMessagesTable();
+  CreatePasswordResetTokensTable();
+  CreateAuditLogsTable();
+  CreateTestimonialsTable();
+
 };
 
 initializeDatabase();

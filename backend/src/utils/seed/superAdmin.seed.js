@@ -161,17 +161,17 @@ const seedSuperAdmin = async () => {
 
   await run(
     `
-    INSERT INTO users (
-      organization_id,
-      department_id,
-      full_name,
-      email,
-      password,
-      must_change_password,
-      status,
-      role
-    )
-    VALUES (?, NULL, ?, ?, ?, 0, 'active', 'super_admin')
+      INSERT INTO users (
+        organization_id,
+        department_id,
+        full_name,
+        email,
+        password,
+        must_change_password,
+        status,
+        role
+      )
+      VALUES (?, NULL, ?, ?, ?, 0, 'active', 'super_admin')
     `,
     [SUPER_ADMIN_ORGANIZATION_ID, SUPER_ADMIN_FULL_NAME, SUPER_ADMIN_EMAIL.trim().toLowerCase(), hashedPassword]
   );
