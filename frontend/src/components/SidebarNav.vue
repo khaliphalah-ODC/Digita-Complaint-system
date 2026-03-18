@@ -33,15 +33,19 @@ const workspaceLabel = computed(() => {
 const isAdminShell = computed(() => isSuperAdmin.value || isOrgAdmin.value);
 const isDarkShell = computed(() => isSuperAdmin.value);
 const isOrgAdminShell = computed(() => isOrgAdmin.value && !isSuperAdmin.value);
+const isUserShell = computed(() => !isSuperAdmin.value && !isOrgAdmin.value);
 const asideClass = computed(() => {
   if (props.mobile) {
     if (isDarkShell.value) {
-      return 'app-dark-panel flex h-full w-full flex-col rounded-none p-6 text-white shadow-2xl';
+      return 'app-dark-panel flex h-full w-full flex-col overflow-y-auto rounded-none p-4 text-white shadow-2xl sm:p-5';
     }
     if (isOrgAdminShell.value) {
-      return 'org-admin-sidebar flex h-full w-full flex-col rounded-none p-6 text-white shadow-2xl';
+      return 'org-admin-sidebar flex h-full w-full flex-col overflow-y-auto rounded-none p-4 text-white shadow-2xl sm:p-5';
     }
-    return 'app-shell-panel flex h-full w-full flex-col rounded-none border-r border-slate-200/90 p-6 text-[var(--app-text-color)] shadow-2xl';
+    if (isUserShell.value) {
+      return 'user-shell-sidebar flex h-full w-full flex-col overflow-y-auto rounded-none p-4 text-[var(--app-primary-ink)] shadow-2xl sm:p-5';
+    }
+    return 'app-shell-panel flex h-full w-full flex-col overflow-y-auto rounded-none border-r border-slate-200/90 p-4 text-[var(--app-text-color)] shadow-2xl sm:p-5';
   }
 
   if (isDarkShell.value) {
@@ -51,6 +55,9 @@ const asideClass = computed(() => {
     return 'org-admin-sidebar hidden h-screen w-72 shrink-0 flex-col rounded-none p-6 text-white shadow-[0_18px_44px_rgba(16,33,60,0.2)] lg:fixed lg:left-0 lg:top-0 lg:z-30 lg:flex';
   }
 
+  if (isUserShell.value) {
+    return 'user-shell-sidebar hidden h-screen w-72 shrink-0 flex-col rounded-none p-6 text-[var(--app-primary-ink)] shadow-[0_18px_44px_rgba(16,33,60,0.12)] lg:fixed lg:left-0 lg:top-0 lg:z-30 lg:flex';
+  }
   return 'app-shell-panel hidden h-screen w-72 shrink-0 flex-col rounded-none border-r border-slate-200/90 p-6 text-[var(--app-text-color)] shadow-[0_18px_44px_rgba(16,33,60,0.12)] lg:fixed lg:left-0 lg:top-0 lg:z-30 lg:flex';
 });
 const navLinkClass = (target) => {
@@ -64,6 +71,11 @@ const navLinkClass = (target) => {
     return isActive
       ? 'flex w-full items-center gap-3 rounded-2xl bg-gradient-to-br from-[#0f1f39] via-[#163462] to-[#1f4db7] px-4 py-3 text-left text-sm font-semibold text-white shadow-[0_14px_32px_rgba(31,77,183,0.25)]'
       : 'flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/10';
+  }
+  if (isUserShell.value) {
+    return isActive
+      ? 'flex w-full items-center gap-3 rounded-2xl border border-[#c2d7fb] bg-[linear-gradient(135deg,#163462_0%,#1f4db7_100%)] px-4 py-3 text-left text-sm font-semibold text-white shadow-[0_12px_24px_rgba(31,77,183,0.18)]'
+      : 'flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm text-[var(--app-primary-ink)] hover:bg-[#eaf2ff] hover:text-[var(--app-primary)]';
   }
 
   return isActive
@@ -84,7 +96,7 @@ const handleLogout = () => emit('logout');
       </p>
     </div>
 
-    <nav class="mt-10 space-y-2">
+    <nav :class="props.mobile ? 'mt-6 space-y-1.5 pb-6' : 'mt-10 space-y-2'">
       <RouterLink :to="dashboardRoute" :class="navLinkClass(dashboardRoute)" @click="handleNavigate">
         <font-awesome-icon :icon="['fas', 'gauge-high']" />
         <span>Dashboard</span>
@@ -168,7 +180,9 @@ const handleLogout = () => emit('logout');
         ? 'mt-auto flex items-center gap-3 rounded-none border border-white/10 bg-white/6 px-4 py-3 text-left text-sm text-white/90 hover:bg-white/10'
         : isOrgAdminShell
           ? 'mt-auto flex items-center gap-3 rounded-none org-admin-logout-btn'
-          : 'mt-auto flex items-center gap-3 rounded-none border border-slate-300/90 bg-white px-4 py-3 text-left text-sm text-slate-700 hover:bg-[var(--app-primary-mist)] hover:text-[var(--app-primary-ink)]'"
+      : isUserShell
+        ? 'mt-auto flex items-center gap-3 rounded-none border border-[#c8d9f7] bg-white/88 px-4 py-3 text-left text-sm text-[var(--app-primary-ink)] hover:bg-[#eaf2ff] hover:text-[var(--app-primary)]'
+        : 'mt-auto flex items-center gap-3 rounded-none border border-slate-300/90 bg-white px-4 py-3 text-left text-sm text-slate-700 hover:bg-[var(--app-primary-mist)] hover:text-[var(--app-primary-ink)]'"
       @click="handleLogout"
     >
       <font-awesome-icon :icon="['fas', 'right-from-bracket']" />

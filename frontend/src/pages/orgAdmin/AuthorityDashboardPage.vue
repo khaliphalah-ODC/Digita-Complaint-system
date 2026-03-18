@@ -124,7 +124,7 @@ onUnmounted(() => {
 
 const statusLabels = {
   submitted: 'Submitted',
-  in_review: 'In Review',
+  in_review: 'Reviewed / Assigned',
   resolved: 'Resolved',
   closed: 'Closed'
 };

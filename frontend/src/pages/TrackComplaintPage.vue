@@ -13,23 +13,39 @@ const complaint = ref(null);
 const trackingInput = ref('');
 const showChatModal = ref(false);
 let refreshTimer = null;
+const isUserWorkspace = computed(() => Boolean(localStorage.getItem('token')));
+const shellClass = computed(() => (isUserWorkspace.value ? 'user-shell-panel w-full rounded-[30px] p-4 sm:p-5 md:p-7' : 'app-shell-panel w-full rounded-[30px] p-4 sm:p-5 md:p-7'));
+const cardClass = computed(() => (isUserWorkspace.value ? 'user-shell-card rounded-[24px] px-4 py-3' : 'app-ink-card rounded-[24px] px-4 py-3'));
 
 const ensureSuccess = (payload, fallbackMessage) => {
   if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
   return payload.data;
 };
 
-const statusOrder = ['submitted', 'in_review', 'resolved', 'closed'];
+const workflowSteps = computed(() => {
+  const row = complaint.value;
+  const rawStatus = String(row?.status || 'submitted').toLowerCase();
+  const reviewed = ['in_review', 'resolved', 'closed'].includes(rawStatus) || Boolean(row?.reviewed_at || row?.admin_response);
+  const assigned = ['resolved', 'closed'].includes(rawStatus) || Boolean(row?.reviewer_name || row?.department_name);
+  const resolved = ['resolved', 'closed'].includes(rawStatus);
+  const closed = rawStatus === 'closed';
 
-const statusIndex = computed(() => {
-  const status = complaint.value?.status || 'submitted';
-  const idx = statusOrder.indexOf(status);
-  return idx >= 0 ? idx : 0;
+  return [
+    { key: 'submitted', label: 'Submitted', done: Boolean(row) },
+    { key: 'reviewed', label: 'Reviewed', done: reviewed },
+    { key: 'assigned', label: 'Assigned', done: assigned },
+    { key: 'resolved', label: 'Resolved', done: resolved },
+    { key: 'closed', label: 'Closed', done: closed }
+  ];
 });
 
 const prettyStatus = (status) => {
   if (!status) return 'Submitted';
-  if (status === 'in_review') return 'In Review';
+  if (status === 'in_review') {
+    return complaint.value?.department_name || complaint.value?.reviewer_name || complaint.value?.reviewed_at
+      ? 'Assigned'
+      : 'Reviewed';
+  }
   return status.charAt(0).toUpperCase() + status.slice(1);
 };
 
@@ -133,7 +149,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <section class="app-shell-panel w-full rounded-[30px] p-4 sm:p-5 md:p-7">
+  <section :class="shellClass">
     <header class="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div class="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
         <h1 class="break-all text-2xl font-black text-slate-800 sm:text-4xl">{{ complaint?.tracking_code || 'TRK-000-000' }}</h1>
@@ -159,47 +175,44 @@ onUnmounted(() => {
 
     <template v-else-if="complaint">
       <div class="mb-5 grid grid-cols-1 gap-3 md:grid-cols-2">
-        <article class="app-ink-card rounded-[24px] px-4 py-3">
+        <article :class="cardClass">
           <p class="text-xs text-slate-500">Organization:</p>
           <p class="text-sm font-semibold text-slate-700">{{ complaint.organization_name || 'N/A' }}</p>
           <p class="mt-1 text-xs text-slate-500">Department: {{ complaint.department_name || 'Not specified' }}</p>
           <p class="text-xs text-slate-500">{{ complaint.organization_address || '' }}</p>
         </article>
-        <article class="app-ink-card rounded-[24px] px-4 py-3 text-left md:text-right">
+        <article :class="`${cardClass} text-left md:text-right`">
           <p class="text-xs text-slate-500">Handled by:</p>
           <p class="text-sm font-semibold text-slate-700">{{ complaint.reviewer_name || 'Pending assignment' }}</p>
         </article>
       </div>
 
       <div class="mb-6 rounded-[24px] border border-slate-200 bg-[var(--app-primary-mist)] px-4 py-3">
-        <div class="grid grid-cols-4 items-center gap-2 text-center text-xs font-semibold text-slate-600">
-          <span>Submitted</span>
-          <span>In Review</span>
-          <span>Resolved</span>
-          <span>Closed</span>
+        <div class="grid grid-cols-5 items-center gap-2 text-center text-[11px] font-semibold text-slate-600">
+          <span v-for="step in workflowSteps" :key="`${step.key}-label`">{{ step.label }}</span>
         </div>
         <div class="mt-2 flex items-center justify-between">
           <div
-            v-for="(step, index) in statusOrder"
-            :key="step"
+            v-for="(step, index) in workflowSteps"
+            :key="step.key"
             class="flex w-full items-center"
           >
             <div
               class="z-10 mx-auto h-5 w-5 rounded-full border-2 text-center text-[10px] leading-4"
-              :class="index <= statusIndex ? 'border-[var(--app-primary)] bg-[var(--app-primary)] text-white' : 'border-slate-300 bg-white text-slate-400'"
+              :class="step.done ? 'border-[var(--app-primary)] bg-[var(--app-primary)] text-white' : 'border-slate-300 bg-white text-slate-400'"
             >
-              {{ index <= statusIndex ? '✓' : '' }}
+              {{ step.done ? '✓' : '' }}
             </div>
             <div
-              v-if="index < statusOrder.length - 1"
+              v-if="index < workflowSteps.length - 1"
               class="-ml-1 h-1 flex-1"
-              :class="index < statusIndex ? 'bg-[var(--app-primary)]' : 'bg-slate-200'"
+              :class="step.done && workflowSteps[index + 1]?.done ? 'bg-[var(--app-primary)]' : 'bg-slate-200'"
             ></div>
           </div>
         </div>
       </div>
 
-      <section class="app-ink-card rounded-[26px] p-4 md:p-5">
+      <section :class="isUserWorkspace ? 'user-shell-card rounded-[26px] p-4 md:p-5' : 'app-ink-card rounded-[26px] p-4 md:p-5'">
         <h2 class="text-2xl font-black text-slate-800 sm:text-3xl">Complaint Title: {{ complaint.title }}</h2>
 
         <div class="mt-3 flex flex-wrap items-center gap-2">

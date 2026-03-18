@@ -40,6 +40,59 @@ const isOrgAdmin = computed(() => session.currentUser?.role === 'org_admin');
 const isAdminFamily = computed(() => isSuperAdmin.value || isOrgAdmin.value);
 const assignableRoles = computed(() => (isAdminFamily.value ? ['org_admin', 'user'] : ['user']));
 const filterRoles = computed(() => (isSuperAdmin.value ? ['super_admin', ...assignableRoles.value] : assignableRoles.value));
+const pageTitleClass = computed(() => (isOrgAdmin.value ? 'mt-2 text-3xl font-bold text-white' : 'mt-2 text-3xl font-bold text-slate-900'));
+const pageMetaClass = computed(() => (isOrgAdmin.value ? 'text-sm text-white/70' : 'text-sm text-slate-600'));
+const panelClass = computed(() => (isOrgAdmin.value ? 'org-admin-panel-card' : 'app-shell-panel rounded-[30px] p-5'));
+const inputClass = computed(() => (
+  isOrgAdmin.value
+    ? 'org-admin-input'
+    : 'rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]'
+));
+const selectClass = computed(() => (
+  isOrgAdmin.value
+    ? 'org-admin-select'
+    : 'rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]'
+));
+const primaryButtonClass = computed(() => (
+  isOrgAdmin.value
+    ? 'org-admin-btn disabled:opacity-70'
+    : 'rounded-full bg-[var(--app-primary)] px-5 py-3 text-sm font-semibold text-white hover:bg-[var(--app-primary-ink)] disabled:opacity-70'
+));
+const secondaryButtonClass = computed(() => (
+  isOrgAdmin.value
+    ? 'org-admin-outline-btn'
+    : 'rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700'
+));
+const toolbarButtonClass = computed(() => (
+  isOrgAdmin.value
+    ? 'org-admin-outline-btn'
+    : 'rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700'
+));
+const textSoftClass = computed(() => (isOrgAdmin.value ? 'text-sm text-white/70' : 'text-sm text-slate-600'));
+const tableClass = computed(() => (isOrgAdmin.value ? 'org-admin-table min-w-full text-left text-sm' : 'min-w-full text-left text-sm'));
+const tableHeadClass = computed(() => (isOrgAdmin.value ? 'text-white/60' : 'text-slate-500'));
+const tableRowClass = computed(() => (isOrgAdmin.value ? 'border-t border-white/10' : 'border-t border-slate-100'));
+const paginationClass = computed(() => (isOrgAdmin.value ? 'mt-3 flex items-center justify-between text-xs text-white/70' : 'mt-3 flex items-center justify-between text-xs text-slate-600'));
+const pagerButtonClass = computed(() => (
+  isOrgAdmin.value
+    ? 'rounded border border-white/20 bg-white/10 px-2 py-1 text-white disabled:opacity-50'
+    : 'rounded border border-slate-300 px-2 py-1 disabled:opacity-50'
+));
+const quickRoleClass = computed(() => (
+  isOrgAdmin.value
+    ? 'rounded border border-white/20 bg-white/10 px-2 py-1 text-xs text-white'
+    : 'rounded border border-slate-300 px-2 py-1 text-xs'
+));
+const editActionClass = computed(() => (
+  isOrgAdmin.value
+    ? 'inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50'
+    : 'inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 disabled:cursor-not-allowed disabled:opacity-50'
+));
+const deleteActionClass = computed(() => (
+  isOrgAdmin.value
+    ? 'inline-flex items-center gap-2 rounded-full bg-red-500/20 px-3 py-1.5 text-xs font-semibold text-red-100 disabled:cursor-not-allowed disabled:opacity-50'
+    : 'inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 disabled:cursor-not-allowed disabled:opacity-50'
+));
 
 const canManageRow = (row) => {
   if (!row) return false;
@@ -246,45 +299,45 @@ watch(assignableRoles, normalizeRoleFilters, { immediate: false });
     <header class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
       <div>
         <p class="app-kicker">Identity Operations</p>
-        <h1 class="mt-2 text-3xl font-bold text-slate-900">{{ isOrgAdmin ? 'Organization Users' : 'User Management' }}</h1>
-        <p class="text-sm text-slate-600">
+        <h1 :class="pageTitleClass">{{ isOrgAdmin ? 'Organization Users' : 'User Management' }}</h1>
+        <p :class="pageMetaClass">
           {{ isOrgAdmin ? 'Create users in your organization and promote staff to organization admin when needed.' : 'Create and maintain user accounts and organization-level access roles.' }}
         </p>
       </div>
-      <button class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700" @click="fetchUsers">
+      <button :class="toolbarButtonClass" @click="fetchUsers">
         Refresh
       </button>
     </header>
 
-    <section ref="userFormSection" class="app-shell-panel rounded-[30px] p-5">
-      <h2 class="mb-3 text-lg font-bold text-slate-900">{{ editingId ? 'Edit User' : 'Create User' }}</h2>
+    <section ref="userFormSection" :class="panelClass">
+      <h2 :class="isOrgAdmin ? 'mb-3 text-lg font-bold text-white' : 'mb-3 text-lg font-bold text-slate-900'">{{ editingId ? 'Edit User' : 'Create User' }}</h2>
       <form class="grid grid-cols-1 gap-3 md:grid-cols-2" @submit.prevent="saveUser">
-        <input v-model="form.full_name" placeholder="Full name" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]">
-        <input v-model="form.email" type="email" placeholder="Email" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]">
-        <input v-model="form.password" type="password" placeholder="Password" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]">
-        <input v-if="isSuperAdmin" v-model="form.organization_id" placeholder="Organization ID" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]">
-        <input v-model="form.department_id" placeholder="Department ID (optional)" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]">
-        <select v-model="form.role" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]">
+        <input v-model="form.full_name" placeholder="Full name" :class="inputClass">
+        <input v-model="form.email" type="email" placeholder="Email" :class="inputClass">
+        <input v-model="form.password" type="password" placeholder="Password" :class="inputClass">
+        <input v-if="isSuperAdmin" v-model="form.organization_id" placeholder="Organization ID" :class="inputClass">
+        <input v-model="form.department_id" placeholder="Department ID (optional)" :class="inputClass">
+        <select v-model="form.role" :class="selectClass">
           <option v-for="role in assignableRoles" :key="role" :value="role">{{ role }}</option>
         </select>
-        <select v-model="form.status" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]">
+        <select v-model="form.status" :class="selectClass">
           <option value="active">active</option>
           <option value="inactive">inactive</option>
         </select>
         <div class="md:col-span-2 flex gap-2">
-          <button type="submit" :disabled="saving" class="rounded-full bg-[var(--app-primary)] px-5 py-3 text-sm font-semibold text-white hover:bg-[var(--app-primary-ink)] disabled:opacity-70">
+          <button type="submit" :disabled="saving" :class="primaryButtonClass">
             {{ saving ? 'Saving...' : editingId ? 'Update User' : 'Create User' }}
           </button>
-          <button type="button" class="rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700" @click="resetForm">
+          <button type="button" :class="secondaryButtonClass" @click="resetForm">
             Clear
           </button>
         </div>
       </form>
     </section>
 
-    <section v-if="isOrgAdmin" class="app-shell-panel rounded-[30px] p-5">
-      <h2 class="mb-2 text-lg font-bold text-slate-900">Assign Existing User</h2>
-      <p class="mb-3 text-sm text-slate-600">
+    <section v-if="isOrgAdmin" :class="panelClass">
+      <h2 class="mb-2 text-lg font-bold text-white">Assign Existing User</h2>
+      <p class="mb-3 text-sm text-white/70">
         Claim a self-signed-up user account into your organization by email address.
       </p>
       <form class="grid grid-cols-1 gap-3 md:grid-cols-[1fr,auto]" @submit.prevent="assignExistingUser">
@@ -292,28 +345,28 @@ watch(assignableRoles, normalizeRoleFilters, { immediate: false });
           v-model="assignExistingForm.email"
           type="email"
           placeholder="Existing user email"
-          class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]"
+          :class="inputClass"
         >
         <button
           type="submit"
           :disabled="assigningExisting"
-          class="rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-70"
+          :class="primaryButtonClass"
         >
           {{ assigningExisting ? 'Assigning...' : 'Assign to Organization' }}
         </button>
       </form>
     </section>
 
-    <section class="app-shell-panel rounded-[30px] p-5">
+    <section :class="panelClass">
       <div class="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <h2 class="text-lg font-bold text-slate-900">Users</h2>
+        <h2 :class="isOrgAdmin ? 'text-lg font-bold text-white' : 'text-lg font-bold text-slate-900'">Users</h2>
         <div class="flex flex-col gap-2 sm:flex-row">
-          <input v-model="search" placeholder="Search name/email" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm">
-          <select v-model="roleFilter" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm">
+          <input v-model="search" placeholder="Search name/email" :class="inputClass">
+          <select v-model="roleFilter" :class="selectClass">
             <option value="all">All roles</option>
             <option v-for="role in filterRoles" :key="role" :value="role">{{ role }}</option>
           </select>
-          <select v-model="statusFilter" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm">
+          <select v-model="statusFilter" :class="selectClass">
             <option value="all">All statuses</option>
             <option value="active">active</option>
             <option value="inactive">inactive</option>
@@ -321,13 +374,13 @@ watch(assignableRoles, normalizeRoleFilters, { immediate: false });
         </div>
       </div>
 
-      <p v-if="loading" class="text-sm text-slate-500">Loading users...</p>
+      <p v-if="loading" :class="textSoftClass">Loading users...</p>
       <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
-      <p v-else-if="filteredUsers.length === 0" class="text-sm text-slate-500">No users found.</p>
+      <p v-else-if="filteredUsers.length === 0" :class="textSoftClass">No users found.</p>
 
       <div v-else class="overflow-x-auto">
-        <table class="min-w-full text-left text-sm">
-          <thead class="text-slate-500">
+        <table :class="tableClass">
+          <thead :class="tableHeadClass">
             <tr>
               <th class="pb-2 pr-3">Name</th>
               <th class="pb-2 pr-3">Email</th>
@@ -339,29 +392,29 @@ watch(assignableRoles, normalizeRoleFilters, { immediate: false });
             </tr>
           </thead>
           <tbody>
-            <tr v-for="row in paginatedUsers" :key="row.id" class="border-t border-slate-100">
-              <td class="py-2 pr-3">{{ row.full_name }}</td>
-              <td class="py-2 pr-3">{{ row.email }}</td>
+            <tr v-for="row in paginatedUsers" :key="row.id" :class="tableRowClass">
+              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white' : ''">{{ row.full_name }}</td>
+              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.email }}</td>
               <td class="py-2 pr-3">
                 <select
                   v-if="canManageRow(row)"
-                  class="rounded border border-slate-300 px-2 py-1 text-xs"
+                  :class="quickRoleClass"
                   :value="row.role"
                   @change="updateUserRoleQuick(row, $event.target.value)"
                 >
                   <option v-for="role in assignableRoles" :key="role" :value="role">{{ role }}</option>
                 </select>
-                <span v-else>{{ row.role }}</span>
+                <span :class="isOrgAdmin ? 'text-white/80' : ''" v-else>{{ row.role }}</span>
               </td>
-              <td class="py-2 pr-3">{{ row.status }}</td>
-              <td class="py-2 pr-3">{{ row.organization_id ?? 'N/A' }}</td>
-              <td class="py-2 pr-3">{{ row.department_id ?? 'N/A' }}</td>
+              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.status }}</td>
+              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.organization_id ?? 'N/A' }}</td>
+              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.department_id ?? 'N/A' }}</td>
               <td class="py-2">
                 <div class="flex flex-wrap gap-2">
                   <button
                     type="button"
                     :disabled="!canManageRow(row)"
-                    class="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    :class="editActionClass"
                     @click="startEdit(row)"
                   >
                     <font-awesome-icon :icon="faPenToSquare" class="text-sm" />
@@ -370,7 +423,7 @@ watch(assignableRoles, normalizeRoleFilters, { immediate: false });
                   <button
                     type="button"
                     :disabled="!canManageRow(row)"
-                    class="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    :class="deleteActionClass"
                     @click="deleteUser(row)"
                   >
                     <font-awesome-icon :icon="faTrashCan" class="text-sm" />
@@ -383,12 +436,12 @@ watch(assignableRoles, normalizeRoleFilters, { immediate: false });
         </table>
       </div>
 
-      <div class="mt-3 flex items-center justify-between text-xs text-slate-600">
+      <div :class="paginationClass">
         <p>Showing {{ paginatedUsers.length }} of {{ filteredUsers.length }} users</p>
         <div class="flex items-center gap-2">
-          <button class="rounded border border-slate-300 px-2 py-1 disabled:opacity-50" :disabled="page <= 1" @click="goToPage(page - 1)">Prev</button>
+          <button :class="pagerButtonClass" :disabled="page <= 1" @click="goToPage(page - 1)">Prev</button>
           <span>Page {{ page }} / {{ totalPages }}</span>
-          <button class="rounded border border-slate-300 px-2 py-1 disabled:opacity-50" :disabled="page >= totalPages" @click="goToPage(page + 1)">Next</button>
+          <button :class="pagerButtonClass" :disabled="page >= totalPages" @click="goToPage(page + 1)">Next</button>
         </div>
       </div>
     </section>

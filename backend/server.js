@@ -90,7 +90,6 @@ export const initializeDatabase = () => {
   CreatePasswordResetTokensTable();
   CreateAuditLogsTable();
   CreateTestimonialsTable();
-
 };
 
 initializeDatabase();

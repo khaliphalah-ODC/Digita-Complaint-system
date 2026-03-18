@@ -45,7 +45,7 @@ const summaryStats = computed(() => {
 
 const statusLabels = {
   submitted: 'Submitted',
-  in_review: 'In Review',
+  in_review: 'Reviewed / Assigned',
   resolved: 'Resolved',
   closed: 'Closed'
 };
@@ -131,7 +131,7 @@ onUnmounted(() => {
       <article class="app-footer-card rounded-[24px] p-4">
         <p class="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">Open Issues</p>
         <p class="mt-2 text-3xl font-black text-white">{{ summaryStats.open }}</p>
-        <p class="text-xs text-white/60">Submitted or in review statuses.</p>
+        <p class="text-xs text-white/60">Submitted, reviewed, or assigned complaints.</p>
       </article>
       <article class="app-footer-card rounded-[24px] p-4">
         <p class="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">Resolved</p>

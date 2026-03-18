@@ -79,6 +79,33 @@ const qrUrl = computed(() => {
   return `https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(trackUrl)}`;
 });
 const isAdminFamily = computed(() => ['super_admin', 'org_admin'].includes(session.currentUser?.role || ''));
+const isUserWorkspace = computed(() => session.currentUser?.role === 'user');
+const shellClass = computed(() => (isUserWorkspace.value ? 'user-shell-panel w-full rounded-[30px]' : 'app-shell-panel w-full rounded-[30px]'));
+const heroClass = computed(() => (
+  isUserWorkspace.value
+    ? 'rounded-t-[30px] border-b border-[#d2e0f8] bg-[#dfeaff] px-4 py-5 sm:px-6 md:px-8 md:py-6'
+    : 'rounded-t-[30px] border-b border-slate-200 bg-[var(--app-primary-mist)] px-4 py-5 sm:px-6 md:px-8 md:py-6'
+));
+const heroTitleClass = computed(() => (isUserWorkspace.value ? 'text-3xl font-black tracking-tight text-[var(--app-primary-ink)] sm:text-4xl' : 'text-3xl font-black tracking-tight text-slate-800 sm:text-4xl'));
+const bodyTextClass = computed(() => (isUserWorkspace.value ? 'text-[var(--app-muted-color)]' : 'text-slate-600'));
+const cardClass = computed(() => (isUserWorkspace.value ? 'user-shell-card rounded-[24px] p-4' : 'app-ink-card rounded-[24px] p-4'));
+const compactCardClass = computed(() => (isUserWorkspace.value ? 'user-shell-card rounded-[24px] px-4 py-3' : 'app-ink-card rounded-[24px] px-4 py-3'));
+const fieldClass = computed(() => (
+  isUserWorkspace.value
+    ? 'w-full rounded-lg border border-[#c6d8f8] bg-white px-3 py-2 text-sm text-[var(--app-primary-ink)] outline-none focus:border-[var(--app-primary)]'
+    : 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500'
+));
+const ghostChipClass = computed(() => (
+  isUserWorkspace.value
+    ? 'rounded-full border border-[#c6d8f8] bg-white px-2 py-1 text-xs text-[var(--app-primary-ink)]'
+    : 'rounded-full border border-slate-300 px-2 py-1 text-xs text-slate-700'
+));
+const inactivePriorityClass = computed(() => (isUserWorkspace.value ? 'bg-[#eaf2ff] text-[var(--app-primary-ink)]' : 'bg-slate-100 text-slate-700'));
+const infoPanelClass = computed(() => (
+  isUserWorkspace.value
+    ? 'rounded-[20px] border border-[#d2e0f8] bg-[#dfeaff] px-3 py-3 text-sm text-[var(--app-primary-ink)]'
+    : 'rounded-[20px] border border-[var(--app-accent-soft)] bg-[var(--app-primary-mist)] px-3 py-3 text-sm text-[var(--app-primary-ink)]'
+));
 
 const priorityClasses = (priority) => {
   if (priority === 'low') return 'bg-slate-500 text-white';
@@ -276,45 +303,45 @@ watch(selectedOrganizationId, (organizationId) => {
     </button>
   </section>
 
-  <section v-else class="app-shell-panel w-full rounded-[30px]">
-    <header class="rounded-t-[30px] border-b border-slate-200 bg-[var(--app-primary-mist)] px-4 py-5 sm:px-6 md:px-8 md:py-6">
-      <h1 class="text-3xl font-black tracking-tight text-slate-800 sm:text-4xl">How can we help you today?</h1>
-      <p class="mt-1 text-sm text-slate-600">
+  <section v-else :class="shellClass">
+    <header :class="heroClass">
+      <h1 :class="heroTitleClass">How can we help you today?</h1>
+      <p :class="`mt-1 text-sm ${bodyTextClass}`">
         {{ complaintAudienceDescription }}
       </p>
     </header>
 
     <div class="grid grid-cols-1 gap-5 px-4 py-5 sm:px-6 md:px-8 xl:grid-cols-[1.2fr,0.9fr] xl:items-start">
       <form class="space-y-4" @submit.prevent="submitComplaint">
-        <div class="app-ink-card rounded-[24px] px-4 py-3">
-          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Complaint Type</p>
-          <p class="mt-1 text-sm font-semibold text-slate-800">{{ complaintAudienceLabel }}</p>
-          <p class="mt-1 text-xs text-slate-500">{{ complaintAudienceDescription }}</p>
+        <div :class="compactCardClass">
+          <p class="text-xs font-semibold uppercase tracking-wide text-[var(--app-muted-color)]">Complaint Type</p>
+          <p class="mt-1 text-sm font-semibold text-[var(--app-primary-ink)]">{{ complaintAudienceLabel }}</p>
+          <p class="mt-1 text-xs text-[var(--app-muted-color)]">{{ complaintAudienceDescription }}</p>
         </div>
 
         <div>
-          <label class="mb-1 block text-sm font-semibold text-slate-700">Complaint Title</label>
+          <label class="mb-1 block text-sm font-semibold text-[var(--app-primary-ink)]">Complaint Title</label>
           <input
             v-model="form.title"
             placeholder="e.g. Broken streetlight on 5th Ave"
-            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
+            :class="fieldClass"
           >
         </div>
 
         <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
           <div>
-            <label class="mb-1 block text-xs font-semibold text-slate-700">Category</label>
+            <label class="mb-1 block text-xs font-semibold text-[var(--app-primary-ink)]">Category</label>
             <input
               v-model="form.category"
               placeholder="Infrastructure, Sanitation, Billing"
-              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
+              :class="fieldClass"
             >
             <div class="mt-2 flex flex-wrap gap-2">
               <button
                 v-for="category in categorySuggestions"
                 :key="category"
                 type="button"
-                class="rounded-full border border-slate-300 px-2 py-1 text-xs text-slate-700"
+                :class="ghostChipClass"
                 @click="form.category = category"
               >
                 {{ category }}
@@ -323,14 +350,14 @@ watch(selectedOrganizationId, (organizationId) => {
           </div>
 
           <div>
-            <label class="mb-1 block text-xs font-semibold text-slate-700">Priority</label>
+            <label class="mb-1 block text-xs font-semibold text-[var(--app-primary-ink)]">Priority</label>
             <div class="flex flex-wrap gap-2">
               <button
                 v-for="priority in priorityOptions"
                 :key="priority"
                 type="button"
                 class="rounded-full px-3 py-1 text-xs font-semibold"
-                :class="form.priority === priority ? priorityClasses(priority) : 'bg-slate-100 text-slate-700'"
+                :class="form.priority === priority ? priorityClasses(priority) : inactivePriorityClass"
                 @click="form.priority = priority"
               >
                 {{ priority }}
@@ -339,10 +366,10 @@ watch(selectedOrganizationId, (organizationId) => {
           </div>
         </div>
 
-        <div class="app-ink-card rounded-[24px] p-4">
-          <label class="mb-1 block text-xs font-semibold text-slate-700">Route to organization</label>
+        <div :class="cardClass">
+          <label class="mb-1 block text-xs font-semibold text-[var(--app-primary-ink)]">Route to organization</label>
 
-          <div v-if="hasOrganization" class="rounded-[20px] border border-[var(--app-accent-soft)] bg-[var(--app-primary-mist)] px-3 py-3 text-sm text-[var(--app-primary-ink)]">
+          <div v-if="hasOrganization" :class="infoPanelClass">
             This organization-linked complaint will go directly to your organization:
             <span class="font-semibold">{{ routeSummary }}</span>
           </div>
@@ -351,7 +378,7 @@ watch(selectedOrganizationId, (organizationId) => {
             <select
               v-model="form.organization_id"
               :disabled="form.unknown_organization || loadingOrganizations"
-              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 disabled:bg-slate-100"
+              :class="`${fieldClass} disabled:bg-slate-100`"
             >
               <option value="">Select organization</option>
               <option v-for="organization in organizationOptions" :key="organization.organization_id" :value="organization.organization_id">
@@ -359,7 +386,7 @@ watch(selectedOrganizationId, (organizationId) => {
               </option>
             </select>
 
-            <label class="mt-3 inline-flex items-center gap-2 text-sm text-slate-700">
+            <label class="mt-3 inline-flex items-center gap-2 text-sm text-[var(--app-primary-ink)]">
               <input
                 v-model="form.unknown_organization"
                 type="checkbox"
@@ -369,53 +396,53 @@ watch(selectedOrganizationId, (organizationId) => {
               I don't know the correct organization
             </label>
 
-            <p class="mt-2 text-xs text-slate-500">
+            <p class="mt-2 text-xs text-[var(--app-muted-color)]">
               Choose the business or organization if you know it. Use triage only when you are not sure where the complaint belongs.
             </p>
-            <p v-if="loadingOrganizations" class="mt-1 text-xs text-slate-500">Loading organizations...</p>
+            <p v-if="loadingOrganizations" class="mt-1 text-xs text-[var(--app-muted-color)]">Loading organizations...</p>
           </template>
         </div>
 
-        <div class="app-ink-card rounded-[24px] p-4">
-          <label class="mb-1 block text-xs font-semibold text-slate-700">Department</label>
+        <div :class="cardClass">
+          <label class="mb-1 block text-xs font-semibold text-[var(--app-primary-ink)]">Department</label>
           <select
             v-model="form.department_id"
             :disabled="!selectedOrganizationId || loadingDepartments || departmentOptions.length === 0"
-            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 disabled:bg-slate-100"
+            :class="`${fieldClass} disabled:bg-slate-100`"
           >
             <option value="">Select department (optional)</option>
             <option v-for="department in departmentOptions" :key="department.id" :value="department.id">
               {{ department.name }}
             </option>
           </select>
-          <p class="mt-2 text-xs text-slate-500">
+          <p class="mt-2 text-xs text-[var(--app-muted-color)]">
             Select the department involved inside the chosen organization if you know it.
           </p>
-          <p v-if="loadingDepartments" class="mt-1 text-xs text-slate-500">Loading departments...</p>
-          <p v-else-if="selectedOrganizationId && departmentOptions.length === 0" class="mt-1 text-xs text-slate-500">
+          <p v-if="loadingDepartments" class="mt-1 text-xs text-[var(--app-muted-color)]">Loading departments...</p>
+          <p v-else-if="selectedOrganizationId && departmentOptions.length === 0" class="mt-1 text-xs text-[var(--app-muted-color)]">
             No departments are available for this organization yet.
           </p>
         </div>
 
         <div>
-          <label class="mb-1 block text-xs font-semibold text-slate-700">Description</label>
+          <label class="mb-1 block text-xs font-semibold text-[var(--app-primary-ink)]">Description</label>
           <textarea
             v-model="form.complaint"
             rows="4"
             placeholder="Describe the issue in detail"
-            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
+            :class="fieldClass"
           />
         </div>
 
         <div>
-          <label class="mb-1 block text-xs font-semibold text-slate-700">Submit as anonymous</label>
+          <label class="mb-1 block text-xs font-semibold text-[var(--app-primary-ink)]">Submit as anonymous</label>
           <input
             v-if="form.is_anonymous"
             v-model="form.anonymous_label"
             placeholder="Guest Name (optional)"
-            class="mb-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
+            :class="`mb-2 ${fieldClass}`"
           >
-          <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+          <label class="inline-flex items-center gap-2 text-sm text-[var(--app-primary-ink)]">
             <span class="relative inline-flex h-6 w-11 items-center rounded-full" :class="form.is_anonymous ? 'bg-blue-500' : 'bg-slate-300'">
               <input v-model="form.is_anonymous" type="checkbox" class="peer sr-only">
               <span class="inline-block h-5 w-5 transform rounded-full bg-white transition" :class="form.is_anonymous ? 'translate-x-5' : 'translate-x-1'"></span>
@@ -439,25 +466,25 @@ watch(selectedOrganizationId, (organizationId) => {
         </button>
       </form>
 
-      <aside class="app-ink-card rounded-[24px] p-4">
-        <div class="rounded-[22px] border border-slate-200 bg-[var(--app-primary-mist)] p-4 text-center">
+      <aside :class="cardClass">
+        <div :class="isUserWorkspace ? 'rounded-[22px] border border-[#d2e0f8] bg-[#dfeaff] p-4 text-center' : 'rounded-[22px] border border-slate-200 bg-[var(--app-primary-mist)] p-4 text-center'">
           <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[var(--app-primary)] text-xl font-black text-white">✓</div>
-          <p class="mt-2 text-sm font-semibold text-slate-800">Thank you for your feedback!</p>
-          <div class="mt-3 rounded-2xl border border-[var(--app-accent-soft)] bg-white px-3 py-2 text-base font-black tracking-wide text-slate-800">
+          <p class="mt-2 text-sm font-semibold text-[var(--app-primary-ink)]">Thank you for your feedback!</p>
+          <div class="mt-3 rounded-2xl border border-[var(--app-accent-soft)] bg-white px-3 py-2 text-base font-black tracking-wide text-[var(--app-primary-ink)]">
             {{ activeTrackingCode }}
           </div>
         </div>
 
-        <div class="mt-4 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 p-3 sm:grid-cols-[1fr,auto] sm:items-center">
-          <p class="text-xs text-slate-500">Scan to track on mobile</p>
+        <div :class="isUserWorkspace ? 'mt-4 grid grid-cols-1 gap-3 rounded-xl border border-[#d2e0f8] bg-white/70 p-3 sm:grid-cols-[1fr,auto] sm:items-center' : 'mt-4 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 p-3 sm:grid-cols-[1fr,auto] sm:items-center'">
+          <p class="text-xs text-[var(--app-muted-color)]">Scan to track on mobile</p>
           <img :src="qrUrl" alt="Track QR" class="h-20 w-20 rounded border border-slate-300 bg-white p-1">
         </div>
 
-        <p class="mt-3 text-xs text-slate-500">Route: {{ routeSummary }}</p>
-        <p class="mt-1 text-xs text-slate-500">
+        <p class="mt-3 text-xs text-[var(--app-muted-color)]">Route: {{ routeSummary }}</p>
+        <p class="mt-1 text-xs text-[var(--app-muted-color)]">
           Type: {{ complaintAudienceLabel }}
         </p>
-        <p class="mt-1 text-xs text-slate-500">
+        <p class="mt-1 text-xs text-[var(--app-muted-color)]">
           Department:
           {{ departmentOptions.find((department) => String(department.id) === String(form.department_id))?.name || 'Not selected' }}
         </p>

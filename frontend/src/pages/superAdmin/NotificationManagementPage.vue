@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import api, { extractApiError, unwrapResponse } from '../../services/api';
 import { useUiToastStore } from '../../stores/uiToast';
+import { useSessionStore } from '../../stores/session';
 
 const loading = ref(false);
 const saving = ref(false);
@@ -14,6 +15,24 @@ const readFilter = ref('all');
 const page = ref(1);
 const pageSize = 8;
 const uiToast = useUiToastStore();
+const session = useSessionStore();
+const isOrgAdmin = computed(() => session.currentUser?.role === 'org_admin');
+const titleClass = computed(() => (isOrgAdmin.value ? 'text-2xl font-bold text-white' : 'text-2xl font-bold text-slate-900'));
+const metaClass = computed(() => (isOrgAdmin.value ? 'text-sm text-white/70' : 'text-sm text-slate-600'));
+const panelClass = computed(() => (isOrgAdmin.value ? 'org-admin-panel-card' : 'rounded-2xl border border-slate-200 bg-white p-4'));
+const inputClass = computed(() => (isOrgAdmin.value ? 'org-admin-input' : 'rounded-lg border border-slate-300 px-3 py-2 text-sm'));
+const selectClass = computed(() => (isOrgAdmin.value ? 'org-admin-select' : 'rounded-lg border border-slate-300 px-3 py-2 text-sm'));
+const refreshButtonClass = computed(() => (isOrgAdmin.value ? 'org-admin-outline-btn' : 'rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700'));
+const primaryButtonClass = computed(() => (isOrgAdmin.value ? 'org-admin-btn disabled:opacity-70' : 'rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white'));
+const secondaryButtonClass = computed(() => (isOrgAdmin.value ? 'org-admin-outline-btn' : 'rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700'));
+const tableClass = computed(() => (isOrgAdmin.value ? 'org-admin-table min-w-full text-left text-sm' : 'min-w-full text-left text-sm'));
+const tableHeadClass = computed(() => (isOrgAdmin.value ? 'text-white/60' : 'text-slate-500'));
+const tableRowClass = computed(() => (isOrgAdmin.value ? 'border-t border-white/10' : 'border-t border-slate-100'));
+const infoTextClass = computed(() => (isOrgAdmin.value ? 'text-sm text-white/70' : 'text-sm text-slate-500'));
+const footerClass = computed(() => (isOrgAdmin.value ? 'mt-3 flex items-center justify-between text-xs text-white/70' : 'mt-3 flex items-center justify-between text-xs text-slate-600'));
+const pagerButtonClass = computed(() => (isOrgAdmin.value ? 'rounded border border-white/20 bg-white/10 px-2 py-1 text-white disabled:opacity-50' : 'rounded border border-slate-300 px-2 py-1 disabled:opacity-50'));
+const successActionClass = computed(() => (isOrgAdmin.value ? 'rounded bg-emerald-500/20 px-2 py-1 text-xs font-semibold text-emerald-100' : 'rounded bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700'));
+const deleteButtonClass = computed(() => (isOrgAdmin.value ? 'rounded bg-red-500/20 px-2 py-1 text-xs font-semibold text-red-100' : 'rounded bg-red-50 px-2 py-1 text-xs font-semibold text-red-700'));
 
 const form = reactive({
   user_id: '',
@@ -152,39 +171,39 @@ onMounted(fetchNotifications);
   <section class="space-y-5">
     <header class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">Notification Management</h1>
-        <p class="text-sm text-slate-600">Create and manage platform notifications for users and complaints.</p>
+        <h1 :class="titleClass">Notification Management</h1>
+        <p :class="metaClass">Create and manage platform notifications for users and complaints.</p>
       </div>
-      <button class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700" @click="fetchNotifications">
+      <button :class="`${refreshButtonClass} w-full sm:w-auto`" @click="fetchNotifications">
         Refresh
       </button>
     </header>
-    <section class="rounded-2xl border border-slate-200 bg-white p-4">
-      <h2 class="mb-3 text-lg font-bold text-slate-900">Create Notification</h2>
+    <section :class="panelClass">
+      <h2 :class="isOrgAdmin ? 'mb-3 text-lg font-bold text-white' : 'mb-3 text-lg font-bold text-slate-900'">Create Notification</h2>
       <form class="grid grid-cols-1 gap-3 md:grid-cols-2" @submit.prevent="createNotification">
-        <select v-model="form.user_id" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+        <select v-model="form.user_id" :class="selectClass">
           <option value="">Target user (optional)</option>
           <option v-for="row in users" :key="row.id" :value="String(row.id)">
             {{ row.full_name }} (#{{ row.id }})
           </option>
         </select>
-        <select v-model="form.complaint_id" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+        <select v-model="form.complaint_id" :class="selectClass">
           <option value="">Linked complaint (optional)</option>
           <option v-for="row in complaints" :key="row.id" :value="String(row.id)">
             #{{ row.id }} - {{ row.title || 'Untitled' }}
           </option>
         </select>
-        <input v-model="form.type" placeholder="Type (e.g. complaint_update)" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-        <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+        <input v-model="form.type" placeholder="Type (e.g. complaint_update)" :class="inputClass">
+        <label :class="isOrgAdmin ? 'inline-flex items-center gap-2 text-sm text-white/80' : 'inline-flex items-center gap-2 text-sm text-slate-700'">
           <input v-model="form.is_read" type="checkbox" class="h-4 w-4 rounded border-slate-300">
           Mark as read on create
         </label>
-        <textarea v-model="form.message" placeholder="Message" class="rounded-lg border border-slate-300 px-3 py-2 text-sm md:col-span-2" rows="2" />
-        <div class="flex gap-2">
-          <button :disabled="saving" type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white">
+        <textarea v-model="form.message" placeholder="Message" :class="`${inputClass} md:col-span-2`" rows="2" />
+        <div class="flex flex-col gap-2 sm:flex-row">
+          <button :disabled="saving" type="submit" :class="`${primaryButtonClass} w-full sm:w-auto`">
             {{ saving ? 'Saving...' : 'Create Notification' }}
           </button>
-          <button type="button" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700" @click="resetForm">
+          <button type="button" :class="`${secondaryButtonClass} w-full sm:w-auto`" @click="resetForm">
             Clear
           </button>
         </div>
@@ -192,12 +211,12 @@ onMounted(fetchNotifications);
       <p v-if="error" class="mt-3 text-sm text-red-600">{{ error }}</p>
     </section>
 
-    <section class="rounded-2xl border border-slate-200 bg-white p-4">
+    <section :class="panelClass">
       <div class="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <h2 class="text-lg font-bold text-slate-900">Notifications</h2>
+        <h2 :class="isOrgAdmin ? 'text-lg font-bold text-white' : 'text-lg font-bold text-slate-900'">Notifications</h2>
         <div class="flex flex-col gap-2 sm:flex-row">
-          <input v-model="search" placeholder="Search type/message..." class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-          <select v-model="readFilter" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+          <input v-model="search" placeholder="Search type/message..." :class="`${inputClass} w-full sm:min-w-[14rem]`">
+          <select v-model="readFilter" :class="`${selectClass} w-full sm:min-w-[11rem]`">
             <option value="all">All</option>
             <option value="unread">Unread</option>
             <option value="read">Read</option>
@@ -205,12 +224,12 @@ onMounted(fetchNotifications);
         </div>
       </div>
 
-      <p v-if="loading" class="text-sm text-slate-500">Loading notifications...</p>
-      <p v-else-if="filteredNotifications.length === 0" class="text-sm text-slate-500">No notifications found.</p>
+      <p v-if="loading" :class="infoTextClass">Loading notifications...</p>
+      <p v-else-if="filteredNotifications.length === 0" :class="infoTextClass">No notifications found.</p>
 
-      <div v-else class="overflow-x-auto">
-        <table class="min-w-full text-left text-sm">
-          <thead class="text-slate-500">
+      <div v-else class="-mx-1 overflow-x-auto pb-1">
+        <table :class="tableClass">
+          <thead :class="tableHeadClass">
             <tr>
               <th class="pb-2 pr-3">ID</th>
               <th class="pb-2 pr-3">Type</th>
@@ -222,35 +241,35 @@ onMounted(fetchNotifications);
             </tr>
           </thead>
           <tbody>
-            <tr v-for="row in paginatedNotifications" :key="row.id" class="border-t border-slate-100">
-              <td class="py-2 pr-3">#{{ row.id }}</td>
-              <td class="py-2 pr-3">{{ row.type }}</td>
-              <td class="py-2 pr-3">{{ row.message }}</td>
-              <td class="py-2 pr-3">{{ userNameById.get(Number(row.user_id)) || row.user_id || 'All users' }}</td>
-              <td class="py-2 pr-3">{{ complaintTitleById.get(Number(row.complaint_id)) || row.complaint_id || 'N/A' }}</td>
-              <td class="py-2 pr-3">{{ Number(row.is_read) === 1 ? 'read' : 'unread' }}</td>
+            <tr v-for="row in paginatedNotifications" :key="row.id" :class="tableRowClass">
+              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white' : ''">#{{ row.id }}</td>
+              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.type }}</td>
+              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.message }}</td>
+              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ userNameById.get(Number(row.user_id)) || row.user_id || 'All users' }}</td>
+              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ complaintTitleById.get(Number(row.complaint_id)) || row.complaint_id || 'N/A' }}</td>
+              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ Number(row.is_read) === 1 ? 'read' : 'unread' }}</td>
               <td class="py-2">
-                <div class="flex gap-2">
+                <div class="flex flex-wrap gap-2">
                   <button
                     v-if="Number(row.is_read) === 0"
-                    class="rounded bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700"
+                    :class="successActionClass"
                     @click="markAsRead(row)"
                   >
                     Mark Read
                   </button>
-                  <button class="rounded bg-red-50 px-2 py-1 text-xs font-semibold text-red-700" @click="deleteNotification(row)">Delete</button>
+                  <button :class="deleteButtonClass" @click="deleteNotification(row)">Delete</button>
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-      <div v-if="filteredNotifications.length > 0" class="mt-3 flex items-center justify-between text-xs text-slate-600">
+      <div v-if="filteredNotifications.length > 0" :class="`${footerClass} flex-col gap-2 sm:flex-row`">
         <p>Showing {{ paginatedNotifications.length }} of {{ filteredNotifications.length }} notifications</p>
-        <div class="flex items-center gap-2">
-          <button class="rounded border border-slate-300 px-2 py-1 disabled:opacity-50" :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">Prev</button>
+        <div class="flex items-center gap-2 self-start sm:self-auto">
+          <button :class="pagerButtonClass" :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">Prev</button>
           <span>Page {{ currentPage }} / {{ totalPages }}</span>
-          <button class="rounded border border-slate-300 px-2 py-1 disabled:opacity-50" :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">Next</button>
+          <button :class="pagerButtonClass" :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">Next</button>
         </div>
       </div>
     </section>

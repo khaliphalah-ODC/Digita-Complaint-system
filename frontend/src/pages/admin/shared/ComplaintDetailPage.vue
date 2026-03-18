@@ -60,11 +60,11 @@ onMounted(fetchComplaint);
         <h1 class="mt-2 text-3xl font-bold text-slate-900">Complaint Review</h1>
         <p class="text-sm text-slate-600">Inspect full complaint details and send official response.</p>
       </div>
-      <div class="flex flex-wrap gap-2">
-        <button class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700" @click="fetchComplaint">
+      <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        <button class="w-full rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 sm:w-auto" @click="fetchComplaint">
           Refresh
         </button>
-        <button class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700" @click="router.push(complaintsListRoute)">
+        <button class="w-full rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 sm:w-auto" @click="router.push(complaintsListRoute)">
           Back
         </button>
       </div>
