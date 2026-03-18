@@ -1,86 +1,267 @@
 <script setup>
+import { ref, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
 import AuthTopNav from '../components/AuthTopNav.vue';
 import AppFooter from '../components/AppFooter.vue';
+
+const testimonials = ref([]);
+const loadingTestimonials = ref(true);
+
+onMounted(async () => {
+  try {
+    const res = await fetch('http://localhost:5000/api/testimonials/public');
+    if (res.ok) {
+      const data = await res.json();
+      testimonials.value = (Array.isArray(data) ? data : data.data ?? []).slice(0, 6);
+    }
+  } catch (e) {
+    console.error('Failed to load testimonials:', e);
+  } finally {
+    loadingTestimonials.value = false;
+  }
+});
+
+const avatarColors = ['#f97316', '#059669', '#7c3aed', '#0284c7', '#dc2626', '#d97706'];
+const avatarColor = (i) => avatarColors[i % avatarColors.length];
 </script>
-
 <template>
-  <div class="flex min-h-screen w-screen flex-col">
-    <div class="w-full flex-1 px-0 py-3">
-      <AuthTopNav fixed />
+  <div class="flex min-h-screen w-screen flex-col font-sans">
+    <AuthTopNav fixed />
 
-      <section class="grid gap-5 px-4 pb-8 pt-24 sm:px-5 sm:pt-28 md:px-8 lg:grid-cols-[1.15fr,0.85fr] lg:items-stretch lg:py-10 lg:pt-32">
-        <article class="app-shell-panel relative overflow-hidden rounded-[34px] px-5 py-8 sm:px-7 md:px-8 md:py-10">
-          <div class="absolute -right-14 top-10 h-36 w-36 rounded-full bg-[radial-gradient(circle,rgba(79,141,247,0.24),transparent_68%)]"></div>
-          <div class="absolute bottom-0 right-0 h-40 w-40 rounded-tl-[4rem] bg-[linear-gradient(135deg,rgba(31,77,183,0.18),rgba(16,33,60,0.02))]"></div>
-          <p class="app-kicker">Public Reporting Experience</p>
-          <h1 class="mt-4 max-w-3xl text-4xl font-black leading-[0.96] text-slate-900 sm:text-5xl lg:text-7xl">
-            Raise issues clearly.
-            <span class="block text-[var(--app-primary)]">Route them fast.</span>
-          </h1>
-          <p class="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-            A civic reporting interface built for real use: direct organization routing, anonymous submissions when needed, and complaint tracking that stays readable and calm under pressure.
-          </p>
+    <!-- Hero Section -->
+    <section class="hero-section relative flex items-center justify-center overflow-hidden pt-20">
+      <!-- Background overlay -->
+      <div class="hero-overlay absolute inset-0 z-10"></div>
 
-          <div class="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap">
-            <RouterLink to="/submit-complaint" class="rounded-full bg-[var(--app-primary)] px-7 py-3 text-center text-base font-semibold text-white shadow-[0_14px_32px_rgba(31,77,183,0.24)] hover:-translate-y-0.5 hover:bg-[var(--app-primary-ink)]">
-              Submit a Complaint
-            </RouterLink>
-            <RouterLink to="/track-complaint" class="rounded-full border border-slate-300 bg-white/70 px-7 py-3 text-center text-base font-semibold text-slate-800 hover:bg-white">
-              Track Existing Case
-            </RouterLink>
-          </div>
+      <!-- Decorative architectural line art -->
+      <div class="absolute inset-0 z-0">
+        <svg class="absolute bottom-0 left-0 w-full opacity-10" viewBox="0 0 1440 320" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0,160 L80,160 L80,80 L160,80 L160,160 L240,160 L240,40 L320,40 L320,160 L400,160 L400,100 L480,100 L480,160 L560,160 L560,60 L640,60 L640,160 L720,160 L720,120 L800,120 L800,160 L880,160 L880,50 L960,50 L960,160 L1040,160 L1040,90 L1120,90 L1120,160 L1200,160 L1200,70 L1280,70 L1280,160 L1360,160 L1360,110 L1440,110 L1440,320 L0,320 Z" fill="white"/>
+        </svg>
+      </div>
 
-          <div class="mt-8 grid gap-3 sm:grid-cols-3">
-            <div class="app-ink-card rounded-[24px] p-4">
-              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Channels</p>
-              <p class="mt-2 text-2xl font-black text-slate-900">Anonymous + Named</p>
-            </div>
-            <div class="app-ink-card rounded-[24px] p-4">
-              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Routing</p>
-              <p class="mt-2 text-2xl font-black text-slate-900">Organization + Department</p>
-            </div>
-            <div class="app-ink-card rounded-[24px] p-4">
-              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Tracking</p>
-              <p class="mt-2 text-2xl font-black text-slate-900">Status-first</p>
-            </div>
-          </div>
-        </article>
+      <div class="relative z-20 mx-auto max-w-5xl px-6 py-20 text-center sm:py-28 lg:py-36">
+        <h1 class="hero-title text-5xl font-black leading-[0.95] tracking-tight text-white sm:text-6xl lg:text-8xl">
+          Submit Your
+          <span class="block text-[#f97316]">Complaints.</span>
+        </h1>
 
-        <aside class="grid gap-4">
-          <article class="rounded-[30px] border border-[#14345b] bg-[linear-gradient(180deg,#10213c_0%,#183563_100%)] p-6 text-white shadow-[0_24px_60px_rgba(16,33,60,0.25)]">
-            <p class="text-xs font-semibold uppercase tracking-[0.22em] text-blue-100">Why It Works</p>
-            <div class="mt-4 space-y-4">
-              <div class="rounded-[22px] border border-white/10 bg-white/6 p-4">
-                <p class="text-sm font-semibold">Direct Routing</p>
-                <p class="mt-1 text-sm text-blue-100/85">Complaints go to the right organization first, not a generic inbox.</p>
+        <p class="mx-auto mt-6 max-w-2xl text-base leading-7 text-blue-100/80 sm:text-lg">
+           A digital civic platform that allows citizens, students, and customers to report issues directly — and track every step of their resolution in real time.
+        </p>
+      </div>
+
+      <!-- Wave divider -->
+      <!--<div class="absolute bottom-0 left-0 right-0 z-20">
+        <svg viewBox="0 0 1440 80" preserveAspectRatio="none" class="w-full" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0,40 C360,80 1080,0 1440,40 L1440,80 L0,80 Z" fill="#f5f7fa"/>
+        </svg>
+      </div>-->
+    </section>
+
+
+    <!-- Cards Section -->
+    <section class="bg-[#f5f7fa] px-4 py-16 sm:px-6 md:px-10 lg:py-24">
+      <div class="mx-auto max-w-6xl">
+        <div class="mb-10 text-center">
+          <p class="text-sm font-bold font-family mt-16 uppercase tracking-[0.22em] text-[#f97316]">How It Works</p>
+          <!--<h2 class="mt-2 text-3xl font-black text-[#0f2444] sm:text-4xl">Three Ways We Help</h2>-->
+        </div>
+
+        <div class="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
+
+          <!-- Card 1 -->
+          <article class="course-card group relative overflow-hidden rounded-2xl bg-white shadow-[0_4px_24px_rgba(15,36,68,0.08)] transition hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(15,36,68,0.15)]">
+            <div class="card-image-wrapper relative h-52 overflow-hidden">
+              <div class="absolute inset-0 flex items-center justify-center card-bg-blue">
+                <svg class="h-24 w-24 text-white opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
               </div>
-              <div class="rounded-[22px] border border-white/10 bg-white/6 p-4">
-                <p class="text-sm font-semibold">Triage Only When Needed</p>
-                <p class="mt-1 text-sm text-blue-100/85">Unknown-organization complaints are treated as an exception, not the default.</p>
-              </div>
-              <div class="rounded-[22px] border border-white/10 bg-white/6 p-4">
-                <p class="text-sm font-semibold">Tenant-Safe Admin Flow</p>
-                <p class="mt-1 text-sm text-blue-100/85">Org admins see only their own operational space. Super admins stay at the organization layer.</p>
-              </div>
+              <span class="badge badge-orange">
+                <font-awesome-icon :icon="['fas', 'file-lines']" class="mr-1" />
+                Submission
+              </span>
+            </div>
+            <div class="p-6">
+              <h3 class="text-xl font-bold font-family text-[#0f2444]">Focused Submission of Complaints</h3>
+              <p class="mt-2 text-sm leading-6 text-slate-500">
+                Purpose-built forms that route directly to the right organization and department — no guesswork.
+              </p>
+             <!--<RouterLink to="/submit-complaint" class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#f97316] transition hover:gap-3">
+                Submit Now
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+              </RouterLink>-->
             </div>
           </article>
 
-          <article id="features" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-            <div class="app-ink-card rounded-[28px] p-5">
-              <p class="mb-3 text-4xl text-[var(--app-primary)]"><font-awesome-icon :icon="['fas', 'file-lines']" /></p>
-              <h2 class="text-2xl font-bold text-slate-900">Focused Submission</h2>
-              <p class="mt-2 text-base text-slate-600">Purpose-built forms that route by organization and optionally by department.</p>
+          <!-- Card 2 -->
+          <article class="course-card group relative overflow-hidden rounded-2xl bg-white shadow-[0_4px_24px_rgba(15,36,68,0.08)] transition hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(15,36,68,0.15)]">
+            <div class="card-image-wrapper relative h-52 overflow-hidden">
+              <div class="absolute inset-0 flex items-center justify-center card-bg-green">
+                <svg class="h-24 w-24 text-white opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+              </div>
+              <span class="badge badge-emerald">
+                <font-awesome-icon :icon="['fas', 'chart-line']" class="mr-1" />
+                Tracking
+              </span>
             </div>
-            <div class="app-ink-card rounded-[28px] p-5">
-              <p class="mb-3 text-4xl text-emerald-600"><font-awesome-icon :icon="['fas', 'chart-line']" /></p>
-              <h2 class="text-2xl font-bold text-slate-900">Readable Tracking</h2>
-              <p class="mt-2 text-base text-slate-600">Tracking codes, timelines, and statuses are visible without making users decode the system.</p>
+            <div class="p-6">
+              <h3 class="text-xl font-bold font-family text-[#0f2444]">Easy Tracking of Complaints</h3>
+              <p class="mt-2 text-sm leading-6 text-slate-500">
+                Tracking codes, timelines, and statuses are visible and clear — without making users decode a confusing system.
+              </p>
+              <!--<RouterLink to="/track-complaint" class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#f97316] transition hover:gap-3">
+                Track a Case
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+              </RouterLink>-->
             </div>
           </article>
-        </aside>
-      </section>
+
+          <!-- Card 3 -->
+          <article class="course-card group relative overflow-hidden rounded-2xl bg-white shadow-[0_4px_24px_rgba(15,36,68,0.08)] transition hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(15,36,68,0.15)]">
+            <div class="card-image-wrapper relative h-52 overflow-hidden">
+              <div class="absolute inset-0 flex items-center justify-center card-bg-violet">
+                <svg class="h-24 w-24 text-white opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+              </div>
+              <span class="badge badge-violet">
+                <font-awesome-icon :icon="['fas', 'user-shield']" class="mr-1" />
+                Anonymous
+              </span>
+            </div>
+            <div class="p-6">
+              <h3 class="text-xl font-bold font-family text-[#0f2444]">Safe &amp; Anonymous</h3>
+              <p class="mt-2 text-sm leading-6 text-slate-500">
+                Submit Complaint without revealing your identity when needed. Users Privacies matter and so the design ensures your safety is always protected.
+              </p>
+             <!-- <RouterLink to="/submit-complaint" class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#f97316] transition hover:gap-3">
+                Submit Anonymously
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+              </RouterLink>-->
+            </div>
+          </article>
+
+        </div>
+      </div>
+    </section>
+
+   <!-- ─── TESTIMONIALS ──────────────────────────────────────── -->
+<section class="testi-section">
+  <div class="mx-auto max-w-5xl px-6 py-20 sm:px-10 lg:px-16 lg:py-24">
+    <div class="mb-14 text-center">
+      <p class="section-kicker">Testimonials</p>
+      <h2 class="section-title">What Users Say</h2>
     </div>
-    <AppFooter />
+
+    <!-- Loading -->
+    <div v-if="loadingTestimonials" class="flex justify-center py-10">
+      <div class="h-8 w-8 animate-spin rounded-full border-4 border-orange-200 border-t-orange-500"></div>
+    </div>
+
+    <!-- Empty -->
+    <div v-else-if="testimonials.length === 0" class="py-10 text-center">
+      <p class="text-sm text-slate-400">No testimonials yet.</p>
+      <p class="mt-1 text-xs text-slate-300">Log in and share your experience to be the first!</p>
+    </div>
+
+    <!-- Cards -->
+    <div v-else class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div v-for="(item, index) in testimonials" :key="item.id" class="testimonial-card">
+        <div class="stars">
+          <span
+            v-for="n in 5"
+            :key="n"
+            :style="{ color: n <= item.rating ? '#f59e0b' : '#e2e8f0' }"
+          >★</span>
+        </div>
+        <p class="mt-4 text-sm leading-7 text-slate-600 italic">"{{ item.message }}"</p>
+        <div class="mt-6 flex items-center gap-3">
+          <div class="avatar" :style="{ background: avatarColor(index) }">
+            {{ item.display_name ? item.display_name.charAt(0).toUpperCase() : 'U' }}
+          </div>
+          <div>
+            <p class="text-sm font-bold text-[#0f2444]">{{ item.display_name || 'Anonymous' }}</p>
+            <p class="text-xs text-slate-400">{{ item.role_label || 'System User' }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+    <!-- ─── FOOTER (full-width, replaces AppFooter) ─── -->
+   <AppFooter /> 
   </div>
 </template>
+
+<style scoped>
+/* ── Hero ──────────────────────────────────── */
+.hero-section {
+  min-height: 600px;
+    background-image: url('https://images.unsplash.com/photo-1573497620053-ea5300f94f21?w=1600&q=80');
+  background-size: cover;
+  background-position: center top;
+}
+.hero-overlay {
+  background: linear-gradient(135deg, rgba(10,28,64,0.88) 0%, rgba(15,52,100,0.82) 50%, rgba(30,60,110,0.75) 100%);
+}
+.hero-title {
+  font-family: 'Georgia', 'Times New Roman';
+  letter-spacing: -0.02em;
+}
+
+/* ── Cards ─────────────────────────────────── */
+.course-card { border: 1px solid rgba(15,36,68,0.07); }
+.card-bg-blue   { background: linear-gradient(135deg, #0f2444, #1a4a8a); }
+.card-bg-green  { background: linear-gradient(135deg, #0f2444, #1a4a8a); }
+.card-bg-violet { background: linear-gradient(135deg, #0f2444, #1a4a8a); }
+.badge {
+  position: absolute; bottom: 1rem; right: 1rem;
+  border-radius: 9999px; padding: 0.25rem 0.75rem;
+  font-size: 0.75rem; font-weight: 700; color: white;
+  box-shadow: 0 2px 8px hsl(0, 13%, 96%);
+}
+.font-family{
+  font-family: 'Georgia', 'Times New Roman';
+}
+.badge-orange  { background: #f97316; }
+.badge-emerald { background: #f97316; }
+.badge-violet  { background: #f97316; }
+
+/* ── Testimonials ──────────────────────────── */
+.testi-section { width: 100%; background: #ffffff; }
+.section-kicker {
+  display: block; font-size: 0.85rem; font-weight: 700;
+  font-family: 'Georgia', 'Times New Roman';
+  letter-spacing: 0.22em; text-transform: uppercase; color: #f97316;
+}
+.section-title {
+  margin-top: 0.5rem;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: clamp(1.8rem, 4vw, 2.4rem); font-weight: 900;
+  color: #0f2444; line-height: 1.1;
+}
+.testimonial-card {
+  background: white;
+  border: 1px solid rgba(15,36,68,0.07);
+  border-radius: 1.25rem; padding: 1.75rem;
+  box-shadow: 0 4px 20px rgba(15,36,68,0.05);
+  transition: all 0.25s;
+}
+.testimonial-card:hover { transform: translateY(-3px); box-shadow: 0 14px 40px rgba(15,36,68,0.1); }
+.stars { font-size: 0.9rem; letter-spacing: 0.1em; color: #f59e0b; }
+.avatar {
+  display: flex; align-items: center; justify-content: center;
+  width: 2.25rem; height: 2.25rem; border-radius: 9999px;
+  font-size: 0.85rem; font-weight: 700; color: white; flex-shrink: 0;
+}
+.av-orange  { background: #f97316; }
+.av-emerald { background: #059669; }
+.av-violet  { background: #7c3aed; }
+
+/* ── Footer ────────────────────────────────── */
+</style>
