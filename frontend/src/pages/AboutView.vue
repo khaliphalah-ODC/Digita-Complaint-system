@@ -1,6 +1,7 @@
 <script setup>
 import { RouterLink } from 'vue-router';
 import AuthTopNav from '../components/AuthTopNav.vue';
+import AppFooter from '../components/AppFooter.vue';
 </script>
 
 <template>
@@ -18,10 +19,10 @@ import AuthTopNav from '../components/AuthTopNav.vue';
       <div class="orb orb-b absolute z-10"></div>
 
       <div class="relative z-20 mx-auto w-full max-w-6xl px-6 pb-16 pt-36 sm:px-10 lg:px-16">
-        <div class="animate-fade-down mb-4 inline-flex items-center gap-2.5 rounded-full border border-orange-400/30 bg-orange-500/10 px-5 py-2 backdrop-blur-sm">
+        <!--<div class="animate-fade-down mb-4 inline-flex items-center gap-2.5 rounded-full border border-orange-400/30 bg-orange-500/10 px-5 py-2 backdrop-blur-sm">
           <span class="h-2 w-2 animate-pulse rounded-full bg-orange-400"></span>
           <span class="text-xs font-bold uppercase tracking-widest text-orange-300">About Us</span>
-        </div>
+        </div>-->
         <h1 class="hero-h1 animate-fade-up text-5xl font-black leading-[0.93] text-white sm:text-6xl lg:text-7xl">
           Built for People.<br/>
           <span class="text-gradient">Driven by Accountability.</span>
@@ -32,17 +33,17 @@ import AuthTopNav from '../components/AuthTopNav.vue';
       </div>
 
       <!-- Wave divider -->
-      <div class="absolute bottom-0 left-0 right-0 z-20">
+      <!--<div class="absolute bottom-0 left-0 right-0 z-20">
         <svg viewBox="0 0 1440 70" preserveAspectRatio="none" class="w-full" xmlns="http://www.w3.org/2000/svg">
           <path d="M0,35 C480,70 960,0 1440,35 L1440,70 L0,70 Z" fill="#ffffff"/>
         </svg>
-      </div>
+      </div>-->
     </section>
 
     <!-- ─── MISSION ───────────────────────────────────────────── -->
     <section class="bg-white px-6 py-20 sm:px-10 lg:px-16 lg:py-28">
       <div class="mx-auto max-w-6xl">
-        <div class="grid items-center gap-16 lg:grid-cols-2">
+        <div class="grid items-center gap-16 lg:grid-cols-1">
           <div>
             <p class="section-kicker">Our Mission</p>
             <h2 class="section-title mt-2">Every Complaint Deserves<br/>a Real Response.</h2>
@@ -53,7 +54,7 @@ import AuthTopNav from '../components/AuthTopNav.vue';
               Our platform ensures that every complaint is routed directly to the right organization, tracked transparently, and responded to within a clear timeline. We exist to make institutions answerable to the people they serve.
             </p>
 
-            <div class="mt-8 grid grid-cols-2 gap-4">
+           <!-- <div class="mt-8 grid grid-cols-2 gap-4">
               <div class="mission-stat">
                 <p class="mission-stat-num text-orange-500">1,200+</p>
                 <p class="mission-stat-label">Complaints Filed</p>
@@ -70,11 +71,11 @@ import AuthTopNav from '../components/AuthTopNav.vue';
                 <p class="mission-stat-num text-violet-600">98%</p>
                 <p class="mission-stat-label">Satisfaction Rate</p>
               </div>
-            </div>
+            </div>-->
           </div>
 
           <!-- Visual block -->
-          <div class="relative">
+        <div class="relative">
             <div class="mission-visual-card">
               <div class="mv-inner">
                 <div class="mv-icon-row">
@@ -186,7 +187,7 @@ import AuthTopNav from '../components/AuthTopNav.vue';
     </section>
 
     <!-- ─── HOW WE SERVE ──────────────────────────────────────── -->
-    <section class="relative overflow-hidden bg-[#0f2444] px-6 py-20 sm:px-10 lg:px-16 lg:py-28">
+    <!--<section class="relative overflow-hidden bg-[#0f2444] px-6 py-20 sm:px-10 lg:px-16 lg:py-28">
       <div class="dots absolute inset-0 opacity-[0.04]"></div>
       <div class="absolute right-0 top-0 h-96 w-96 rounded-full bg-orange-500/10 blur-3xl pointer-events-none"></div>
       <div class="absolute bottom-0 left-0 h-64 w-64 rounded-full bg-sky-500/10 blur-3xl pointer-events-none"></div>
@@ -221,7 +222,7 @@ import AuthTopNav from '../components/AuthTopNav.vue';
           </div>
         </div>
       </div>
-    </section>
+    </section>-->
 
     <!-- ─── TEAM ──────────────────────────────────────────────── -->
     <section class="bg-white px-6 py-20 sm:px-10 lg:px-16 lg:py-28">
@@ -256,7 +257,7 @@ import AuthTopNav from '../components/AuthTopNav.vue';
     </section>
 
     <!-- ─── CTA ───────────────────────────────────────────────── -->
-    <section class="cta-section relative overflow-hidden px-6 py-24 sm:px-10 lg:px-16">
+    <!--<section class="cta-section relative overflow-hidden px-6 py-24 sm:px-10 lg:px-16">
       <div class="cta-bg absolute inset-0"></div>
       <div class="absolute left-0 top-0 h-64 w-64 rounded-full bg-orange-500/20 blur-3xl pointer-events-none"></div>
       <div class="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-sky-400/10 blur-3xl pointer-events-none"></div>
@@ -280,24 +281,11 @@ import AuthTopNav from '../components/AuthTopNav.vue';
           </RouterLink>
         </div>
       </div>
-    </section>
+    </section>-->
 
     <!-- ─── FOOTER STRIP ──────────────────────────────────────── -->
-    <footer class="footer-strip relative overflow-hidden px-6 py-8 sm:px-10 lg:px-16">
-      <div class="footer-accent-bar"></div>
-      <div class="relative mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
-        <div class="flex items-center gap-2">
-          <svg class="h-5 w-5 text-orange-500" fill="currentColor" viewBox="0 0 24 24"><path d="M20 2H4c-1.103 0-2 .897-2 2v18l4-4h14c1.103 0 2-.897 2-2V4c0-1.103-.897-2-2-2zm-6 11h-4v-2h4v2zm0-4H8V7h6v2z"/></svg>
-          <span class="text-sm font-black text-white">ComplaintTrack</span>
-        </div>
-        <p class="text-sm text-slate-500">© 2026 ComplaintTrack. All rights reserved.</p>
-        <div class="flex gap-4 text-sm text-slate-500">
-          <RouterLink to="/" class="transition hover:text-orange-400">Home</RouterLink>
-          <RouterLink to="/submit-complaint" class="transition hover:text-orange-400">Submit</RouterLink>
-          <RouterLink to="/track-complaint" class="transition hover:text-orange-400">Track</RouterLink>
-        </div>
-      </div>
-    </footer>
+    
+      <AppFooter />
   </div>
 </template>
 
@@ -309,39 +297,31 @@ import AuthTopNav from '../components/AuthTopNav.vue';
 /* ── Hero ──────────────────────────────────── */
 .about-hero { background-color: #0b1a33; }
 .hero-bg {
-  background-image: url('https://images.unsplash.com/photo-1521791136064-7986c2920216?w=1600&q=80');
+  background-image: url('https://images.unsplash.com/photo-1568992687947-868a62a9f521?w=1600&q=80');
   background-size: cover;
-  background-position: center 30%;
+  background-position: center top;
 }
 .hero-gradient {
-  background: linear-gradient(
-    130deg,
-    rgba(9,20,48,0.97) 0%,
-    rgba(12,35,80,0.90) 45%,
-    rgba(20,55,110,0.75) 100%
-  );
+  background: linear-gradient(135deg, rgba(10,28,64,0.88) 0%, rgba(15,52,100,0.82) 50%, rgba(30,60,110,0.75) 100%);
 }
 .grid-lines {
   background-image:
-    linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px);
-  background-size: 55px 55px;
+    linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-size: 60px 60px;
 }
 .orb { border-radius: 50%; filter: blur(80px); pointer-events: none; }
 .orb-a {
-  right: 8%; top: 20%; width: 360px; height: 360px;
-  background: radial-gradient(circle, rgba(249,115,22,0.15), transparent 70%);
+  right: 5%; top: 15%; width: 420px; height: 420px;
+  background: radial-gradient(circle, rgba(249,115,22,0.18), transparent 70%);
 }
 .orb-b {
-  left: 15%; bottom: 10%; width: 240px; height: 240px;
-  background: radial-gradient(circle, rgba(56,189,248,0.10), transparent 70%);
+  left: 20%; bottom: 15%; width: 280px; height: 280px;
+  background: radial-gradient(circle, rgba(56,189,248,0.12), transparent 70%);
 }
-.hero-h1 { font-family: 'Playfair Display', Georgia, serif; }
-.text-gradient {
-  background: linear-gradient(90deg, #f97316 0%, #fb923c 55%, #fbbf24 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.hero-h1 {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  letter-spacing: -0.02em;
 }
 
 /* ── Animations ────────────────────────────── */
@@ -474,21 +454,5 @@ import AuthTopNav from '../components/AuthTopNav.vue';
   display: inline-flex; align-items: center; justify-content: center;
   font-size: 1rem; font-weight: 900; color: white;
   letter-spacing: 0.05em;
-}
-
-/* ── CTA ───────────────────────────────────── */
-.cta-bg {
-  inset: 0; position: absolute;
-  background: linear-gradient(135deg, #0b1a33 0%, #162d5c 50%, #0f2444 100%);
-}
-
-/* ── Footer strip ──────────────────────────── */
-.footer-strip {
-  background: linear-gradient(180deg, #0a1628 0%, #060e1c 100%);
-  border-top: 1px solid rgba(255,255,255,0.05);
-}
-.footer-accent-bar {
-  position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, #f97316, #fb923c, #fbbf24, #38bdf8, #818cf8);
 }
 </style>

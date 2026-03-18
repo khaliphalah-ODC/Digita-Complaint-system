@@ -1,18 +1,22 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSessionStore } from '../stores/session.js';
 import api from '../services/api.js';
-import AppFooter from '../components/AppFooter.vue';
+
 const router = useRouter();
 const session = useSessionStore();
 
 const form = ref({
-  display_name: session.currentUser?.full_name || '',
+  display_name: '',
   role_label: '',
   message: '',
   rating: 0,
   is_anonymous: false,
+});
+
+onMounted(() => {
+  form.value.display_name = session.currentUser?.full_name || '';
 });
 
 const hoverRating = ref(0);
@@ -23,7 +27,6 @@ const error = ref('');
 const setRating = (val) => { form.value.rating = val; };
 const setHover = (val) => { hoverRating.value = val; };
 const clearHover = () => { hoverRating.value = 0; };
-
 const activeRating = () => hoverRating.value || form.value.rating;
 
 const handleAnonymous = () => {
@@ -66,6 +69,7 @@ const submit = async () => {
   }
 };
 </script>
+
 
 <template>
   <section class="testimonial-page w-full">

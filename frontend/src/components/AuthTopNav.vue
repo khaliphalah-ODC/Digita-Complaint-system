@@ -15,21 +15,22 @@ const session = useSessionStore();
 
 const publicItems = computed(() => [
   { label: 'Home', to: '/' },
-  { label: 'Submit Complaint', to: '/submit-complaint' },
-  { label: 'Track Complaint', to: '/track-complaint' },
-  { label: 'Organizations', to: '/organizations' }
+  { label: 'About', to: '/about' },
+  { label: 'Features', to: '/features' },
 ]);
+
 const isLoggedIn = computed(() => session.isLoggedIn);
 const dashboardRoute = computed(() => {
   if (session.currentUser?.role === 'super_admin') return '/admin/dashboard';
   if (session.currentUser?.role === 'org_admin') return '/org-admin/dashboard';
   return '/user/dashboard';
 });
+
 const wrapperClass = computed(() => (props.fixed ? 'fixed inset-x-0 top-0 z-40' : ''));
 const shellClass = computed(() => (
   props.fixed
-    ? 'app-shell-panel  px-4 py-4 sm:px-5 md:px-8'
-    : 'app-shell-panel mb-6 w-full  px-4 py-4 sm:px-5 md:px-8'
+    ? 'app-shell-panel px-4 py-4 sm:px-5 md:px-8'
+    : 'app-shell-panel mb-6 w-full px-4 py-4 sm:px-5 md:px-8'
 ));
 
 const publicLinkClass = (to) => {
@@ -61,12 +62,21 @@ const authLinkClass = (to) => {
   <div :class="wrapperClass">
     <header :class="shellClass">
       <nav class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div class="min-w-0">
-          <p class="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--app-primary)]">Complaint Operations</p>
-          <p class="text-2xl font-black text-slate-900 sm:text-3xl">Complaint <span class="text-[var(--app-primary)]">MS</span></p>
-          <p class="text-xs font-medium text-slate-500">Submit · Track · Resolve</p>
-        </div>
 
+        <!-- ── Logo ─────────────────────────────────────────── -->
+        <RouterLink to="/" class="logo-link min-w-0 flex items-center gap-2.5 no-underline">
+          <div class="logo-icon">
+            <svg fill="currentColor" viewBox="0 0 24 24" class="h-5 w-5">
+              <path d="M20 2H4c-1.103 0-2 .897-2 2v18l4-4h14c1.103 0 2-.897 2-2V4c0-1.103-.897-2-2-2zm-6 11h-4v-2h4v2zm0-4H8V7h6v2z"/>
+            </svg>
+          </div>
+          <div class="logo-text">
+            <span class="logo-name">Complaint<span class="logo-accent">Track</span></span>
+            <span class="logo-tagline">Submit · Track · Resolve</span>
+          </div>
+        </RouterLink>
+
+        <!-- ── Nav Links ─────────────────────────────────────── -->
         <ul class="flex flex-wrap items-center gap-4 text-sm font-semibold text-slate-700">
           <li v-for="item in publicItems" :key="item.to">
             <RouterLink :to="item.to" :class="publicLinkClass(item.to)">
@@ -75,6 +85,7 @@ const authLinkClass = (to) => {
           </li>
         </ul>
 
+        <!-- ── Auth Buttons ──────────────────────────────────── -->
         <div class="flex flex-wrap items-center gap-2 sm:gap-3">
           <RouterLink to="/signin" :class="authLinkClass('/signin')">
             Login
@@ -90,7 +101,46 @@ const authLinkClass = (to) => {
             Dashboard
           </RouterLink>
         </div>
+
       </nav>
     </header>
   </div>
 </template>
+
+<style scoped>
+.logo-link {
+  text-decoration: none;
+}
+.logo-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.625rem;
+  background: var(--app-primary, #1f4db7);
+  color: white;
+  flex-shrink: 0;
+}
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+.logo-name {
+  font-size: 1.2rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: #0f172a;
+}
+.logo-accent {
+  color: var(--app-primary, #1f4db7);
+}
+.logo-tagline {
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+  margin-top: 0.15rem;
+}
+</style>

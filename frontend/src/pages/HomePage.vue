@@ -1,14 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
-
-import { useSessionStore } from '../stores/session';
-                                                                                                                                               
-
-const session = useSessionStore();
-const isLoggedIn = computed(() => session.isLoggedIn);
-const dashboardRoute = computed(() => (session.currentUser?.role === 'admin' ? '/admin/dashboard' : '/team-dashboard'));
-
 import AuthTopNav from '../components/AuthTopNav.vue';
 import AppFooter from '../components/AppFooter.vue';
 
@@ -210,7 +202,7 @@ const avatarColor = (i) => avatarColors[i % avatarColors.length];
 /* ── Hero ──────────────────────────────────── */
 .hero-section {
   min-height: 600px;
-  background-image: url('https://images.unsplash.com/photo-1568992687947-868a62a9f521?w=1600&q=80');
+    background-image: url('https://images.unsplash.com/photo-1573497620053-ea5300f94f21?w=1600&q=80');
   background-size: cover;
   background-position: center top;
 }
