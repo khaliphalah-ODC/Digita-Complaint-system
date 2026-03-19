@@ -3,6 +3,8 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSessionStore } from '../stores/session.js';
 import api from '../services/api.js';
+import AuthTopNav from '../components/AuthTopNav.vue';
+import AppFooter from '../components/AppFooter.vue';
 
 const router = useRouter();
 const session = useSessionStore();
@@ -72,7 +74,9 @@ const submit = async () => {
 
 
 <template>
-  <section class="testimonial-page w-full">
+ <div class="min-h-screen w-screen flex flex-col">
+    <AuthTopNav fixed />
+    <section class="testimonial-page w-full flex-1 pt-24">
 
     <!-- ── Success state ───────────────────────────────────────── -->
     <div v-if="submitted" class="success-card">
@@ -81,7 +85,7 @@ const submit = async () => {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
       </div>
-      <h2 class="success-title">Thank you for sharing!</h2>
+      <h2 class="success-title font-family">Thank you for sharing your experience!</h2>
       <p class="success-desc">Your testimonial has been submitted and is pending review. Once approved by an admin it will appear publicly on the homepage.</p>
       <button class="back-btn" @click="router.push('/user/dashboard')">
         ← Back to Dashboard
@@ -203,7 +207,8 @@ const submit = async () => {
 
     </div>
   </section>
-  <AppFooter/>
+    <AppFooter/>
+  </div>
 </template>
 
 <style scoped>
@@ -211,36 +216,41 @@ const submit = async () => {
 
 .testimonial-page {
   font-family: 'Georgia', Times New Roman;
-  padding: 1.5rem;
+  
+  padding-top: 3.4rem;
 }
 
 /* ── Success ───────────────────────────────── */
 .success-card {
   max-width: 32rem; margin: 4rem auto;
+  font-family:'Georgia''Times New Roman';
   text-align: center; padding: 3rem 2rem;
   border-radius: 1.5rem;
   border: 1px solid rgba(16,185,129,0.15);
-  background: linear-gradient(135deg, #f0fdf4, #ffffff);
+  background: linear-gradient(135deg, #5098c9, #ffffff);
   box-shadow: 0 8px 40px rgba(16,185,129,0.08);
 }
+
+
 .success-icon { display: flex; justify-content: center; margin-bottom: 1.25rem; }
 .success-title { font-size: 1.5rem; font-weight: 900; color: #0f2444; }
-.success-desc { margin-top: 0.75rem; font-size: 0.875rem; line-height: 1.7; color: #64748b; max-width: 22rem; margin-left: auto; margin-right: auto; }
+.success-desc { margin-top: 0.75rem; font-size: 0.875rem; line-height: 1.7; color: #09090a; max-width: 22rem; margin-left: auto; margin-right: auto; }
 .back-btn {
   margin-top: 2rem; display: inline-flex; align-items: center; gap: 0.5rem;
   padding: 0.75rem 1.75rem; border-radius: 9999px;
   background: #0f2444; color: white; font-size: 0.875rem; font-weight: 700;
   border: none; cursor: pointer; transition: all 0.2s;
+  
 }
 .back-btn:hover { background: #162d5c; transform: translateY(-1px); }
 
 /* ── Form wrapper ──────────────────────────── */
 .form-wrapper {
-  max-width: 42rem; margin: 0 auto;
+ max-width: 100%; margin: 0 auto;
   background: white;
   border: 1px solid rgba(15,36,68,0.08);
   border-radius: 1.5rem;
-  padding: 2rem;
+   padding: 6.5rem 11rem 18rem 11rem;
   box-shadow: 0 4px 30px rgba(15,36,68,0.07);
   display: flex; flex-direction: column; gap: 1.5rem;
 }
@@ -254,17 +264,20 @@ const submit = async () => {
 .form-header-icon {
   display: inline-flex; align-items: center; justify-content: center;
   width: 3rem; height: 3rem; border-radius: 0.875rem;
-  background: #fff7ed; color: #f97316; flex-shrink: 0;
+  background: #faf8f6; color: #072f6d; flex-shrink: 0;
 }
 .form-kicker {
-  font-size: 0.65rem; font-weight: 700;
-  letter-spacing: 0.2em; text-transform: uppercase; color: #f97316;
+  font-size: 0.70rem; font-weight: 700;
+  letter-spacing: 0.2em; text-transform: uppercase; color: #f78f07;
+   font-family: 'Times New Roman';
 }
 .form-title {
   font-size: 1.25rem; font-weight: 900; color: #0f2444; margin-top: 0.2rem;
+  font-family:'Times New Roman';
 }
 .form-subtitle {
   margin-top: 0.4rem; font-size: 0.8rem; line-height: 1.6; color: #94a3b8;
+   font-family: 'Georgia''Times New Roman';
 }
 
 /* ── Error banner ──────────────────────────── */
@@ -277,20 +290,20 @@ const submit = async () => {
 
 /* ── Field ─────────────────────────────────── */
 .field-group { display: flex; flex-direction: column; gap: 0.4rem; }
-.field-label { font-size: 0.8rem; font-weight: 700; color: #374151; }
+.field-label { font-size: 0.8rem; font-weight: 700; color: #110f30; }
 .field-input {
   padding: 0.65rem 0.875rem;
   border: 1px solid #e2e8f0; border-radius: 0.625rem;
   font-size: 0.875rem; color: #0f172a; background: #f8fafc;
   outline: none; transition: border 0.2s;
-  font-family: 'DM Sans', sans-serif;
+  font-family:'Georgia' 'Times New Roman';
 }
 .field-input:focus { border-color: #f97316; background: white; box-shadow: 0 0 0 3px rgba(249,115,22,0.08); }
 .field-input:disabled { opacity: 0.5; cursor: not-allowed; }
 .field-textarea {
   padding: 0.75rem 0.875rem;
   border: 1px solid #e2e8f0; border-radius: 0.625rem;
-  font-size: 0.875rem; color: #0f172a; background: #f8fafc;
+  font-size: 0.875rem; color:  #0f172a; background: #f8fafc;
   outline: none; resize: vertical; transition: border 0.2s;
   font-family: 'DM Sans', sans-serif; line-height: 1.6;
 }
@@ -318,7 +331,7 @@ const submit = async () => {
   width: 2.75rem; height: 1.5rem; border-radius: 9999px;
   background: #e2e8f0; position: relative; transition: background 0.2s; flex-shrink: 0;
 }
-.anon-on { background: #f97316; }
+.anon-on { background: #e7760c; }
 .anon-knob {
   position: absolute; top: 3px; left: 3px;
   width: 1.125rem; height: 1.125rem; border-radius: 9999px;
@@ -349,7 +362,7 @@ const submit = async () => {
 .submit-btn {
   display: inline-flex; align-items: center; gap: 0.5rem;
   padding: 0.7rem 1.75rem; border-radius: 9999px;
-  background: #f97316; color: white;
+  background: #072f6d; color: white;
   font-size: 0.875rem; font-weight: 700; border: none; cursor: pointer;
   box-shadow: 0 4px 16px rgba(249,115,22,0.35);
   transition: all 0.2s;

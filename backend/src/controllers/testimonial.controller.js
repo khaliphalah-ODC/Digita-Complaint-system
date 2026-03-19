@@ -14,15 +14,16 @@ import {
 } from '../model/testimonial.model.js';
 
 export const CreateTestimonialsTable = () => {
-    complaintDB.run(testimonialsQuery, (err) => {
-        if (err) {
-            console.error('Error creating testimonials table:', err.message);
-        } else {
-            console.log('Testimonials table created or already exists');
-        }
+    complaintDB.serialize(() => {
+        complaintDB.run(testimonialsQuery, (err) => {
+            if (err) {
+                console.error('Error creating testimonials table:', err.message);
+            } else {
+                console.log('Testimonials table created or already exists');
+            }
+        });
     });
 };
-
 // ── POST /api/testimonials ─────────────────────────────────
 // Logged-in user submits a public testimonial
 export const submitTestimonial = (req, res) => {

@@ -64,7 +64,7 @@ const avatarColor = (i) => avatarColors[i % avatarColors.length];
     <section class="bg-[#f5f7fa] px-4 py-16 sm:px-6 md:px-10 lg:py-24">
       <div class="mx-auto max-w-6xl">
         <div class="mb-10 text-center">
-          <p class="text-sm font-bold font-family mt-16 uppercase tracking-[0.22em] text-[#f97316]">How It Works</p>
+          <p class="text-sm font-bold font-family mt-16 uppercase tracking-[0.22em] text-[ #051327]">How It Works</p>
           <!--<h2 class="mt-2 text-3xl font-black text-[#0f2444] sm:text-4xl">Three Ways We Help</h2>-->
         </div>
 
@@ -193,6 +193,57 @@ const avatarColor = (i) => avatarColors[i % avatarColors.length];
   </div>
 </section>
 
+ <!-- ─── TEAM ──────────────────────────────────────────────── -->
+<section class="bg-white px-6 py-20 sm:px-10 lg:px-16 lg:py-28">
+  <div class="mx-auto max-w-5xl">
+    <div class="mb-14 text-center">
+      <!--<p class="section-kicker">The Team</p>-->
+      <h2 class="section-title mt-2">Meet the Team behind<br/>ComplaintTrack</h2>
+      <p class="mx-auto mt-4 max-w-xl font-color text-sm leading-7 text-slate-500">A focused team of technological-minded builders committed to making accountability accessible to everyone.</p>
+    </div>
+
+    <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+
+      <!-- Card 1 — real photo -->
+      <div class="team-card">
+        <img
+          src="/images/yeato.jpeg"
+          alt="Yeato Yowah"
+          class="team-avatar-img"
+        />
+        <h3 class="mt-4 text-base font-bold text-[#0f2444]">Yeato Yowah</h3>
+        <p class="text-sm font-medium text-orange-500">Group Head</p>
+        <p class="mt-2 text-xs leading-6 text-slate-500">Built the core platform architecture and is passionate about civic tech solving real problems for everyday Liberians.</p>
+      </div>
+
+      <!-- Card 2 — initials until photo is ready -->
+      <div class="team-card">
+        <img
+          src="/images/yeato.jpeg"
+          alt="Yeato Yowah"
+          class="team-avatar-img"
+        />
+        <h3 class="mt-4 text-base font-bold text-[#0f2444]">Yeato Yowah</h3>
+        <p class="text-sm font-medium text-sky-600">UX & Product Design</p>
+        <p class="mt-2 text-xs leading-6 text-slate-500">Leads the user experience to ensure the platform is accessible, calm, and frustration-free for every type of user.</p>
+      </div>
+
+      <!-- Card 3 — initials until photo is ready -->
+      <div class="team-card">
+        <img
+          src="/images/yeato.jpeg"
+          alt="Yeato Yowah"
+          class="team-avatar-img"
+        />
+        <h3 class="mt-4 text-base font-bold text-[#0f2444]">Yeato Yowah</h3>
+        <p class="text-sm font-medium text-violet-600">Backend & Systems</p>
+        <p class="mt-2 text-xs leading-6 text-slate-500">Manages data security, routing logic, and the admin infrastructure that keeps organizations on track.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
     <!-- ─── FOOTER (full-width, replaces AppFooter) ─── -->
    <AppFooter /> 
   </div>
@@ -201,7 +252,7 @@ const avatarColor = (i) => avatarColors[i % avatarColors.length];
 <style scoped>
 /* ── Hero ──────────────────────────────────── */
 .hero-section {
-  min-height: 600px;
+  min-height: 500px;
     background-image: url('https://images.unsplash.com/photo-1573497620053-ea5300f94f21?w=1600&q=80');
   background-size: cover;
   background-position: center top;
@@ -223,7 +274,7 @@ const avatarColor = (i) => avatarColors[i % avatarColors.length];
   position: absolute; bottom: 1rem; right: 1rem;
   border-radius: 9999px; padding: 0.25rem 0.75rem;
   font-size: 0.75rem; font-weight: 700; color: white;
-  box-shadow: 0 2px 8px hsl(0, 13%, 96%);
+  box-shadow: 0 2px 8px hsl(240, 14%, 96%); 
 }
 .font-family{
   font-family: 'Georgia', 'Times New Roman';
@@ -243,7 +294,7 @@ const avatarColor = (i) => avatarColors[i % avatarColors.length];
   margin-top: 0.5rem;
   font-family: 'Georgia', 'Times New Roman', serif;
   font-size: clamp(1.8rem, 4vw, 2.4rem); font-weight: 900;
-  color: #0f2444; line-height: 1.1;
+  color: #051327; line-height: 1.1;
 }
 .testimonial-card {
   background: white;
@@ -263,5 +314,33 @@ const avatarColor = (i) => avatarColors[i % avatarColors.length];
 .av-emerald { background: #059669; }
 .av-violet  { background: #7c3aed; }
 
-/* ── Footer ────────────────────────────────── */
+/* ── Team cards ────────────────────────────── */
+
+.section-title{
+  
+}
+
+
+.team-card {
+  text-align: center; padding: 2rem 1.5rem;
+  border-radius: 1.5rem;
+  border: 1px solid rgba(15,36,68,0.07);
+  background: white;
+  box-shadow: 0 4px 20px rgba(15,36,68,0.06);
+  transition: all 0.25s;
+  
+}
+.team-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(15,36,68,0.11); }
+.team-avatar-img {
+  width: 8rem;
+  height: 8rem;
+  border-radius: 9999px;
+  object-fit: cover;
+  object-position: center top;
+  border: 3px solid #f1f5f9;
+  box-shadow: 0 4px 12px rgba(15,36,68,0.12);
+  margin: 0 auto 0.5rem auto;
+  display: block;
+}
+
 </style>
