@@ -3,6 +3,7 @@ import { createPinia } from 'pinia';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import {
+  faBars,
   faBell,
   faBuilding,
   faChartLine,
@@ -37,6 +38,7 @@ import './asset/main.css';
 
 library.add(
   faBell,
+  faBars,
   faBuilding,
   faChartLine,
   faCircleInfo,

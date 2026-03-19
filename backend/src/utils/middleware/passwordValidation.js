@@ -12,8 +12,6 @@ const passwordPolicy = Joi.string()
   });
 
 export const passwordOnlySchema = Joi.object({
-  full_name: Joi.string().min(2).required(),
-  email: Joi.string().email().required(),
   password: passwordPolicy.required()
 });
 

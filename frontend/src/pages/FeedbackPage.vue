@@ -25,6 +25,13 @@ const ensureSuccess = (payload, fallbackMessage) => {
 };
 
 const isAdminFamily = computed(() => ['super_admin', 'org_admin'].includes(session.currentUser?.role || ''));
+const isUserWorkspace = computed(() => session.currentUser?.role === 'user');
+const panelClass = computed(() => (isUserWorkspace.value ? 'user-shell-panel rounded-[30px] p-4' : 'app-shell-panel rounded-[30px] p-4'));
+const statCardClass = computed(() => (isUserWorkspace.value ? 'user-shell-card rounded-[26px] p-4' : 'app-ink-card rounded-[26px] p-4'));
+const softTextClass = computed(() => (isUserWorkspace.value ? 'text-sm text-[var(--app-muted-color)]' : 'text-sm text-slate-600'));
+const headingClass = computed(() => (isUserWorkspace.value ? 'mt-2 text-2xl font-bold text-[var(--app-primary-ink)]' : 'mt-2 text-2xl font-bold text-slate-900'));
+const inputClass = computed(() => (isUserWorkspace.value ? 'rounded-2xl border border-[#c6d8f8] bg-white px-3 py-2 text-sm text-[var(--app-primary-ink)]' : 'rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm'));
+const secondaryButtonClass = computed(() => (isUserWorkspace.value ? 'rounded-full border border-[#c6d8f8] bg-white px-4 py-2 text-sm font-semibold text-[var(--app-primary-ink)] hover:bg-[#eef4ff]' : 'rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700'));
 const feedbackSummary = computed(() => {
   const rows = feedbackRows.value || [];
   const total = rows.length;
@@ -175,38 +182,38 @@ onMounted(async () => {
     <header class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
       <div>
         <p class="app-kicker">Experience Notes</p>
-        <h1 class="mt-2 text-2xl font-bold text-slate-900">Feedback</h1>
-        <p class="text-sm text-slate-600">Share feedback for your complaint experience.</p>
+        <h1 :class="headingClass">Feedback</h1>
+        <p :class="softTextClass">Share feedback for your complaint experience.</p>
       </div>
-      <button class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700" @click="fetchFeedback">
+      <button :class="secondaryButtonClass" @click="fetchFeedback">
         Refresh
       </button>
     </header>
 
     <section class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-      <article class="app-ink-card rounded-[26px] p-4">
-        <p class="text-xs uppercase tracking-wide text-slate-500">Average Rating</p>
+      <article :class="statCardClass">
+        <p class="text-xs uppercase tracking-wide text-[var(--app-muted-color)]">Average Rating</p>
         <p class="mt-2 text-3xl font-black text-[var(--app-primary)]">{{ feedbackSummary.averageRating }}</p>
       </article>
-      <article class="app-ink-card rounded-[26px] p-4">
-        <p class="text-xs uppercase tracking-wide text-slate-500">Total Feedback</p>
-        <p class="mt-2 text-3xl font-black text-slate-900">{{ feedbackSummary.total }}</p>
+      <article :class="statCardClass">
+        <p class="text-xs uppercase tracking-wide text-[var(--app-muted-color)]">Total Feedback</p>
+        <p class="mt-2 text-3xl font-black text-[var(--app-primary-ink)]">{{ feedbackSummary.total }}</p>
       </article>
-      <article class="app-ink-card rounded-[26px] p-4">
-        <p class="text-xs uppercase tracking-wide text-slate-500">Last 7 Days</p>
+      <article :class="statCardClass">
+        <p class="text-xs uppercase tracking-wide text-[var(--app-muted-color)]">Last 7 Days</p>
         <p class="mt-2 text-3xl font-black text-[var(--app-primary)]">{{ feedbackSummary.recentCount }}</p>
       </article>
     </section>
 
-    <section class="app-shell-panel rounded-[30px] p-4">
-      <h2 class="mb-3 text-lg font-bold text-slate-900">{{ editingId ? 'Edit Feedback' : 'Create Feedback' }}</h2>
+    <section :class="panelClass">
+      <h2 class="mb-3 text-lg font-bold text-[var(--app-primary-ink)]">{{ editingId ? 'Edit Feedback' : 'Create Feedback' }}</h2>
       <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <select v-model="form.complaint_id" class="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm">
+        <select v-model="form.complaint_id" :class="inputClass">
           <option value="">Select complaint</option>
           <option v-for="c in complaintOptions" :key="c.id" :value="c.id">{{ c.label }}</option>
         </select>
 
-        <select v-model="form.rating" class="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm">
+        <select v-model="form.rating" :class="inputClass">
           <option :value="5">5 - Excellent</option>
           <option :value="4">4 - Good</option>
           <option :value="3">3 - Fair</option>
@@ -218,34 +225,34 @@ onMounted(async () => {
           v-model="form.comment"
           rows="3"
           placeholder="Write your feedback"
-          class="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm md:col-span-2"
+          :class="`${inputClass} md:col-span-2`"
         />
 
         <div class="flex gap-2 md:col-span-2">
           <button :disabled="saving" class="rounded-full bg-[var(--app-primary)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60" @click="saveFeedback">
             {{ saving ? 'Saving...' : editingId ? 'Update Feedback' : 'Submit Feedback' }}
           </button>
-          <button class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700" @click="resetForm">
+          <button :class="secondaryButtonClass" @click="resetForm">
             Clear
           </button>
         </div>
       </div>
     </section>
 
-    <section class="app-shell-panel rounded-[30px] p-4">
-      <h2 class="mb-3 text-lg font-bold text-slate-900">Feedback Records</h2>
-      <p v-if="loading" class="text-sm text-slate-500">Loading feedback...</p>
+    <section :class="panelClass">
+      <h2 class="mb-3 text-lg font-bold text-[var(--app-primary-ink)]">Feedback Records</h2>
+      <p v-if="loading" class="text-sm text-[var(--app-muted-color)]">Loading feedback...</p>
       <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
-      <p v-else-if="feedbackRows.length === 0" class="text-sm text-slate-500">No feedback found.</p>
+      <p v-else-if="feedbackRows.length === 0" class="text-sm text-[var(--app-muted-color)]">No feedback found.</p>
 
       <div v-else class="space-y-3">
-        <article v-for="row in feedbackRows" :key="row.id" class="app-ink-card rounded-[24px] p-4">
+        <article v-for="row in feedbackRows" :key="row.id" :class="statCardClass">
           <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
             <div>
-              <p class="text-sm font-semibold text-slate-900">{{ row.complaint_title || `Complaint #${row.complaint_id}` }}</p>
-              <p class="text-xs text-slate-500">{{ row.complaint_tracking_code || 'No tracking code' }}</p>
-              <p class="mt-2 text-sm text-slate-700">{{ row.comment || 'No comment provided.' }}</p>
-              <p class="mt-1 text-xs text-slate-500">
+              <p class="text-sm font-semibold text-[var(--app-primary-ink)]">{{ row.complaint_title || `Complaint #${row.complaint_id}` }}</p>
+              <p class="text-xs text-[var(--app-muted-color)]">{{ row.complaint_tracking_code || 'No tracking code' }}</p>
+              <p class="mt-2 text-sm text-[var(--app-primary-ink)]">{{ row.comment || 'No comment provided.' }}</p>
+              <p class="mt-1 text-xs text-[var(--app-muted-color)]">
                 By {{ row.user_full_name || `User #${row.user_id}` }} | {{ row.created_at }}
               </p>
             </div>

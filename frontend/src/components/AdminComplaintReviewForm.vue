@@ -20,14 +20,35 @@ const form = reactive({
   admin_response: ''
 });
 
-const statusOptions = ['submitted', 'in_review', 'resolved', 'closed'];
+const deriveWorkflowStatus = (row) => {
+  const rawStatus = String(row?.status || 'submitted').toLowerCase();
+  if (rawStatus === 'in_review') {
+    return row?.department_name || row?.reviewer_name || row?.reviewed_at ? 'assigned' : 'reviewed';
+  }
+  return rawStatus;
+};
+
+const toBackendStatus = (workflowStatus) => {
+  if (workflowStatus === 'reviewed' || workflowStatus === 'assigned') {
+    return 'in_review';
+  }
+  return workflowStatus;
+};
+
+const statusOptions = [
+  { value: 'submitted', label: 'Submitted' },
+  { value: 'reviewed', label: 'Reviewed' },
+  { value: 'assigned', label: 'Assigned' },
+  { value: 'resolved', label: 'Resolved' },
+  { value: 'closed', label: 'Closed' }
+];
 const priorityOptions = ['low', 'medium', 'high', 'urgent'];
 
 watch(
   () => props.complaint,
   (row) => {
     if (!row) return;
-    form.status = row.status || 'submitted';
+    form.status = deriveWorkflowStatus(row);
     form.priority = row.priority || 'medium';
     form.admin_response = row.admin_response || '';
   },
@@ -38,7 +59,7 @@ const canSave = computed(() => Boolean(props.complaint));
 
 const submit = () => {
   emit('save', {
-    status: form.status,
+    status: toBackendStatus(form.status),
     priority: form.priority,
     admin_response: form.admin_response.trim() || null
   });
@@ -55,7 +76,7 @@ const submit = () => {
       <label class="space-y-1">
         <span class="text-xs font-semibold text-slate-600">Status</span>
         <select v-model="form.status" class="w-full rounded-2xl border border-slate-300 bg-white px-3 py-3 text-sm">
-          <option v-for="status in statusOptions" :key="status" :value="status">{{ status }}</option>
+          <option v-for="status in statusOptions" :key="status.value" :value="status.value">{{ status.label }}</option>
         </select>
       </label>
 

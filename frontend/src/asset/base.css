@@ -17,6 +17,11 @@
   --app-deep: #10213c;
   --app-deep-ink: #0f1f39;
   --app-shadow: 0 20px 60px rgba(16, 33, 60, 0.12);
+  --user-shell-gradient: linear-gradient(180deg, #f4f8ff 0%, #e8f0ff 46%, #d9e7ff 100%);
+  --user-panel-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(237, 244, 255, 0.92));
+  --user-panel-border: rgba(126, 159, 221, 0.22);
+  --user-panel-shadow: 0 24px 60px rgba(16, 33, 60, 0.12);
+  --user-accent-gradient: linear-gradient(135deg, #163462 0%, #1f4db7 100%);
   --org-admin-gradient: linear-gradient(135deg, #0f1f39 0%, #163462 48%, #1f4db7 100%);
   --org-admin-panel-bg: rgba(255, 255, 255, 0.08);
   --org-admin-panel-border: rgba(255, 255, 255, 0.25);
@@ -167,6 +172,90 @@ a {
   color: #ffffff;
 }
 
+.user-shell {
+  background:
+    radial-gradient(circle at top left, rgba(79, 141, 247, 0.14), transparent 28%),
+    radial-gradient(circle at 92% 8%, rgba(31, 77, 183, 0.18), transparent 22%),
+    var(--user-shell-gradient);
+}
+
+.user-shell-panel {
+  background: var(--user-panel-bg);
+  border: 1px solid var(--user-panel-border);
+  border-radius: 30px;
+  box-shadow: var(--user-panel-shadow);
+  backdrop-filter: blur(16px);
+}
+
+.user-shell-sidebar {
+  background: linear-gradient(135deg, #0f1f39 0%, #163462 48%, #1f4db7 100%);
+  border-right: 1px solid rgba(170, 194, 235, 0.5);
+  box-shadow: 0 18px 44px rgba(16, 33, 60, 0.12);
+  backdrop-filter: blur(16px);
+}
+
+.user-shell-header {
+  background: linear-gradient(180deg, rgba(245, 249, 255, 0.96), rgba(232, 240, 255, 0.94));
+  border-bottom: 1px solid rgba(170, 194, 235, 0.45);
+  box-shadow: 0 14px 40px rgba(2, 6, 23, 0.12);
+  backdrop-filter: blur(24px);
+}
+
+.user-shell-card {
+  background: linear-gradient(135deg, #0f1f39 0%, #163462 48%, #1f4db7 100%);
+  border: 1px solid rgba(126, 159, 221, 0.2);
+  border-radius: 28px;
+  box-shadow: 0 18px 42px rgba(16, 33, 60, 0.1);
+}
+
+.user-shell-accent {
+  background: var(--user-accent-gradient);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 30px;
+  box-shadow: 0 22px 56px rgba(15, 31, 57, 0.24);
+  color: #ffffff;
+}
+
+.user-shell-soft-card {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  color: #ffffff;
+}
+
+.user-shell-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #164362;
+  color: var(--app-primary-ink);
+  font-weight: 700;
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.user-shell-btn:hover {
+  background: rgba(255, 255, 255, 0.92);
+  transform: translateY(-1px);
+}
+
+.user-shell-outline-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  font-weight: 700;
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.user-shell-outline-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: translateY(-1px);
+}
+
 .org-admin-shell {
   background: var(--org-admin-gradient);
   background-attachment: fixed;
@@ -202,9 +291,7 @@ a {
 .org-admin-shell .app-footer-panel,
 .org-admin-shell .org-admin-card,
 .org-admin-shell .app-shell-panel,
-.org-admin-shell .app-shell-stage,
-.org-admin-shell article,
-.org-admin-shell section {
+.org-admin-shell .app-shell-stage {
   background: var(--org-admin-panel-bg);
   border: 1px solid var(--org-admin-panel-border);
   border-radius: 28px;
@@ -220,7 +307,6 @@ a {
 .org-admin-shell input,
 .org-admin-shell select,
 .org-admin-shell textarea {
-  /* background: rgba(255, 255, 255, 0.12); */
   background: linear-gradient(135deg, #0f1f39 0%, #163462 48%, #1f4db7 100%);
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 18px;
@@ -231,8 +317,7 @@ a {
 .org-admin-shell input:focus,
 .org-admin-shell select:focus,
 .org-admin-shell textarea:focus {
-  /* border-color: rgba(255, 255, 255, 0.6); */
-  border-color: linear-gradient(135deg, #0f1f39 0%, #163462 48%, #1f4db7 100%);
+  border-color: rgba(255, 255, 255, 0.6);
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
 }
 
@@ -261,6 +346,28 @@ a {
   font-size: 0.95rem;
   outline: none;
   transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.org-admin-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image:
+    linear-gradient(135deg, rgba(15, 31, 57, 0.92) 0%, rgba(22, 52, 98, 0.94) 48%, rgba(31, 77, 183, 0.92) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Cpath d='M3.5 5.25L7 8.75L10.5 5.25' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat, no-repeat;
+  background-position: left top, right 1rem center;
+  background-size: auto, 14px 14px;
+  padding-right: 2.8rem;
+  cursor: pointer;
+}
+
+.org-admin-shell select option,
+.org-admin-shell select optgroup,
+.org-admin-select option,
+.org-admin-select optgroup {
+  background: #163462;
+  color: #ffffff;
 }
 
 .org-admin-input:focus,

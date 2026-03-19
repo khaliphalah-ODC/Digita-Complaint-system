@@ -17,6 +17,22 @@ const page = ref(1);
 const pageSize = 8;
 const uiToast = useUiToastStore();
 const isOrgAdmin = computed(() => session.currentUser?.role === 'org_admin');
+const titleClass = computed(() => (isOrgAdmin.value ? 'text-2xl font-bold text-white' : 'text-2xl font-bold text-slate-900'));
+const metaClass = computed(() => (isOrgAdmin.value ? 'text-sm text-white/70' : 'text-sm text-slate-600'));
+const panelClass = computed(() => (isOrgAdmin.value ? 'org-admin-panel-card' : 'rounded-2xl border border-slate-200 bg-white p-4'));
+const inputClass = computed(() => (isOrgAdmin.value ? 'org-admin-input' : 'rounded-lg border border-slate-300 px-3 py-2 text-sm'));
+const selectClass = computed(() => (isOrgAdmin.value ? 'org-admin-select' : 'rounded-lg border border-slate-300 px-3 py-2 text-sm'));
+const refreshButtonClass = computed(() => (isOrgAdmin.value ? 'org-admin-outline-btn' : 'rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700'));
+const primaryButtonClass = computed(() => (isOrgAdmin.value ? 'org-admin-btn disabled:opacity-70' : 'rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white'));
+const secondaryButtonClass = computed(() => (isOrgAdmin.value ? 'org-admin-outline-btn' : 'rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700'));
+const tableClass = computed(() => (isOrgAdmin.value ? 'org-admin-table min-w-full text-left text-sm' : 'min-w-full text-left text-sm'));
+const tableHeadClass = computed(() => (isOrgAdmin.value ? 'text-white/60' : 'text-slate-500'));
+const tableRowClass = computed(() => (isOrgAdmin.value ? 'border-t border-white/10' : 'border-t border-slate-100'));
+const infoTextClass = computed(() => (isOrgAdmin.value ? 'text-sm text-white/70' : 'text-sm text-slate-500'));
+const footerClass = computed(() => (isOrgAdmin.value ? 'mt-3 flex items-center justify-between text-xs text-white/70' : 'mt-3 flex items-center justify-between text-xs text-slate-600'));
+const pagerButtonClass = computed(() => (isOrgAdmin.value ? 'rounded border border-white/20 bg-white/10 px-2 py-1 text-white disabled:opacity-50' : 'rounded border border-slate-300 px-2 py-1 disabled:opacity-50'));
+const editButtonClass = computed(() => (isOrgAdmin.value ? 'rounded bg-white/10 px-2 py-1 text-xs font-semibold text-white' : 'rounded bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700'));
+const deleteButtonClass = computed(() => (isOrgAdmin.value ? 'rounded bg-red-500/20 px-2 py-1 text-xs font-semibold text-red-100' : 'rounded bg-red-50 px-2 py-1 text-xs font-semibold text-red-700'));
 
 const form = reactive({
   organization_id: '',
@@ -155,40 +171,40 @@ onMounted(async () => {
   <section class="space-y-5">
     <header class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">Department Management</h1>
-        <p class="text-sm text-slate-600">
+        <h1 :class="titleClass">Department Management</h1>
+        <p :class="metaClass">
           {{ isOrgAdmin ? 'Create, update, and delete departments inside your organization.' : 'Create, update, and delete departments linked to organizations.' }}
         </p>
       </div>
-      <button class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700" @click="fetchDepartments">
+      <button :class="`${refreshButtonClass} w-full sm:w-auto`" @click="fetchDepartments">
         Refresh
       </button>
     </header>
-    <section class="rounded-2xl border border-slate-200 bg-white p-4">
-      <h2 class="mb-3 text-lg font-bold text-slate-900">{{ editingId ? 'Edit Department' : 'Create Department' }}</h2>
+    <section :class="panelClass">
+      <h2 :class="isOrgAdmin ? 'mb-3 text-lg font-bold text-white' : 'mb-3 text-lg font-bold text-slate-900'">{{ editingId ? 'Edit Department' : 'Create Department' }}</h2>
       <form class="grid grid-cols-1 gap-3 md:grid-cols-2" @submit.prevent="saveDepartment">
-        <select v-if="!isOrgAdmin" v-model="form.organization_id" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+        <select v-if="!isOrgAdmin" v-model="form.organization_id" :class="selectClass">
           <option value="">Select organization</option>
           <option v-for="row in organizations" :key="row.organization_id" :value="String(row.organization_id)">
             {{ row.name }} (#{{ row.organization_id }})
           </option>
         </select>
-        <div v-else class="flex items-center rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+        <div v-else :class="isOrgAdmin ? 'flex items-center rounded-[18px] border border-white/20 bg-white/10 px-3 py-2 text-sm text-white/80' : 'flex items-center rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600'">
           Organization ID: {{ session.currentUser?.organization_id || 'N/A' }}
         </div>
-        <input v-model="form.name" placeholder="Department name" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-        <textarea v-model="form.description" placeholder="Description (optional)" class="rounded-lg border border-slate-300 px-3 py-2 text-sm md:col-span-2" rows="2" />
-        <select v-model="form.accessment_id" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+        <input v-model="form.name" placeholder="Department name" :class="inputClass">
+        <textarea v-model="form.description" placeholder="Description (optional)" :class="`${inputClass} md:col-span-2`" rows="2" />
+        <select v-model="form.accessment_id" :class="selectClass">
           <option value="">Link accessment (optional)</option>
           <option v-for="row in accessments" :key="row.id" :value="String(row.id)">
             #{{ row.id }} - {{ row.complaint_title || row.findings?.slice(0, 40) || 'Accessment' }}
           </option>
         </select>
-        <div class="flex gap-2">
-          <button :disabled="saving" type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white">
+        <div class="flex flex-col gap-2 sm:flex-row">
+          <button :disabled="saving" type="submit" :class="`${primaryButtonClass} w-full sm:w-auto`">
             {{ saving ? 'Saving...' : editingId ? 'Update Department' : 'Create Department' }}
           </button>
-          <button type="button" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700" @click="resetForm">
+          <button type="button" :class="`${secondaryButtonClass} w-full sm:w-auto`" @click="resetForm">
             Clear
           </button>
         </div>
@@ -196,18 +212,18 @@ onMounted(async () => {
       <p v-if="error" class="mt-3 text-sm text-red-600">{{ error }}</p>
     </section>
 
-    <section class="rounded-2xl border border-slate-200 bg-white p-4">
+    <section :class="panelClass">
       <div class="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <h2 class="text-lg font-bold text-slate-900">Departments</h2>
-        <input v-model="search" placeholder="Search departments..." class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+        <h2 :class="isOrgAdmin ? 'text-lg font-bold text-white' : 'text-lg font-bold text-slate-900'">Departments</h2>
+        <input v-model="search" placeholder="Search departments..." :class="`${inputClass} w-full md:max-w-sm`">
       </div>
 
-      <p v-if="loading" class="text-sm text-slate-500">Loading departments...</p>
-      <p v-else-if="filteredDepartments.length === 0" class="text-sm text-slate-500">No departments found.</p>
+      <p v-if="loading" :class="infoTextClass">Loading departments...</p>
+      <p v-else-if="filteredDepartments.length === 0" :class="infoTextClass">No departments found.</p>
 
-      <div v-else class="overflow-x-auto">
-        <table class="min-w-full text-left text-sm">
-          <thead class="text-slate-500">
+      <div v-else class="-mx-1 overflow-x-auto pb-1">
+        <table :class="tableClass">
+          <thead :class="tableHeadClass">
             <tr>
               <th class="pb-2 pr-3">Name</th>
               <th class="pb-2 pr-3">Organization</th>
@@ -217,27 +233,27 @@ onMounted(async () => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="row in paginatedDepartments" :key="row.id" class="border-t border-slate-100">
-              <td class="py-2 pr-3">{{ row.name }}</td>
-              <td class="py-2 pr-3">{{ organizationNameById.get(Number(row.organization_id)) || row.organization_id }}</td>
-              <td class="py-2 pr-3">{{ row.accessment_id ?? 'N/A' }}</td>
-              <td class="py-2 pr-3">{{ row.created_at }}</td>
+            <tr v-for="row in paginatedDepartments" :key="row.id" :class="tableRowClass">
+              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white' : ''">{{ row.name }}</td>
+              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ organizationNameById.get(Number(row.organization_id)) || row.organization_id }}</td>
+              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.accessment_id ?? 'N/A' }}</td>
+              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.created_at }}</td>
               <td class="py-2">
-                <div class="flex gap-2">
-                  <button class="rounded bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700" @click="startEdit(row)">Edit</button>
-                  <button class="rounded bg-red-50 px-2 py-1 text-xs font-semibold text-red-700" @click="deleteDepartment(row)">Delete</button>
+                <div class="flex flex-wrap gap-2">
+                  <button :class="editButtonClass" @click="startEdit(row)">Edit</button>
+                  <button :class="deleteButtonClass" @click="deleteDepartment(row)">Delete</button>
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-      <div v-if="filteredDepartments.length > 0" class="mt-3 flex items-center justify-between text-xs text-slate-600">
+      <div v-if="filteredDepartments.length > 0" :class="`${footerClass} flex-col gap-2 sm:flex-row`">
         <p>Showing {{ paginatedDepartments.length }} of {{ filteredDepartments.length }} departments</p>
-        <div class="flex items-center gap-2">
-          <button class="rounded border border-slate-300 px-2 py-1 disabled:opacity-50" :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">Prev</button>
+        <div class="flex items-center gap-2 self-start sm:self-auto">
+          <button :class="pagerButtonClass" :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">Prev</button>
           <span>Page {{ currentPage }} / {{ totalPages }}</span>
-          <button class="rounded border border-slate-300 px-2 py-1 disabled:opacity-50" :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">Next</button>
+          <button :class="pagerButtonClass" :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">Next</button>
         </div>
       </div>
     </section>
