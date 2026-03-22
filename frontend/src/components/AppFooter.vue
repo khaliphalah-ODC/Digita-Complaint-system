@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue';
+import { RouterLink } from 'vue-router';
 import { socialLinks } from '../config/socialLinks';
 import { useUiToastStore } from '../stores/uiToast';
 
@@ -17,30 +18,45 @@ const subscribe = () => {
 </script>
 
 <template>
-  <footer class="mt-6 px-3 pb-3 sm:px-4 md:px-7">
-    <div class="w-full  border border-[#14294b] bg-[linear-gradient(135deg,#0f1f39_0%,#163462_48%,#1f4db7_100%)] px-5 py-6 text-white shadow-[0_26px_80px_rgba(16,33,60,0.28)] sm:px-6 md:px-8">
+  <footer class="mt-6 px-3 pb-3 sm:px-4 md:px-8">
+    <div class="app-footer-panel w-full px-5 py-6 sm:px-6 md:px-8">
     <div class="flex w-full flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
       <div class="max-w-xl">
-        <p class="text-xs font-semibold uppercase tracking-[0.25em] text-blue-100">Stay Informed</p>
-        <h3 class="mt-2 text-2xl font-black text-white">Complaint Management System</h3>
-        <p class="mt-2 text-sm leading-6 text-blue-100/90">
+        <p class="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--app-primary)]">Platform Updates</p>
+        <h3 class="mt-2 text-2xl font-semibold text-[var(--app-title-color)]">Complaint Management System</h3>
+        <p class="mt-2 text-sm leading-6 text-[var(--app-muted-color)]">
           Submit, monitor, and resolve complaints with a clear organization workflow for users, organization admins, and super admins.
         </p>
+
+        <div class="mt-5">
+          <p class="text-sm font-semibold text-[var(--app-title-color)]">Quick Links</p>
+          <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[var(--app-muted-color)]">
+            <RouterLink to="/" class="transition hover:text-[var(--app-primary)]">
+              Home
+            </RouterLink>
+            <RouterLink to="/about" class="transition hover:text-[var(--app-primary)]">
+              About
+            </RouterLink>
+            <RouterLink to="/features" class="transition hover:text-[var(--app-primary)]">
+              Features
+            </RouterLink>
+          </div>
+        </div>
       </div>
 
       <div class="min-w-0 flex-1 lg:max-w-md">
-        <p class="text-sm font-semibold text-white">Newsletter</p>
-        <p class="mt-1 text-sm text-blue-100/85">Receive product updates, complaint workflow improvements, and release notes.</p>
+        <p class="text-sm font-semibold text-[var(--app-title-color)]">Newsletter</p>
+        <p class="mt-1 text-sm text-[var(--app-muted-color)]">Receive product updates, complaint workflow improvements, and release notes.</p>
         <form class="mt-3 flex flex-col gap-3 sm:flex-row" @submit.prevent="subscribe">
           <input
             v-model="email"
             type="email"
             placeholder="Enter your email"
-            class="w-full rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm text-white outline-none placeholder:text-blue-100/65 focus:border-blue-200"
+            class="app-input"
           >
           <button
             type="submit"
-            class="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-[var(--app-primary-ink)] hover:bg-blue-50"
+            class="app-btn-primary"
           >
             Subscribe
           </button>
@@ -48,18 +64,18 @@ const subscribe = () => {
       </div>
 
       <div>
-        <p class="text-sm font-semibold text-white">Follow</p>
-        <div class="mt-3 flex items-center gap-3 text-white/80">
-          <a :href="socialLinks.facebook" target="_blank" rel="noreferrer" class="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/8 hover:bg-white/16">
+        <p class="text-sm font-semibold text-[var(--app-title-color)]">Follow</p>
+        <div class="mt-3 flex items-center gap-3 text-[var(--app-primary)]">
+          <a :href="socialLinks.facebook" target="_blank" rel="noreferrer" class="flex h-10 w-10 items-center justify-center rounded-[var(--app-radius-md)] border border-[var(--app-line)] bg-[var(--app-surface)] hover:bg-[var(--app-primary-mist)]">
             <font-awesome-icon :icon="['fab', 'facebook-f']" />
           </a>
-          <a :href="socialLinks.x" target="_blank" rel="noreferrer" class="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/8 hover:bg-white/16">
+          <a :href="socialLinks.x" target="_blank" rel="noreferrer" class="flex h-10 w-10 items-center justify-center rounded-[var(--app-radius-md)] border border-[var(--app-line)] bg-[var(--app-surface)] hover:bg-[var(--app-primary-mist)]">
             <font-awesome-icon :icon="['fab', 'x-twitter']" />
           </a>
-          <a :href="socialLinks.instagram" target="_blank" rel="noreferrer" class="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/8 hover:bg-white/16">
+          <a :href="socialLinks.instagram" target="_blank" rel="noreferrer" class="flex h-10 w-10 items-center justify-center rounded-[var(--app-radius-md)] border border-[var(--app-line)] bg-[var(--app-surface)] hover:bg-[var(--app-primary-mist)]">
             <font-awesome-icon :icon="['fab', 'instagram']" />
           </a>
-          <a :href="socialLinks.linkedin" target="_blank" rel="noreferrer" class="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/8 hover:bg-white/16">
+          <a :href="socialLinks.linkedin" target="_blank" rel="noreferrer" class="flex h-10 w-10 items-center justify-center rounded-[var(--app-radius-md)] border border-[var(--app-line)] bg-[var(--app-surface)] hover:bg-[var(--app-primary-mist)]">
             <font-awesome-icon :icon="['fab', 'linkedin-in']" />
           </a>
         </div>

@@ -18,6 +18,10 @@ const props = defineProps({
     type: Number,
     default: 0
   },
+  errors: {
+    type: Object,
+    default: () => ({})
+  },
   theme: {
     type: String,
     default: 'light'
@@ -38,7 +42,7 @@ const form = reactive({
   status: 'active'
 });
 const uploadError = ref('');
-const MAX_LOGO_FILE_SIZE_BYTES = 1024 * 1024 * 2; // 2MB
+const MAX_LOGO_FILE_SIZE_BYTES = 1024 * 1024 * 2;
 
 watch(
   () => props.resetKey,
@@ -102,119 +106,108 @@ const onSubmit = () => {
 </script>
 
 <template>
-  <section :class="theme === 'dark' ? 'app-dark-panel rounded-[32px] p-5 md:p-6' : 'app-shell-panel rounded-[32px] p-5 md:p-6'">
-    <div class="mb-5 flex items-start justify-between">
-      <div>
-        <p :class="theme === 'dark' ? 'app-dark-kicker' : 'app-kicker'">Onboarding Form</p>
-        <h2 :class="theme === 'dark' ? 'mt-2 text-3xl font-black text-white md:text-4xl' : 'mt-2 text-3xl font-black text-slate-800 md:text-4xl'">{{ title }}</h2>
-        <p :class="theme === 'dark' ? 'text-sm text-white/58' : 'text-sm text-slate-500'">Fill in the details to onboard a new entity</p>
-      </div>
-      <button :class="theme === 'dark' ? 'rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm font-semibold text-white/60' : 'rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-sm font-semibold text-slate-500'" type="button">Form</button>
+  <section class="app-section-card">
+    <div class="mb-6">
+      <h2 class="text-xl font-semibold text-slate-900">{{ title }}</h2>
+      <p class="mt-1 text-[0.98rem] text-slate-600">Create an organization record and assign its first organization administrator.</p>
     </div>
 
-    <form class="grid grid-cols-1 gap-5 md:grid-cols-[180px,1fr]" @submit.prevent="onSubmit">
-      <div class="flex flex-col items-center justify-start gap-3">
-        <div :class="theme === 'dark' ? 'flex h-24 w-24 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-3xl font-black text-blue-200' : 'flex h-24 w-24 items-center justify-center rounded-full border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#eaf2ff_100%)] text-3xl font-black text-[var(--app-primary)]'">
-          <img v-if="form.logo" :src="form.logo" alt="Organization Logo" class="h-24 w-24 rounded-full object-cover">
-          <span v-else>O</span>
+    <form class="grid grid-cols-1 gap-6 lg:grid-cols-[220px,1fr]" @submit.prevent="onSubmit">
+      <div class="space-y-4">
+        <div class="flex h-24 w-24 items-center justify-center rounded-2xl border border-[var(--app-line)] bg-[var(--app-surface-soft)] text-2xl font-semibold text-[var(--app-primary)]">
+          <img v-if="form.logo" :src="form.logo" alt="Organization logo" class="h-24 w-24 rounded-2xl object-cover">
+          <span v-else>ORG</span>
         </div>
-        <p :class="theme === 'dark' ? 'text-sm text-white/58' : 'text-sm text-slate-600'">Logo or identity mark</p>
-        <input
-          type="file"
-          accept="image/*"
-          :class="theme === 'dark' ? 'w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white file:text-white' : 'w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm'"
-          @change="onLogoFileChange"
-        >
-        <input
-          v-model="form.logo"
-          type="url"
-          placeholder="Logo URL (or upload image above)"
-          :class="theme === 'dark' ? 'w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white placeholder:text-white/36' : 'w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm'"
-        >
-        <p v-if="uploadError" class="text-xs text-red-600">{{ uploadError }}</p>
+
+        <div>
+          <label class="mb-2 block text-sm font-medium text-slate-700">Logo file</label>
+          <input type="file" accept="image/*" class="w-full rounded-xl border border-[var(--app-line)] bg-white px-4 py-3 text-sm text-slate-900 outline-none file:mr-4 file:rounded-lg file:border-0 file:bg-[var(--app-surface-soft)] file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700 focus:border-[var(--app-primary)]" @change="onLogoFileChange">
+        </div>
+
+        <div>
+          <label class="mb-2 block text-sm font-medium text-slate-700">Logo URL</label>
+          <input
+            v-model="form.logo"
+            type="url"
+            placeholder="Optional hosted logo URL"
+            class="app-input"
+          >
+        </div>
+
+        <p v-if="uploadError" class="text-sm text-red-600">{{ uploadError }}</p>
       </div>
 
-      <div class="space-y-3">
-        <label :class="theme === 'dark' ? 'block text-base font-semibold text-white' : 'block text-base font-semibold text-slate-700'">Organization Name</label>
-        <input
-          v-model="form.name"
-          required
-          placeholder="Organization Name"
-          :class="theme === 'dark' ? 'w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-white/36 focus:border-blue-300' : 'w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]'"
-        >
+      <div class="space-y-5">
+        <p v-if="props.errors.general" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {{ props.errors.general }}
+        </p>
 
-        <input
-          v-model="form.email"
-          type="email"
-          required
-          placeholder="Organization Email"
-          :class="theme === 'dark' ? 'w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-white/36 focus:border-blue-300' : 'w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]'"
-        >
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div class="md:col-span-2">
+            <label class="mb-2 block text-sm font-medium text-slate-700">Organization name</label>
+            <input v-model="form.name" required placeholder="Ministry of Public Works" class="app-input">
+          </div>
 
-        <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <input
-            v-model="form.admin_full_name"
-            placeholder="Organization Admin Name"
-            :class="theme === 'dark' ? 'rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-white/36 focus:border-blue-300' : 'rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]'"
-          >
-          <input
-            v-model="form.admin_email"
-            type="email"
-            required
-            placeholder="Organization Admin Email"
-            :class="theme === 'dark' ? 'rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-white/36 focus:border-blue-300' : 'rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]'"
-          >
+          <div>
+            <label class="mb-2 block text-sm font-medium text-slate-700">Organization type</label>
+            <input v-model="form.organization_type" required placeholder="Public sector" class="app-input">
+          </div>
+
+          <div>
+            <label class="mb-2 block text-sm font-medium text-slate-700">Organization email</label>
+            <input
+              v-model="form.email"
+              type="email"
+              required
+              placeholder="contact@organization.org"
+              class="w-full rounded-xl border bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-[var(--app-primary)]"
+              :class="props.errors.email ? 'border-red-300' : 'border-[var(--app-line)]'"
+            >
+            <p v-if="props.errors.email" class="mt-2 text-sm text-red-600">{{ props.errors.email }}</p>
+          </div>
+
+          <div>
+            <label class="mb-2 block text-sm font-medium text-slate-700">Organization admin name</label>
+            <input v-model="form.admin_full_name" placeholder="Jane Doe" class="app-input">
+          </div>
+
+          <div>
+            <label class="mb-2 block text-sm font-medium text-slate-700">Organization admin email</label>
+            <input
+              v-model="form.admin_email"
+              type="email"
+              required
+              placeholder="admin@organization.org"
+              class="w-full rounded-xl border bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-[var(--app-primary)]"
+              :class="props.errors.admin_email ? 'border-red-300' : 'border-[var(--app-line)]'"
+            >
+            <p v-if="props.errors.admin_email" class="mt-2 text-sm text-red-600">{{ props.errors.admin_email }}</p>
+          </div>
+
+          <div>
+            <label class="mb-2 block text-sm font-medium text-slate-700">Phone</label>
+            <input v-model="form.phone" placeholder="0888123456" class="app-input">
+          </div>
+
+          <div v-if="showStatus">
+            <label class="mb-2 block text-sm font-medium text-slate-700">Status</label>
+            <select v-model="form.status" class="app-select">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="mb-2 block text-sm font-medium text-slate-700">Address</label>
+            <input v-model="form.address" required placeholder="Capital Hill, Monrovia" class="app-input">
+          </div>
         </div>
 
-        <input
-          v-model="form.organization_type"
-          required
-          placeholder="Organization Type"
-          :class="theme === 'dark' ? 'w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-white/36 focus:border-blue-300' : 'w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]'"
-        >
-
-        <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <input
-            v-model="form.organization_type"
-            placeholder="Public Sector / Private Enterprise"
-            :class="theme === 'dark' ? 'rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-white/36 focus:border-blue-300' : 'rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]'"
-          >
-          <input
-            v-model="form.phone"
-            placeholder="(555) 123-667"
-            :class="theme === 'dark' ? 'rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-white/36 focus:border-blue-300' : 'rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]'"
-          >
-        </div>
-
-        <input
-          v-model="form.address"
-          required
-          placeholder="Address"
-          :class="theme === 'dark' ? 'w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-white/36 focus:border-blue-300' : 'w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--app-primary)]'"
-        >
-
-        <div v-if="showStatus" class="pt-1">
-          <label :class="theme === 'dark' ? 'mb-2 block text-base font-semibold text-white' : 'mb-2 block text-base font-semibold text-slate-700'">Status</label>
-          <label :class="theme === 'dark' ? 'inline-flex items-center gap-2 text-sm text-white/72' : 'inline-flex items-center gap-2 text-sm text-slate-700'">
-            <span class="relative inline-flex h-6 w-11 items-center rounded-full" :class="form.status === 'active' ? 'bg-[var(--app-primary)]' : (theme === 'dark' ? 'bg-white/18' : 'bg-slate-300')">
-              <input
-                type="checkbox"
-                class="sr-only"
-                :checked="form.status === 'active'"
-                @change="form.status = form.status === 'active' ? 'inactive' : 'active'"
-              >
-              <span class="inline-block h-5 w-5 transform rounded-full bg-white transition" :class="form.status === 'active' ? 'translate-x-5' : 'translate-x-1'"></span>
-            </span>
-            <span :class="form.status === 'active' ? (theme === 'dark' ? 'font-semibold text-white' : 'font-semibold text-slate-800') : (theme === 'dark' ? 'text-white/44' : 'text-slate-500')">Active</span>
-            <span :class="form.status === 'inactive' ? (theme === 'dark' ? 'font-semibold text-white' : 'font-semibold text-slate-800') : (theme === 'dark' ? 'text-white/44' : 'text-slate-500')">Inactive</span>
-          </label>
-        </div>
-
-        <div class="pt-2">
+        <div class="flex flex-col gap-3 border-t border-[var(--app-line)] pt-4 sm:flex-row">
           <button
             :disabled="loading"
             type="submit"
-            :class="theme === 'dark' ? 'rounded-full bg-[linear-gradient(90deg,#163462_0%,#1f4db7_58%,#4f8df7_100%)] px-7 py-3 text-base font-bold text-white shadow-[0_16px_32px_rgba(31,77,183,0.28)] disabled:opacity-60' : 'rounded-full bg-[var(--app-primary)] px-7 py-3 text-base font-bold text-white shadow-[0_16px_32px_rgba(31,77,183,0.24)] disabled:opacity-60'"
+            class="app-btn-primary disabled:cursor-not-allowed disabled:opacity-60"
           >
             {{ loading ? 'Saving...' : 'Create Organization' }}
           </button>

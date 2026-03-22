@@ -12,51 +12,59 @@ defineProps({
     type: String,
     default: ''
   },
-  theme: {
+  title: {
     type: String,
-    default: 'light'
+    default: 'Recent Organizations'
+  },
+  description: {
+    type: String,
+    default: 'Recently updated organizations and their current status.'
   }
 });
 </script>
 
 <template>
-  <section :class="theme === 'dark' ? 'app-dark-panel mt-5 rounded-[30px] p-5' : 'app-shell-panel mt-5 rounded-[30px] p-5'">
-    <p :class="theme === 'dark' ? 'app-dark-kicker' : 'app-kicker'">Directory Snapshot</p>
-    <h2 :class="theme === 'dark' ? 'mb-3 mt-2 text-2xl font-bold text-white' : 'mb-3 mt-2 text-2xl font-bold text-slate-900'">Recent Organizations</h2>
-    <p v-if="loading" :class="theme === 'dark' ? 'mb-3 text-sm text-white/60' : 'mb-3 text-sm text-slate-500'">Loading organizations...</p>
+  <section class="app-section-card">
+    <header class="mb-4">
+      <h2 class="text-lg font-semibold text-slate-900">{{ title }}</h2>
+      <p class="mt-1 text-sm text-slate-600">{{ description }}</p>
+    </header>
+
+    <p v-if="loading" class="mb-3 text-sm text-slate-500">Loading organizations...</p>
     <p v-else-if="error" class="mb-3 text-sm text-red-600">{{ error }}</p>
-    <p v-else-if="organizations.length === 0" :class="theme === 'dark' ? 'mb-3 text-sm text-white/60' : 'mb-3 text-sm text-slate-500'">No organizations found.</p>
-    <div class="overflow-x-auto">
-      <table class="min-w-full text-left text-sm">
-        <thead :class="theme === 'dark' ? 'text-white/46' : 'text-slate-500'">
+    <p v-else-if="organizations.length === 0" class="mb-3 text-sm text-slate-500">No organizations found.</p>
+
+    <div v-else class="app-table-shell overflow-x-auto">
+      <table class="app-table min-w-full text-left text-sm">
+        <thead>
           <tr>
-            <th class="pb-2 pr-4">Name</th>
-            <th class="pb-2 pr-4">Type</th>
-            <th class="pb-2 pr-4">Status</th>
-            <th class="pb-2 pr-4">Organization Admin</th>
-            <th class="pb-2">Last Active</th>
+            <th class="px-4 py-3 font-medium">Organization</th>
+            <th class="px-4 py-3 font-medium">Type</th>
+            <th class="px-4 py-3 font-medium">Status</th>
+            <th class="px-4 py-3 font-medium">Org Admin</th>
+            <th class="px-4 py-3 font-medium">Updated</th>
           </tr>
         </thead>
         <tbody>
           <tr
             v-for="organization in organizations"
             :key="organization.id || organization.name + organization.lastActive"
-            :class="theme === 'dark' ? 'border-t border-white/8 text-white/84' : 'border-t border-slate-100'"
+            class="text-slate-700 first:border-t-0"
           >
-            <td class="py-2 pr-4">{{ organization.name }}</td>
-            <td class="py-2 pr-4">{{ organization.type || 'Organization' }}</td>
-            <td class="py-2 pr-4">
+            <td class="px-4 py-3 font-medium text-slate-900">{{ organization.name }}</td>
+            <td class="px-4 py-3">{{ organization.type || 'Organization' }}</td>
+            <td class="px-4 py-3">
               <span
-                class="rounded-md px-2 py-1 text-xs font-semibold"
+                class="app-badge"
                 :class="organization.status === 'Active'
-                  ? (theme === 'dark' ? 'bg-emerald-500/18 text-emerald-300' : 'bg-emerald-100 text-emerald-700')
-                  : (theme === 'dark' ? 'bg-white/10 text-white/72' : 'bg-slate-200 text-slate-700')"
+                  ? 'app-badge-success'
+                  : 'app-badge-neutral'"
               >
                 {{ organization.status }}
               </span>
             </td>
-            <td class="py-2 pr-4">{{ organization.organization_admin?.full_name || 'Not assigned' }}</td>
-            <td class="py-2">{{ organization.lastActive }}</td>
+            <td class="px-4 py-3">{{ organization.organization_admin?.full_name || 'Not assigned' }}</td>
+            <td class="px-4 py-3 text-slate-500">{{ organization.lastActive }}</td>
           </tr>
         </tbody>
       </table>

@@ -30,11 +30,15 @@ const props = defineProps({
   },
   lineColor: {
     type: String,
-    default: '#1d4ed8'
+    default: '#2563eb'
   },
-  theme: {
+  compact: {
+    type: Boolean,
+    default: false
+  },
+  emptyMessage: {
     type: String,
-    default: 'light'
+    default: 'No meaningful data is available for this chart yet.'
   }
 });
 
@@ -45,6 +49,10 @@ const normalizedSeries = computed(() => {
   }));
 });
 
+const hasMeaningfulData = computed(() =>
+  normalizedSeries.value.some((item) => item.value > 0)
+);
+
 const chartData = computed(() => ({
   labels: normalizedSeries.value.map((item) => item.label),
   datasets: [
@@ -52,11 +60,11 @@ const chartData = computed(() => ({
       label: props.title || 'Trend',
       data: normalizedSeries.value.map((item) => item.value),
       borderColor: props.lineColor,
-      backgroundColor: `${props.lineColor}22`,
+      backgroundColor: `${props.lineColor}14`,
       fill: true,
       tension: 0.35,
-      pointRadius: 4,
-      pointHoverRadius: 6,
+      pointRadius: 2.5,
+      pointHoverRadius: 4,
       pointBorderWidth: 2,
       pointBackgroundColor: '#ffffff',
       pointBorderColor: props.lineColor
@@ -70,6 +78,12 @@ const chartOptions = computed(() => ({
   plugins: {
     legend: {
       display: false
+    },
+    tooltip: {
+      backgroundColor: '#0f172a',
+      titleColor: '#ffffff',
+      bodyColor: '#e2e8f0',
+      displayColors: false
     }
   },
   scales: {
@@ -77,22 +91,31 @@ const chartOptions = computed(() => ({
       grid: {
         display: false
       },
+      border: {
+        display: false
+      },
       ticks: {
-        color: props.theme === 'dark' ? '#d7e7ff' : '#475569',
+        color: '#64748b',
         font: {
-          size: 11,
-          weight: '600'
+          size: 10,
+          weight: '500'
         }
       }
     },
     y: {
       beginAtZero: true,
+      border: {
+        display: false
+      },
       grid: {
-        color: props.theme === 'dark' ? 'rgba(215,231,255,0.12)' : '#e2e8f0'
+        color: '#e2e8f0'
       },
       ticks: {
-        color: props.theme === 'dark' ? '#aac7f3' : '#64748b',
-        precision: 0
+        color: '#64748b',
+        precision: 0,
+        font: {
+          size: 10
+        }
       }
     }
   }
@@ -100,29 +123,34 @@ const chartOptions = computed(() => ({
 </script>
 
 <template>
-  <section :class="theme === 'dark' ? 'app-dark-panel rounded-[30px] p-5' : 'app-shell-panel rounded-[30px] p-5'">
-    <header class="mb-5">
-      <p v-if="title" :class="theme === 'dark' ? 'text-lg font-bold text-white' : 'text-lg font-bold text-slate-900'">{{ title }}</p>
-      <p v-if="subtitle" :class="theme === 'dark' ? 'mt-1 text-sm text-white/58' : 'mt-1 text-sm text-slate-600'">{{ subtitle }}</p>
+  <section class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+    <header class="mb-3">
+      <p v-if="title" class="text-sm font-semibold text-slate-900">{{ title }}</p>
+      <p v-if="subtitle" class="mt-0.5 text-xs text-slate-500">{{ subtitle }}</p>
     </header>
 
-    <div v-if="normalizedSeries.length" class="space-y-4">
-      <div :class="theme === 'dark' ? 'h-[300px] rounded-[24px] bg-white/[0.03] p-4' : 'h-[300px] rounded-[24px] bg-slate-50 p-4'">
+    <div v-if="normalizedSeries.length && hasMeaningfulData">
+      <div :class="compact ? 'h-[150px]' : 'h-[190px]'">
         <Line :data="chartData" :options="chartOptions" />
       </div>
 
-      <div class="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
+      <div v-if="!compact" class="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
         <article
           v-for="point in normalizedSeries"
           :key="`${point.label}-metric`"
-          :class="theme === 'dark' ? 'rounded-[18px] border border-white/8 bg-white/[0.04] px-3 py-3' : 'app-ink-card rounded-[18px] px-3 py-3'"
+          class="rounded-lg border border-slate-200 bg-white px-2.5 py-2"
         >
-          <p :class="theme === 'dark' ? 'text-[11px] font-semibold uppercase tracking-[0.2em] text-white/48' : 'text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500'">{{ point.label }}</p>
-          <p :class="theme === 'dark' ? 'mt-2 text-xl font-black text-white' : 'mt-2 text-xl font-black text-slate-900'">{{ point.value }}</p>
+          <p class="text-[11px] text-slate-500">{{ point.label }}</p>
+          <p class="mt-1 text-sm font-semibold text-slate-900">{{ point.value }}</p>
         </article>
       </div>
     </div>
 
-    <p v-else :class="theme === 'dark' ? 'text-sm text-white/60' : 'text-sm text-slate-500'">No analytics data available yet.</p>
+    <div
+      v-else
+      class="rounded-lg border border-dashed border-slate-300 bg-white px-3 py-5 text-xs text-slate-500"
+    >
+      {{ emptyMessage }}
+    </div>
   </section>
 </template>

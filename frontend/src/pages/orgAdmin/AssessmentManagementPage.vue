@@ -8,7 +8,7 @@ const session = useSessionStore();
 const loading = ref(false);
 const saving = ref(false);
 const error = ref('');
-const accessments = ref([]);
+const assessments = ref([]);
 const complaints = ref([]);
 const editingId = ref(null);
 const search = ref('');
@@ -57,15 +57,15 @@ const resetForm = () => {
   form.admin_response = '';
 };
 
-const fetchAccessments = async () => {
+const fetchAssessments = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const [accessmentRes, complaintRes] = await Promise.all([api.get('/accessments'), api.get('/complaint')]);
-    accessments.value = ensureSuccess(unwrapResponse(accessmentRes), 'Failed to fetch accessments') || [];
+    const [assessmentRes, complaintRes] = await Promise.all([api.get('/assessments'), api.get('/complaint')]);
+    assessments.value = ensureSuccess(unwrapResponse(assessmentRes), 'Failed to fetch assessments') || [];
     complaints.value = ensureSuccess(unwrapResponse(complaintRes), 'Failed to fetch complaints') || [];
   } catch (requestError) {
-    error.value = extractApiError(requestError, 'Failed to fetch accessments');
+    error.value = extractApiError(requestError, 'Failed to fetch assessments');
   } finally {
     loading.value = false;
   }
@@ -80,7 +80,7 @@ const startEdit = (row) => {
   form.admin_response = row.admin_response || '';
 };
 
-const saveAccessment = async () => {
+const saveAssessment = async () => {
   if (!form.complaint_id || !form.findings.trim()) {
     error.value = 'complaint_id and findings are required.';
     return;
@@ -98,33 +98,33 @@ const saveAccessment = async () => {
     };
 
     if (editingId.value) {
-      await api.put(`/accessments/${editingId.value}`, payload);
-      uiToast.success('Accessment updated successfully.');
+      await api.put(`/assessments/${editingId.value}`, payload);
+      uiToast.success('Assessment updated successfully.');
     } else {
-      await api.post('/accessments', payload);
-      uiToast.success('Accessment created successfully.');
+      await api.post('/assessments', payload);
+      uiToast.success('Assessment created successfully.');
     }
 
     resetForm();
-    await fetchAccessments();
+    await fetchAssessments();
   } catch (requestError) {
-    error.value = extractApiError(requestError, 'Failed to save accessment');
+    error.value = extractApiError(requestError, 'Failed to save assessment');
     uiToast.error(error.value);
   } finally {
     saving.value = false;
   }
 };
 
-const deleteAccessment = async (row) => {
-  const ok = window.confirm(`Delete accessment #${row.id}?`);
+const deleteAssessment = async (row) => {
+  const ok = window.confirm(`Delete assessment #${row.id}?`);
   if (!ok) return;
   error.value = '';
   try {
-    await api.delete(`/accessments/${row.id}`);
-    uiToast.success('Accessment deleted successfully.');
-    await fetchAccessments();
+    await api.delete(`/assessments/${row.id}`);
+      uiToast.success('Assessment deleted successfully.');
+    await fetchAssessments();
   } catch (requestError) {
-    error.value = extractApiError(requestError, 'Failed to delete accessment');
+    error.value = extractApiError(requestError, 'Failed to delete assessment');
     uiToast.error(error.value);
   }
 };
@@ -135,9 +135,9 @@ const complaintTitleById = computed(() => {
   return map;
 });
 
-const filteredAccessments = computed(() => {
+const filteredAssessments = computed(() => {
   const keyword = search.value.trim().toLowerCase();
-  return accessments.value.filter((row) => {
+  return assessments.value.filter((row) => {
     const matchesText =
       !keyword ||
       String(row.findings || '').toLowerCase().includes(keyword) ||
@@ -150,11 +150,11 @@ const filteredAccessments = computed(() => {
   });
 });
 
-const totalPages = computed(() => Math.max(1, Math.ceil(filteredAccessments.value.length / pageSize)));
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredAssessments.value.length / pageSize)));
 const currentPage = computed(() => Math.min(page.value, totalPages.value));
-const paginatedAccessments = computed(() => {
+const paginatedAssessments = computed(() => {
   const start = (currentPage.value - 1) * pageSize;
-  return filteredAccessments.value.slice(start, start + pageSize);
+  return filteredAssessments.value.slice(start, start + pageSize);
 });
 const goToPage = (nextPage) => {
   page.value = Math.min(Math.max(1, nextPage), totalPages.value);
@@ -162,7 +162,7 @@ const goToPage = (nextPage) => {
 
 onMounted(async () => {
   if (!session.currentUser) await session.fetchCurrentUser();
-  await fetchAccessments();
+  await fetchAssessments();
 });
 </script>
 
@@ -170,16 +170,16 @@ onMounted(async () => {
   <section class="space-y-5">
     <header class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
       <div>
-        <h1 :class="titleClass">Accessment Management</h1>
-        <p :class="metaClass">Create and maintain complaint accessments and admin responses.</p>
+        <h1 :class="titleClass">Assessment Management</h1>
+        <p :class="metaClass">Create and maintain complaint assessments and admin responses.</p>
       </div>
-      <button :class="`${refreshButtonClass} w-full sm:w-auto`" @click="fetchAccessments">
+      <button :class="`${refreshButtonClass} w-full sm:w-auto`" @click="fetchAssessments">
         Refresh
       </button>
     </header>
     <section :class="panelClass">
-      <h2 :class="isOrgAdmin ? 'mb-3 text-lg font-bold text-white' : 'mb-3 text-lg font-bold text-slate-900'">{{ editingId ? 'Edit Accessment' : 'Create Accessment' }}</h2>
-      <form class="grid grid-cols-1 gap-3 md:grid-cols-2" @submit.prevent="saveAccessment">
+      <h2 :class="isOrgAdmin ? 'mb-3 text-lg font-bold text-white' : 'mb-3 text-lg font-bold text-slate-900'">{{ editingId ? 'Edit Assessment' : 'Create Assessment' }}</h2>
+      <form class="grid grid-cols-1 gap-3 md:grid-cols-2" @submit.prevent="saveAssessment">
         <select v-model="form.complaint_id" :class="selectClass">
           <option value="">Select complaint</option>
           <option v-for="row in complaints" :key="row.id" :value="String(row.id)">
@@ -194,7 +194,7 @@ onMounted(async () => {
         <textarea v-model="form.admin_response" placeholder="Admin response (optional)" :class="`${inputClass} md:col-span-2`" rows="2" />
         <div class="flex flex-col gap-2 sm:flex-row">
           <button :disabled="saving" type="submit" :class="`${primaryButtonClass} w-full sm:w-auto`">
-            {{ saving ? 'Saving...' : editingId ? 'Update Accessment' : 'Create Accessment' }}
+            {{ saving ? 'Saving...' : editingId ? 'Update Assessment' : 'Create Assessment' }}
           </button>
           <button type="button" :class="`${secondaryButtonClass} w-full sm:w-auto`" @click="resetForm">
             Clear
@@ -206,9 +206,9 @@ onMounted(async () => {
 
     <section :class="panelClass">
       <div class="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <h2 :class="isOrgAdmin ? 'text-lg font-bold text-white' : 'text-lg font-bold text-slate-900'">Accessments</h2>
+        <h2 :class="isOrgAdmin ? 'text-lg font-bold text-white' : 'text-lg font-bold text-slate-900'">Assessments</h2>
         <div class="flex flex-col gap-2 sm:flex-row md:w-auto">
-          <input v-model="search" placeholder="Search accessments..." :class="`${inputClass} w-full sm:min-w-[14rem]`">
+          <input v-model="search" placeholder="Search assessments..." :class="`${inputClass} w-full sm:min-w-[14rem]`">
           <select v-model="statusFilter" :class="`${selectClass} w-full sm:min-w-[11rem]`">
             <option value="all">All status</option>
             <option v-for="status in statusOptions" :key="status" :value="status">{{ status }}</option>
@@ -216,8 +216,8 @@ onMounted(async () => {
         </div>
       </div>
 
-      <p v-if="loading" :class="infoTextClass">Loading accessments...</p>
-      <p v-else-if="filteredAccessments.length === 0" :class="infoTextClass">No accessments found.</p>
+      <p v-if="loading" :class="infoTextClass">Loading assessments...</p>
+      <p v-else-if="filteredAssessments.length === 0" :class="infoTextClass">No assessments found.</p>
 
       <div v-else class="-mx-1 overflow-x-auto pb-1">
         <table :class="tableClass">
@@ -232,7 +232,7 @@ onMounted(async () => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="row in paginatedAccessments" :key="row.id" :class="tableRowClass">
+            <tr v-for="row in paginatedAssessments" :key="row.id" :class="tableRowClass">
               <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white' : ''">#{{ row.id }}</td>
               <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.complaint_title || complaintTitleById.get(Number(row.complaint_id)) || row.complaint_id }}</td>
               <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.status }}</td>
@@ -241,15 +241,15 @@ onMounted(async () => {
               <td class="py-2">
                 <div class="flex flex-wrap gap-2">
                   <button :class="editButtonClass" @click="startEdit(row)">Edit</button>
-                  <button :class="deleteButtonClass" @click="deleteAccessment(row)">Delete</button>
+                  <button :class="deleteButtonClass" @click="deleteAssessment(row)">Delete</button>
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-      <div v-if="filteredAccessments.length > 0" :class="`${footerClass} flex-col gap-2 sm:flex-row`">
-        <p>Showing {{ paginatedAccessments.length }} of {{ filteredAccessments.length }} accessments</p>
+      <div v-if="filteredAssessments.length > 0" :class="`${footerClass} flex-col gap-2 sm:flex-row`">
+        <p>Showing {{ paginatedAssessments.length }} of {{ filteredAssessments.length }} assessments</p>
         <div class="flex items-center gap-2 self-start sm:self-auto">
           <button :class="pagerButtonClass" :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">Prev</button>
           <span>Page {{ currentPage }} / {{ totalPages }}</span>

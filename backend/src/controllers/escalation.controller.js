@@ -2,7 +2,7 @@
 import complaintDB from '../model/connect.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { fetchUserByIdQuery } from '../model/user.model.js';
-import { fetchAccessmentByIdQuery } from '../model/accessment.model.js';
+import { fetchAccessmentByIdQuery } from '../model/assessment.model.js';
 import {
   VALID_ESCALATION_LEVELS,
   VALID_ESCALATION_STATUSES,
@@ -120,7 +120,7 @@ export const createEscalation = (req, res) => {
   } = req.body;
 
   if (!accessment_id || !reason) {
-    return sendError(res, 400, 'accessment_id and reason are required');
+    return sendError(res, 400, 'assessment_id and reason are required');
   }
   if (!VALID_ESCALATION_LEVELS.includes(escalation_level)) {
     return sendError(res, 400, `escalation_level must be one of: ${VALID_ESCALATION_LEVELS.join(', ')}`);
@@ -131,10 +131,10 @@ export const createEscalation = (req, res) => {
 
   complaintDB.get(fetchAccessmentByIdQuery, [accessment_id], (accessmentErr, accessmentRow) => {
     if (accessmentErr) {
-      return sendError(res, 500, 'Failed to validate accessment', accessmentErr.message);
+      return sendError(res, 500, 'Failed to validate assessment', accessmentErr.message);
     }
     if (!accessmentRow) {
-      return sendError(res, 404, 'Accessment not found');
+      return sendError(res, 404, 'Assessment not found');
     }
     if (String(accessmentRow.organization_id) !== String(req.user.organization_id)) {
       return sendError(res, 403, 'Access denied');
@@ -212,10 +212,10 @@ export const getEscalationsByAccessmentId = (req, res) => {
 
   complaintDB.get(fetchAccessmentByIdQuery, [req.params.accessmentId], (accessmentErr, accessmentRow) => {
     if (accessmentErr) {
-      return sendError(res, 500, 'Failed to validate accessment', accessmentErr.message);
+      return sendError(res, 500, 'Failed to validate assessment', accessmentErr.message);
     }
     if (!accessmentRow) {
-      return sendError(res, 404, 'Accessment not found');
+      return sendError(res, 404, 'Assessment not found');
     }
     if (String(accessmentRow.organization_id) !== String(req.user.organization_id)) {
       return sendError(res, 403, 'Access denied');
@@ -223,7 +223,7 @@ export const getEscalationsByAccessmentId = (req, res) => {
 
     complaintDB.all(fetchEscalationsByAccessmentIdQuery, [req.params.accessmentId], (err, rows) => {
       if (err) {
-        return sendError(res, 500, 'Failed to fetch escalations by accessment', err.message);
+        return sendError(res, 500, 'Failed to fetch escalations by assessment', err.message);
       }
       return sendSuccess(res, 200, 'Escalations retrieved successfully', rows);
     });

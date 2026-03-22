@@ -31,7 +31,7 @@ const fetchUnassignedComplaints = async () => {
 
     const nextAssignments = {};
     for (const row of rows) {
-      nextAssignments[row.id] = '';
+      nextAssignments[row.id] = triageAssignments.value[row.id] || '';
     }
     triageAssignments.value = nextAssignments;
   } catch (requestError) {
@@ -63,12 +63,20 @@ const assignComplaint = async (row) => {
   }
 };
 
+const activeOrganizations = computed(() => organizations.value.filter((item) => String(item.status).toLowerCase() === 'active'));
 const triageSummary = computed(() => ({
   total: unassignedComplaints.value.length,
-  activeOrganizations: organizations.value.filter((item) => String(item.status).toLowerCase() === 'active').length,
+  activeOrganizations: activeOrganizations.value.length,
   urgent: unassignedComplaints.value.filter((item) => String(item.priority).toLowerCase() === 'urgent').length,
   anonymous: unassignedComplaints.value.filter((item) => Number(item.is_anonymous || 0) === 1).length
 }));
+
+const priorityClass = (priority) => {
+  const value = String(priority || '').toLowerCase();
+  if (value === 'urgent') return 'bg-red-50 text-red-700';
+  if (value === 'high') return 'bg-amber-50 text-amber-700';
+  return 'bg-slate-100 text-slate-700';
+};
 
 onMounted(async () => {
   await Promise.all([fetchOrganizations(), fetchUnassignedComplaints()]);
@@ -76,92 +84,105 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="app-dark-stage w-full space-y-5 rounded-[34px] p-4 sm:p-6">
+  <section class="space-y-6 bg-slate-50 p-4 sm:p-6">
     <PageHeader
-      theme="dark"
-      kicker="Complaint Routing"
       title="Triage Queue"
-      description="Assign anonymous complaints that were submitted without an organization so they can enter the correct tenant workflow."
+      description="Assign anonymous complaints to the correct organization so they can enter the normal review flow."
     >
       <template #actions>
-        <button class="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-medium text-white/84" @click="fetchUnassignedComplaints">
-          Refresh Queue
+        <button class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50" @click="fetchUnassignedComplaints">
+          Refresh
         </button>
       </template>
     </PageHeader>
 
     <section class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <article class="rounded-[26px] border border-white/8 bg-white/[0.04] p-5">
-        <p class="text-xs uppercase tracking-wide text-white/46">Unassigned</p>
-        <p class="mt-2 text-3xl font-black text-white">{{ triageSummary.total }}</p>
-        <p class="text-sm text-white/58">Complaints still waiting to be routed.</p>
+      <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="text-sm font-medium text-slate-500">Waiting in queue</p>
+        <p class="mt-2 text-3xl font-semibold text-slate-900">{{ triageSummary.total }}</p>
+        <p class="mt-2 text-sm text-slate-600">Complaints still waiting for organization assignment.</p>
       </article>
-      <article class="rounded-[26px] border border-white/8 bg-white/[0.04] p-5">
-        <p class="text-xs uppercase tracking-wide text-white/46">Active Organizations</p>
-        <p class="mt-2 text-3xl font-black text-emerald-300">{{ triageSummary.activeOrganizations }}</p>
-        <p class="text-sm text-white/58">Available destinations for complaint assignment.</p>
+      <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="text-sm font-medium text-slate-500">Active organizations</p>
+        <p class="mt-2 text-3xl font-semibold text-slate-900">{{ triageSummary.activeOrganizations }}</p>
+        <p class="mt-2 text-sm text-slate-600">Available destinations for routing.</p>
       </article>
-      <article class="rounded-[26px] border border-white/8 bg-white/[0.04] p-5">
-        <p class="text-xs uppercase tracking-wide text-white/46">Urgent</p>
-        <p class="mt-2 text-3xl font-black text-blue-200">{{ triageSummary.urgent }}</p>
-        <p class="text-sm text-white/58">Queue items marked with urgent priority.</p>
+      <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="text-sm font-medium text-slate-500">Urgent complaints</p>
+        <p class="mt-2 text-3xl font-semibold text-slate-900">{{ triageSummary.urgent }}</p>
+        <p class="mt-2 text-sm text-slate-600">Queue items marked with urgent priority.</p>
       </article>
-      <article class="rounded-[26px] border border-white/8 bg-white/[0.04] p-5">
-        <p class="text-xs uppercase tracking-wide text-white/46">Anonymous</p>
-        <p class="mt-2 text-3xl font-black text-blue-200">{{ triageSummary.anonymous }}</p>
-        <p class="text-sm text-white/58">Anonymous complaints currently visible in the queue.</p>
+      <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="text-sm font-medium text-slate-500">Anonymous</p>
+        <p class="mt-2 text-3xl font-semibold text-slate-900">{{ triageSummary.anonymous }}</p>
+        <p class="mt-2 text-sm text-slate-600">Complaints submitted without a visible reporter identity.</p>
       </article>
     </section>
 
-    <section class="app-dark-panel rounded-[30px] p-5">
-      <div class="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 class="text-lg font-bold text-white">Unassigned Anonymous Complaints</h2>
-          <p class="text-sm text-white/58">Choose the correct active organization for each complaint so it can move into the normal review flow.</p>
-        </div>
+    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="mb-4">
+        <h2 class="text-lg font-semibold text-slate-900">Queue Items</h2>
+        <p class="mt-1 text-sm text-slate-600">Review each complaint summary, choose the destination organization, and assign it into the main workflow.</p>
       </div>
 
-      <p v-if="loading" class="text-sm text-white/58">Loading unassigned complaints...</p>
-      <p v-else-if="error" class="text-sm text-red-400">{{ error }}</p>
-      <p v-else-if="unassignedComplaints.length === 0" class="text-sm text-white/58">No unassigned anonymous complaints.</p>
+      <p v-if="loading" class="text-sm text-slate-500">Loading unassigned complaints...</p>
+      <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
+      <p v-else-if="unassignedComplaints.length === 0" class="text-sm text-slate-500">No unassigned anonymous complaints.</p>
 
       <div v-else class="space-y-3">
         <article
           v-for="row in unassignedComplaints"
           :key="row.id"
-          class="rounded-[24px] border border-white/8 bg-white/[0.04] p-4"
+          class="rounded-xl border border-slate-200 p-4"
         >
-          <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div class="space-y-1">
+          <div class="grid grid-cols-1 gap-4 xl:grid-cols-[1.4fr,0.8fr]">
+            <div>
               <div class="flex flex-wrap items-center gap-2">
-                <h3 class="text-base font-bold text-white">{{ row.title || 'Untitled Complaint' }}</h3>
-                <span class="rounded-full bg-white/10 px-2 py-1 text-[11px] font-semibold text-white/68">{{ row.priority || 'medium' }}</span>
+                <h3 class="text-base font-semibold text-slate-900">{{ row.title || 'Untitled Complaint' }}</h3>
+                <span class="inline-flex rounded-lg px-2.5 py-1 text-xs font-medium" :class="priorityClass(row.priority)">
+                  {{ row.priority || 'medium' }}
+                </span>
               </div>
-              <p class="text-sm text-white/72">{{ row.complaint }}</p>
-              <p class="text-xs text-white/46">Tracking: {{ row.tracking_code || 'N/A' }}</p>
-              <p class="text-xs text-white/46">Reporter: {{ row.anonymous_label || 'Anonymous Reporter' }}</p>
+              <p class="mt-2 text-sm text-slate-600">{{ row.complaint }}</p>
+
+              <div class="mt-3 grid grid-cols-1 gap-3 text-sm text-slate-600 sm:grid-cols-3">
+                <div>
+                  <p class="font-medium text-slate-900">Tracking code</p>
+                  <p class="mt-1">{{ row.tracking_code || 'N/A' }}</p>
+                </div>
+                <div>
+                  <p class="font-medium text-slate-900">Reporter</p>
+                  <p class="mt-1">{{ row.anonymous_label || 'Anonymous Reporter' }}</p>
+                </div>
+                <div>
+                  <p class="font-medium text-slate-900">Complaint ID</p>
+                  <p class="mt-1">{{ row.id }}</p>
+                </div>
+              </div>
             </div>
 
-            <div class="w-full max-w-sm space-y-2">
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <label class="mb-2 block text-sm font-medium text-slate-700">Assign organization</label>
               <select
                 v-model="triageAssignments[row.id]"
-                class="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3 text-sm text-white"
+                class="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-900 outline-none focus:border-blue-500"
               >
                 <option value="">Select organization</option>
                 <option
-                  v-for="organization in organizations.filter((item) => String(item.status).toLowerCase() === 'active')"
+                  v-for="organization in activeOrganizations"
                   :key="organization.organization_id"
                   :value="organization.organization_id"
                 >
                   {{ organization.name }}
                 </option>
               </select>
+
               <button
                 :disabled="assigningId === row.id || !triageAssignments[row.id]"
-                class="rounded-full bg-[linear-gradient(90deg,#163462_0%,#1f4db7_58%,#4f8df7_100%)] px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                class="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                 @click="assignComplaint(row)"
               >
-                {{ assigningId === row.id ? 'Assigning...' : 'Assign to Organization' }}
+                {{ assigningId === row.id ? 'Assigning...' : 'Assign complaint' }}
               </button>
             </div>
           </div>

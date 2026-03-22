@@ -1,8 +1,9 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
-import { useSessionStore } from '../stores/session.js';
-import api from '../services/api.js';
+import { useSessionStore } from '../../stores/session.js';
+import AppFooter from '../../components/AppFooter.vue';
+import api, { extractApiError } from '../../services/api.js';
 
 const router = useRouter();
 const session = useSessionStore();
@@ -23,6 +24,7 @@ const hoverRating = ref(0);
 const submitting = ref(false);
 const submitted = ref(false);
 const error = ref('');
+let redirectTimer = null;
 
 const setRating = (val) => { form.value.rating = val; };
 const setHover = (val) => { hoverRating.value = val; };
@@ -62,12 +64,21 @@ const submit = async () => {
       rating: form.value.rating,
     });
     submitted.value = true;
-  } catch (e) {
-    error.value = e?.response?.data?.message || 'Something went wrong. Please try again.';
+    redirectTimer = window.setTimeout(() => {
+      router.push('/user/dashboard');
+    }, 1800);
+  } catch (requestError) {
+    error.value = extractApiError(requestError, 'Failed to submit testimonial');
   } finally {
     submitting.value = false;
   }
 };
+
+onBeforeUnmount(() => {
+  if (redirectTimer) {
+    window.clearTimeout(redirectTimer);
+  }
+});
 </script>
 
 
@@ -83,6 +94,7 @@ const submit = async () => {
       </div>
       <h2 class="success-title">Thank you for sharing!</h2>
       <p class="success-desc">Your testimonial has been submitted and is pending review. Once approved by an admin it will appear publicly on the homepage.</p>
+      <p class="mt-3 text-xs font-medium text-slate-400">Redirecting you back to the dashboard...</p>
       <button class="back-btn" @click="router.push('/user/dashboard')">
         ← Back to Dashboard
       </button>
@@ -207,10 +219,8 @@ const submit = async () => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
-
 .testimonial-page {
-  font-family: 'Georgia', Times New Roman;
+  font-family: 'Times New Roman', Times, serif;
   padding: 1.5rem;
 }
 
@@ -283,7 +293,7 @@ const submit = async () => {
   border: 1px solid #e2e8f0; border-radius: 0.625rem;
   font-size: 0.875rem; color: #0f172a; background: #f8fafc;
   outline: none; transition: border 0.2s;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Times New Roman', Times, serif;
 }
 .field-input:focus { border-color: #f97316; background: white; box-shadow: 0 0 0 3px rgba(249,115,22,0.08); }
 .field-input:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -292,7 +302,7 @@ const submit = async () => {
   border: 1px solid #e2e8f0; border-radius: 0.625rem;
   font-size: 0.875rem; color: #0f172a; background: #f8fafc;
   outline: none; resize: vertical; transition: border 0.2s;
-  font-family: 'DM Sans', sans-serif; line-height: 1.6;
+  font-family: 'Times New Roman', Times, serif; line-height: 1.6;
 }
 .field-textarea:focus { border-color: #f97316; background: white; box-shadow: 0 0 0 3px rgba(249,115,22,0.08); }
 .char-count { font-size: 0.72rem; color: #94a3b8; text-align: right; }

@@ -3,19 +3,19 @@ import { ref, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
 import AuthTopNav from '../components/AuthTopNav.vue';
 import AppFooter from '../components/AppFooter.vue';
+import api, { unwrapResponse } from '../services/api';
 
 const testimonials = ref([]);
 const loadingTestimonials = ref(true);
 
 onMounted(async () => {
   try {
-    const res = await fetch('http://localhost:5000/api/testimonials/public');
-    if (res.ok) {
-      const data = await res.json();
-      testimonials.value = (Array.isArray(data) ? data : data.data ?? []).slice(0, 6);
-    }
-  } catch (e) {
-    console.error('Failed to load testimonials:', e);
+    const response = await api.get('/testimonials/public', { skipAuth: true });
+    const payload = unwrapResponse(response);
+    const rows = Array.isArray(payload) ? payload : payload.data ?? [];
+    testimonials.value = rows.slice(0, 6);
+  } catch (error) {
+    console.error('Failed to load testimonials:', error);
   } finally {
     loadingTestimonials.value = false;
   }
@@ -30,10 +30,8 @@ const avatarColor = (i) => avatarColors[i % avatarColors.length];
 
     <!-- Hero Section -->
     <section class="hero-section relative flex items-center justify-center overflow-hidden pt-20">
-      <!-- Background overlay -->
       <div class="hero-overlay absolute inset-0 z-10"></div>
 
-      <!-- Decorative architectural line art -->
       <div class="absolute inset-0 z-0">
         <svg class="absolute bottom-0 left-0 w-full opacity-10" viewBox="0 0 1440 320" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M0,160 L80,160 L80,80 L160,80 L160,160 L240,160 L240,40 L320,40 L320,160 L400,160 L400,100 L480,100 L480,160 L560,160 L560,60 L640,60 L640,160 L720,160 L720,120 L800,120 L800,160 L880,160 L880,50 L960,50 L960,160 L1040,160 L1040,90 L1120,90 L1120,160 L1200,160 L1200,70 L1280,70 L1280,160 L1360,160 L1360,110 L1440,110 L1440,320 L0,320 Z" fill="white"/>
@@ -202,7 +200,7 @@ const avatarColor = (i) => avatarColors[i % avatarColors.length];
 /* ── Hero ──────────────────────────────────── */
 .hero-section {
   min-height: 600px;
-    background-image: url('https://images.unsplash.com/photo-1573497620053-ea5300f94f21?w=1600&q=80');
+  background-image: url('https://images.unsplash.com/photo-1573497620053-ea5300f94f21?w=1600&q=80');
   background-size: cover;
   background-position: center top;
 }
@@ -210,7 +208,7 @@ const avatarColor = (i) => avatarColors[i % avatarColors.length];
   background: linear-gradient(135deg, rgba(10,28,64,0.88) 0%, rgba(15,52,100,0.82) 50%, rgba(30,60,110,0.75) 100%);
 }
 .hero-title {
-  font-family: 'Georgia', 'Times New Roman';
+  font-family: 'Times New Roman', Times, serif;
   letter-spacing: -0.02em;
 }
 
@@ -226,7 +224,7 @@ const avatarColor = (i) => avatarColors[i % avatarColors.length];
   box-shadow: 0 2px 8px hsl(0, 13%, 96%);
 }
 .font-family{
-  font-family: 'Georgia', 'Times New Roman';
+  font-family: 'Times New Roman', Times, serif;
 }
 .badge-orange  { background: #f97316; }
 .badge-emerald { background: #f97316; }
@@ -236,12 +234,12 @@ const avatarColor = (i) => avatarColors[i % avatarColors.length];
 .testi-section { width: 100%; background: #ffffff; }
 .section-kicker {
   display: block; font-size: 0.85rem; font-weight: 700;
-  font-family: 'Georgia', 'Times New Roman';
+  font-family: 'Times New Roman', Times, serif;
   letter-spacing: 0.22em; text-transform: uppercase; color: #f97316;
 }
 .section-title {
   margin-top: 0.5rem;
-  font-family: 'Georgia', 'Times New Roman', serif;
+  font-family: 'Times New Roman', Times, serif;
   font-size: clamp(1.8rem, 4vw, 2.4rem); font-weight: 900;
   color: #0f2444; line-height: 1.1;
 }

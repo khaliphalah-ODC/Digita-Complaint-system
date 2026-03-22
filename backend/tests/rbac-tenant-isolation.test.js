@@ -30,6 +30,7 @@ const {
 } = await import('../src/controllers/user.controller.js');
 const {
   CreateOrganizationTable,
+  createOrganization,
   deleteOrganization,
   getGlobalOrganizationStats
 } = await import('../src/controllers/organization.controller.js');
@@ -435,6 +436,75 @@ test('super_admin can create an organization admin inside a selected organizatio
   assert.equal(response.body.success, true);
   assert.equal(Number(response.body.data.organization_id), 2);
   assert.equal(response.body.data.role, 'org_admin');
+});
+
+test('super_admin can create an organization together with its first organization admin', async () => {
+  const response = await invoke(createOrganization, {
+    user: state.users.superAdmin,
+    body: {
+      name: 'New Oversight Org',
+      organization_type: 'Agency',
+      email: 'newoverightorg@example.com',
+      phone: '0888123456',
+      address: 'Sinkor, Monrovia',
+      status: 'active',
+      admin_full_name: 'New Oversight Admin',
+      admin_email: 'neworgadmin@example.com'
+    }
+  });
+
+  assert.equal(response.status, 201);
+  assert.equal(response.body.success, true);
+  assert.equal(response.body.data.organization.name, 'New Oversight Org');
+  assert.equal(response.body.data.organization_admin.full_name, 'New Oversight Admin');
+  assert.equal(response.body.data.organization_admin.email, 'neworgadmin@example.com');
+
+  const createdAdmin = await getQuery('SELECT * FROM users WHERE email = ?', ['neworgadmin@example.com']);
+  assert.ok(createdAdmin);
+  assert.equal(createdAdmin.role, 'org_admin');
+  assert.equal(createdAdmin.status, 'active');
+  assert.equal(Number(createdAdmin.must_change_password), 1);
+});
+
+test('organization creation rolls back if the organization admin cannot be created', async () => {
+  const response = await invoke(createOrganization, {
+    user: state.users.superAdmin,
+    body: {
+      name: 'Rolled Back Org',
+      organization_type: 'Agency',
+      email: 'rolledbackorg@example.com',
+      address: 'Broad Street, Monrovia',
+      status: 'active',
+      admin_full_name: 'Duplicate Admin',
+      admin_email: 'orgadmin1@example.com'
+    }
+  });
+
+  assert.equal(response.status, 409);
+  assert.equal(response.body.success, false);
+  assert.equal(response.body.message, 'Organization admin email already exists');
+
+  const createdOrganization = await getQuery('SELECT * FROM organization WHERE email = ?', ['rolledbackorg@example.com']);
+  assert.equal(createdOrganization, null);
+});
+
+test('organization creation returns a conflict when the organization email already exists', async () => {
+  const response = await invoke(createOrganization, {
+    user: state.users.superAdmin,
+    body: {
+      name: 'Duplicate Email Org',
+      organization_type: 'Agency',
+      email: 'org-one@example.com',
+      address: 'Broad Street, Monrovia',
+      status: 'active',
+      admin_full_name: 'Another Org Admin',
+      admin_email: 'another-new-admin@example.com'
+    }
+  });
+
+  assert.equal(response.status, 409);
+  assert.equal(response.body.success, false);
+  assert.equal(response.body.message, 'Organization email already exists');
 });
 
 test('user only sees their own complaints and notifications while anonymous tracking still works', async () => {

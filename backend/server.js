@@ -7,8 +7,9 @@ import './src/model/connect.js';
 
 
 // Import routes and controllers
+import emailRoutes from './src/routes/email.route.js';
 import userRoutes from './src/routes/user.route.js';
-import accessmentRoutes from './src/routes/accessment.route.js';
+import assessmentRoutes from './src/routes/assessment.route.js';
 import escalationRoutes from './src/routes/escalation.route.js';
 import statusLogRoutes from './src/routes/statusLog.route.js';
 import feedbackRoutes from './src/routes/feedback.route.js';
@@ -26,10 +27,12 @@ import { getPublicDepartmentsByOrganization } from './src/controllers/department
 import {
   CreateUsersTable,
   CreateRevokedTokensTable,
-  CreatePasswordResetTokensTable
+  CreatePasswordResetTokensTable,
+  CreateEmailVerificationTokensTable
 } from './src/controllers/user.controller.js';
+
 import { CreateAuditLogsTable } from './src/controllers/audit.controller.js';
-import { CreateAccessmentsTable } from './src/controllers/accessment.controller.js';
+import { CreateAccessmentsTable } from './src/controllers/assessment.controller.js';
 import { CreateEscalationsTable } from './src/controllers/escalation.controller.js';
 import { CreateStatusLogsTable } from './src/controllers/statusLog.controller.js';
 import { CreateOrganizationTable } from './src/controllers/organization.controller.js';
@@ -46,9 +49,10 @@ app.use(cors({ origin: 'http://localhost:5173' }));
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
-
+app.use('/api/email', emailRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/accessments', verifyToken, accessmentRoutes);
+app.use('/api/assessments', verifyToken, assessmentRoutes);
+app.use('/api/accessments', verifyToken, assessmentRoutes);
 app.use('/api/escalations', verifyToken, escalationRoutes);
 app.use('/api/status-logs', verifyToken, statusLogRoutes);
 app.use('/api/feedback', verifyToken, feedbackRoutes);
@@ -78,6 +82,8 @@ export const initializeDatabase = () => {
   didInitializeDatabase = true;
   CreateUsersTable();
   CreateRevokedTokensTable();
+  CreateEmailVerificationTokensTable();
+  CreatePasswordResetTokensTable();
   CreateAccessmentsTable();
   CreateEscalationsTable();
   CreateStatusLogsTable();
@@ -90,6 +96,7 @@ export const initializeDatabase = () => {
   CreatePasswordResetTokensTable();
   CreateAuditLogsTable();
   CreateTestimonialsTable();
+  
 };
 
 initializeDatabase();

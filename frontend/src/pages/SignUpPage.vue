@@ -17,22 +17,15 @@ const signUpForm = reactive({
 });
 const showPassword = ref(false);
 
-const redirectAfterAuth = () => {
-  if (session.currentUser?.role === 'super_admin') {
-    router.push('/admin/dashboard');
-    return;
-  }
-  if (session.currentUser?.role === 'org_admin') {
-    router.push('/org-admin/dashboard');
-    return;
-  }
-  router.push('/user/dashboard');
-};
-
 const submit = async () => {
   try {
-    await session.register(signUpForm);
-    redirectAfterAuth();
+    const data = await session.register(signUpForm);
+    await router.push({
+      path: '/verify-email',
+      query: {
+        email: String(data?.user?.email || signUpForm.email || '').trim().toLowerCase()
+      }
+    });
   } catch (_error) {
     // Store already tracks and displays error message.
   }

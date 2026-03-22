@@ -3,9 +3,10 @@ import bcrypt from 'bcrypt';
 import { randomUUID, createHash } from 'node:crypto';
 import complaintDB from '../model/connect.js';
 import { sendSuccess, sendError } from '../utils/response.js';
-import { sendPasswordResetNotification } from '../utils/notification.js';
 import { logAuditEntry, buildAuditMetadata } from '../utils/audit.js';
 import generateToken from '../middleware/generateToken.js';
+import { sendEmail } from '../services/email.service.js';
+
 import {
   usersQuery,
   createUserQuery,
@@ -19,7 +20,14 @@ import {
   deleteUserQuery,
   createRevokedTokenQuery,
   revokedTokensQuery,
-  updateOwnPasswordQuery
+  updateOwnPasswordQuery,
+  emailVerificationTokensQuery,
+  insertEmailVerificationTokenQuery,
+  selectActiveEmailVerificationTokenQuery,
+  consumeEmailVerificationTokenQuery,
+  invalidateEmailVerificationTokensByUserQuery,
+  markUserEmailVerifiedQuery
+
 } from '../model/user.model.js';
 import {
   passwordResetTokensQuery,
@@ -34,9 +42,12 @@ const sanitizeUser = (user) => {
   return safeUser;
 };
 
-const PASSWORD_RESET_TTL_MS = Number(process.env.PASSWORD_RESET_TTL_MS || 60 * 60 * 1000);
+const PASSWORD_RESET_TTL_MS = Number(process.env.PASSWORD_RESET_TTL_MS || 60 * 60 * 1000);const EMAIL_VERIFICATION_TTL_MS = Number(process.env.EMAIL_VERIFICATION_TTL_MS || 24 * 60 * 60 * 1000);
+const EMAIL_VERIFICATION_URL = process.env.EMAIL_VERIFICATION_URL || '';
+const PASSWORD_RESET_URL = process.env.PASSWORD_RESET_URL || '';
 const hashToken = (token) => createHash('sha256').update(token).digest('hex');
 const previewPasswordResetTokenEnabled = process.env.PASSWORD_RESET_PREVIEW === 'true';
+
 const buildResetTokenPayload = (token, expiresAt) => {
   const payload = { expires_at: expiresAt };
   if (previewPasswordResetTokenEnabled && token) {
@@ -44,6 +55,103 @@ const buildResetTokenPayload = (token, expiresAt) => {
   }
   return payload;
 };
+
+
+const buildEmailVerificationLink = (token, email) => {
+  if (!EMAIL_VERIFICATION_URL) {
+    return '';
+  }
+
+  const separator = EMAIL_VERIFICATION_URL.includes('?') ? '&' : '?';
+  return `${EMAIL_VERIFICATION_URL}${separator}token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
+};
+
+const buildPasswordResetLink = (token, email) => {
+  if (!PASSWORD_RESET_URL) {
+    return '';
+  }
+
+  const separator = PASSWORD_RESET_URL.includes('?') ? '&' : '?';
+  return `${PASSWORD_RESET_URL}${separator}token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
+};
+
+const sendVerificationEmail = async ({ email, fullName, token, expiresAt }) => {
+  const verificationLink = buildEmailVerificationLink(token, email);
+  const displayName = fullName || 'User';
+
+  return sendEmail({
+    to: email,
+    subject: 'Verify your email address',
+    text: `Hello ${displayName}, please verify your email. Verification link: ${verificationLink} This link expires at ${expiresAt}.`,
+    html: `
+      <h2>Verify your email address</h2>
+      <p>Hello ${displayName},</p>
+      <p>Please click the link below to verify your email address:</p>
+      <p><a href="${verificationLink}">${verificationLink}</a></p>
+      <p>This link expires at ${expiresAt}.</p>
+    `,
+  });
+};
+
+// For testing purposes, you can call this function directly to send a verification email:
+const sendPasswordResetEmail = async ({ email, fullName, token, expiresAt }) => {
+  const resetLink = buildPasswordResetLink(token, email);
+  const displayName = fullName || 'User';
+
+  return sendEmail({
+    to: email,
+    subject: 'Reset your password',
+    text: `Hello ${displayName}, you requested a password reset. Reset link: ${resetLink} This link expires at ${expiresAt}.`,
+    html: `
+      <h2>Reset your password</h2>
+      <p>Hello ${displayName},</p>
+      <p>You requested a password reset. Click the link below to continue:</p>
+      <p><a href="${resetLink}">${resetLink}</a></p>
+      <p>This link expires at ${expiresAt}.</p>
+    `,
+  });
+};
+
+//create and send email verification token, ensuring any existing tokens for the user are invalidated
+
+const createAndSendEmailVerification = (userRow) => {
+  return new Promise((resolve, reject) => {
+    const rawToken = randomUUID();
+    const hashedToken = hashToken(rawToken);
+    const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS).toISOString();
+
+    complaintDB.serialize(() => {
+      complaintDB.run(invalidateEmailVerificationTokensByUserQuery, [userRow.id], (invalidateErr) => {
+        if (invalidateErr) {
+          console.error('Failed to invalidate existing email verification tokens:', invalidateErr.message);
+        }
+      });
+
+      complaintDB.run(insertEmailVerificationTokenQuery, [userRow.id, hashedToken, expiresAt], async (insertErr) => {
+        if (insertErr) {
+          reject(insertErr);
+          return;
+        }
+
+        try {
+          await sendVerificationEmail({
+            email: userRow.email,
+            fullName: userRow.full_name,
+            token: rawToken,
+            expiresAt,
+          });
+
+          resolve({
+            expiresAt,
+          });
+        } catch (emailErr) {
+          reject(emailErr);
+        }
+      });
+    });
+  });
+};
+
 
 const buildRequestMetadata = (req, organizationId = null) => {
   const headers = req.headers || {};
@@ -140,7 +248,10 @@ export const CreateUsersTable = () => {
             return;
           }
 
+
           const hasDepartmentId = (columns || []).some((col) => col.name === 'department_id');
+          const hasEmailVerified = (columns || []).some((col) => col.name === 'email_verified');
+          const hasEmailVerifiedAt = (columns || []).some((col) => col.name === 'email_verified_at');
           const hasMustChangePassword = (columns || []).some((col) => col.name === 'must_change_password');
 
           const columnSteps = [];
@@ -150,12 +261,44 @@ export const CreateUsersTable = () => {
               errorMessage: 'Error migrating users table (department_id):'
             });
           }
+          if (!hasEmailVerified) {
+            columnSteps.push({
+              sql: 'ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0',
+              errorMessage: 'Error migrating users table (email_verified):'
+            });
+          }
+          if (!hasEmailVerifiedAt) {
+            columnSteps.push({
+              sql: 'ALTER TABLE users ADD COLUMN email_verified_at DATETIME DEFAULT NULL',
+              errorMessage: 'Error migrating users table (email_verified_at):'
+            });
+          }
           if (!hasMustChangePassword) {
             columnSteps.push({
               sql: 'ALTER TABLE users ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0',
               errorMessage: 'Error migrating users table (must_change_password):'
             });
           }
+
+
+          // const hasDepartmentId = (columns || []).some((col) => col.name === 'department_id');
+          // const hasMustChangePassword = (columns || []).some((col) => col.name === 'must_change_password');
+
+          // const columnSteps = [];
+          // if (!hasDepartmentId) {
+          //   columnSteps.push({
+          //     sql: 'ALTER TABLE users ADD COLUMN department_id INTEGER',
+          //     errorMessage: 'Error migrating users table (department_id):'
+          //   });
+          // }
+          // if (!hasMustChangePassword) {
+          //   columnSteps.push({
+          //     sql: 'ALTER TABLE users ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0',
+          //     errorMessage: 'Error migrating users table (must_change_password):'
+          //   });
+          // }
+
+
           const runStep = (index) => {
             if (index >= columnSteps.length) {
               console.log('Users table created or already exists');
@@ -299,7 +442,13 @@ export const requestPasswordReset = (req, res) => {
         }
 
         const metadata = buildRequestMetadata(req, userRow.organization_id || null);
-        void sendPasswordResetNotification({ email, token: rawToken, expiresAt, metadata });
+        void sendPasswordResetEmail({
+          email: userRow.email,
+          fullName: userRow.full_name,
+          token: rawToken,
+          expiresAt,
+        });
+
         if (previewPasswordResetTokenEnabled) {
           console.log(`Password reset token for ${email}: ${rawToken}`);
         }
@@ -307,6 +456,16 @@ export const requestPasswordReset = (req, res) => {
         return sendSuccess(res, 200, 'Password reset instructions sent', buildResetTokenPayload(rawToken, expiresAt));
       });
     });
+  });
+};
+
+export const CreateEmailVerificationTokensTable = () => {
+  complaintDB.run(emailVerificationTokensQuery, (err) => {
+    if (err) {
+      console.error('Error creating email_verification_tokens table:', err.message);
+    } else {
+      console.log('Email verification tokens table created or already exists');
+    }
   });
 };
 
@@ -326,9 +485,11 @@ export const resetPasswordWithToken = (req, res) => {
     if (tokenErr) {
       return sendError(res, 500, 'Failed to verify reset token', tokenErr.message);
     }
-    if (!tokenRow) {
-      return sendError(res, 400, 'Invalid or expired reset token');
+    if (!Number(userRow.email_verified)) {
+      return sendSuccess(res, 200, 'Password reset instructions will be sent if the account exists');
     }
+
+   
 
     complaintDB.get(fetchUserByIdQuery, [tokenRow.user_id], (userErr, userRow) => {
       if (userErr) {
@@ -363,6 +524,7 @@ export const resetPasswordWithToken = (req, res) => {
   });
 };
 
+
 export const registerUser = (req, res) => {
   const {
     organization_id = null,
@@ -373,11 +535,13 @@ export const registerUser = (req, res) => {
     status = 'active'
   } = req.body;
 
-  if (!full_name || !email || !password) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+
+  if (!full_name || !normalizedEmail || !password) {
     return sendError(res, 400, 'full_name, email, and password are required');
   }
 
-  complaintDB.get(fetchUserByEmailQuery, [email], (findErr, existingUser) => {
+  complaintDB.get(fetchUserByEmailQuery, [normalizedEmail], (findErr, existingUser) => {
     if (findErr) {
       return sendError(res, 500, 'Failed to verify user email', findErr.message);
     }
@@ -386,8 +550,19 @@ export const registerUser = (req, res) => {
     }
 
     complaintDB.run(
-      createUserQuery,
-      [organization_id, department_id, full_name, email, password, 0, status, 'user'],
+      `INSERT INTO users (
+        organization_id,
+        department_id,
+        full_name,
+        email,
+        password,
+        email_verified,
+        email_verified_at,
+        must_change_password,
+        status,
+        role
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [organization_id, department_id, full_name, normalizedEmail, password, 0, null, 0, status, 'user'],
       function onCreate(createErr) {
         if (createErr) {
           return sendError(res, 500, 'Failed to register user', createErr.message);
@@ -401,25 +576,157 @@ export const registerUser = (req, res) => {
             return sendError(res, 500, 'Registered user could not be loaded');
           }
 
-          const safeUser = sanitizeUser(userRow);
-          if (!safeUser?.id || !safeUser?.email) {
-            return sendError(res, 500, 'Registered user payload is incomplete');
-          }
-
-          let token;
           try {
-            token = await generateToken(safeUser.id);
-          } catch (tokenErr) {
-            return sendError(res, 500, 'Failed to generate token', tokenErr.message);
+            await createAndSendEmailVerification(userRow);
+          } catch (verificationErr) {
+            return sendError(res, 500, 'User created but failed to send verification email', verificationErr.message);
           }
 
-          return sendSuccess(res, 201, 'User registered successfully', { user: safeUser, token });
+          return sendSuccess(res, 201, 'User registered successfully. Please verify your email before logging in.', {
+            user: sanitizeUser(userRow),
+          });
         });
       }
     );
   });
 };
 
+
+
+// export const registerUser = (req, res) => {
+//   const {
+//     organization_id = null,
+//     department_id = null,
+//     full_name,
+//     email,
+//     password,
+//     status = 'active'
+//   } = req.body;
+
+//   if (!full_name || !email || !password) {
+//     return sendError(res, 400, 'full_name, email, and password are required');
+//   }
+
+//   complaintDB.get(fetchUserByEmailQuery, [email], (findErr, existingUser) => {
+//     if (findErr) {
+//       return sendError(res, 500, 'Failed to verify user email', findErr.message);
+//     }
+//     if (existingUser) {
+//       return sendError(res, 409, 'Email already registered');
+//     }
+
+//     complaintDB.run(
+//       createUserQuery,
+//       [organization_id, department_id, full_name, email, password, 0, status, 'user'],
+//       function onCreate(createErr) {
+//         if (createErr) {
+//           return sendError(res, 500, 'Failed to register user', createErr.message);
+//         }
+
+//         complaintDB.get(fetchUserByIdQuery, [this.lastID], async (getErr, userRow) => {
+//           if (getErr) {
+//             return sendError(res, 500, 'Failed to fetch registered user', getErr.message);
+//           }
+//           if (!userRow) {
+//             return sendError(res, 500, 'Registered user could not be loaded');
+//           }
+
+//           const safeUser = sanitizeUser(userRow);
+//           if (!safeUser?.id || !safeUser?.email) {
+//             return sendError(res, 500, 'Registered user payload is incomplete');
+//           }
+
+//           let token;
+//           try {
+//             token = await generateToken(safeUser.id);
+//           } catch (tokenErr) {
+//             return sendError(res, 500, 'Failed to generate token', tokenErr.message);
+//           }
+
+//           return sendSuccess(res, 201, 'User registered successfully', { user: safeUser, token });
+//         });
+//       }
+//     );
+//   });
+// };
+
+
+export const verifyEmail = (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  const token = String(req.body?.token || '').trim();
+
+  if (!email || !token) {
+    return sendError(res, 400, 'email and token are required');
+  }
+
+  const hashedToken = hashToken(token);
+  const now = new Date().toISOString();
+
+  complaintDB.get(selectActiveEmailVerificationTokenQuery, [hashedToken, now], (tokenErr, tokenRow) => {
+    if (tokenErr) {
+      return sendError(res, 500, 'Failed to verify email token', tokenErr.message);
+    }
+    if (!tokenRow) {
+      return sendError(res, 400, 'Invalid or expired verification token');
+    }
+
+    complaintDB.get(fetchUserByIdQuery, [tokenRow.user_id], (userErr, userRow) => {
+      if (userErr) {
+        return sendError(res, 500, 'Failed to load user for email verification', userErr.message);
+      }
+      if (!userRow || String(userRow.email).toLowerCase() !== email) {
+        return sendError(res, 403, 'Invalid verification details');
+      }
+
+      complaintDB.run(markUserEmailVerifiedQuery, [userRow.id], (verifyErr) => {
+        if (verifyErr) {
+          return sendError(res, 500, 'Failed to mark email as verified', verifyErr.message);
+        }
+
+        complaintDB.run(consumeEmailVerificationTokenQuery, [tokenRow.id], (consumeErr) => {
+          if (consumeErr) {
+            console.error('Failed to mark verification token as consumed:', consumeErr.message);
+          }
+
+          return sendSuccess(res, 200, 'Email verified successfully');
+        });
+      });
+    });
+  });
+};
+
+
+export const resendVerificationEmail = (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+
+  if (!email) {
+    return sendError(res, 400, 'email is required');
+  }
+
+  complaintDB.get(fetchUserByEmailQuery, [email], async (findErr, userRow) => {
+    if (findErr) {
+      return sendError(res, 500, 'Failed to process resend verification request', findErr.message);
+    }
+
+    if (!userRow) {
+      return sendSuccess(res, 200, 'If the account exists and is not yet verified, a verification email will be sent');
+    }
+
+    if (Number(userRow.email_verified)) {
+      return sendSuccess(res, 200, 'If the account exists and is not yet verified, a verification email will be sent');
+    }
+
+    try {
+      await createAndSendEmailVerification(userRow);
+      return sendSuccess(res, 200, 'If the account exists and is not yet verified, a verification email will be sent');
+    } catch (verificationErr) {
+      return sendError(res, 500, 'Failed to resend verification email', verificationErr.message);
+    }
+  });
+};
+
+
+//loginuser
 export const loginUser = (req, res) => {
   const { email, password } = req.body;
 
@@ -427,12 +734,19 @@ export const loginUser = (req, res) => {
     return sendError(res, 400, 'email and password are required');
   }
 
-  complaintDB.get(fetchUserByEmailQuery, [email], async (err, userRow) => {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+
+  complaintDB.get(fetchUserByEmailQuery, [normalizedEmail], async (err, userRow) => {
     if (err) {
       return sendError(res, 500, 'Failed to login user', err.message);
     }
+
     if (!userRow) {
       return sendError(res, 401, 'Invalid email or password');
+    }
+
+    if (!Number(userRow.email_verified)) {
+      return sendError(res, 403, 'Please verify your email before logging in');
     }
 
     try {

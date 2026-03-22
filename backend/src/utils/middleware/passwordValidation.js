@@ -15,6 +15,17 @@ export const passwordOnlySchema = Joi.object({
   password: passwordPolicy.required()
 });
 
+export const emailVerificationSchema = Joi.object({
+  email: Joi.string().email().required(),
+  token: Joi.string().uuid({ version: 'uuidv4' }).required()
+});
+
+export const emailOnlySchema = Joi.object({
+  email: Joi.string().email().required()
+});
+
+
+
 export const resetPasswordSchema = Joi.object({
   email: Joi.string().email().required(),
   token: Joi.string().uuid({ version: 'uuidv4' }).required(),
