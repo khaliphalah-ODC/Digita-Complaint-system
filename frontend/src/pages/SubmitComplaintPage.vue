@@ -83,28 +83,28 @@ const isUserWorkspace = computed(() => session.currentUser?.role === 'user');
 const shellClass = computed(() => (isUserWorkspace.value ? 'user-shell-panel w-full rounded-[30px]' : 'app-shell-panel w-full rounded-[30px]'));
 const heroClass = computed(() => (
   isUserWorkspace.value
-    ? 'rounded-t-[30px] border-b border-[#d2e0f8] bg-[#dfeaff] px-4 py-5 sm:px-6 md:px-8 md:py-6'
-    : 'rounded-t-[30px] border-b border-slate-200 bg-[var(--app-primary-mist)] px-4 py-5 sm:px-6 md:px-8 md:py-6'
+    ? 'rounded-t-[30px] border-b border-[var(--app-line)] bg-[var(--app-surface-soft)] px-4 py-5 sm:px-6 md:px-8 md:py-6'
+    : 'rounded-t-[30px] border-b border-[var(--app-line)] bg-[var(--app-surface-soft)] px-4 py-5 sm:px-6 md:px-8 md:py-6'
 ));
-const heroTitleClass = computed(() => (isUserWorkspace.value ? 'text-3xl font-black tracking-tight text-[var(--app-primary-ink)] sm:text-4xl' : 'text-3xl font-black tracking-tight text-slate-800 sm:text-4xl'));
+const heroTitleClass = computed(() => (isUserWorkspace.value ? 'text-3xl font-semibold tracking-tight text-[var(--app-primary-ink)] sm:text-4xl' : 'text-3xl font-semibold tracking-tight text-slate-800 sm:text-4xl'));
 const bodyTextClass = computed(() => (isUserWorkspace.value ? 'text-[var(--app-muted-color)]' : 'text-slate-600'));
 const cardClass = computed(() => (isUserWorkspace.value ? 'user-shell-card rounded-[24px] p-4' : 'app-ink-card rounded-[24px] p-4'));
 const compactCardClass = computed(() => (isUserWorkspace.value ? 'user-shell-card rounded-[24px] px-4 py-3' : 'app-ink-card rounded-[24px] px-4 py-3'));
 const fieldClass = computed(() => (
   isUserWorkspace.value
-    ? 'w-full rounded-lg border border-[#c6d8f8] bg-white px-3 py-2 text-sm text-[var(--app-primary-ink)] outline-none focus:border-[var(--app-primary)]'
-    : 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500'
+    ? 'app-input text-[var(--app-primary-ink)]'
+    : 'app-input'
 ));
 const ghostChipClass = computed(() => (
   isUserWorkspace.value
-    ? 'rounded-full border border-[#c6d8f8] bg-white px-2 py-1 text-xs text-[var(--app-primary-ink)]'
-    : 'rounded-full border border-slate-300 px-2 py-1 text-xs text-slate-700'
+    ? 'app-badge app-badge-neutral'
+    : 'app-badge app-badge-neutral'
 ));
-const inactivePriorityClass = computed(() => (isUserWorkspace.value ? 'bg-[#eaf2ff] text-[var(--app-primary-ink)]' : 'bg-slate-100 text-slate-700'));
+const inactivePriorityClass = computed(() => (isUserWorkspace.value ? 'bg-[var(--app-primary-mist)] text-[var(--app-primary-ink)]' : 'bg-slate-100 text-slate-700'));
 const infoPanelClass = computed(() => (
   isUserWorkspace.value
-    ? 'rounded-[20px] border border-[#d2e0f8] bg-[#dfeaff] px-3 py-3 text-sm text-[var(--app-primary-ink)]'
-    : 'rounded-[20px] border border-[var(--app-accent-soft)] bg-[var(--app-primary-mist)] px-3 py-3 text-sm text-[var(--app-primary-ink)]'
+    ? 'rounded-[20px] border border-[var(--app-line)] bg-[var(--app-surface-soft)] px-4 py-3 text-sm text-[var(--app-primary-ink)]'
+    : 'rounded-[20px] border border-[var(--app-line)] bg-[var(--app-surface-soft)] px-4 py-3 text-sm text-[var(--app-primary-ink)]'
 ));
 
 const priorityClasses = (priority) => {
@@ -235,7 +235,7 @@ const downloadReceiptPdf = () => {
   if (!lastSubmitted.value) return;
 
   const html = `<!doctype html><html><head><meta charset="utf-8" /><title>Complaint Receipt</title></head>
-  <body style="font-family: Arial, sans-serif; padding: 24px;">
+  <body style="font-family: 'Times New Roman', Times, serif; padding: 24px;">
     <h2>Complaint Receipt</h2>
     <p><strong>Tracking:</strong> ${lastSubmitted.value.tracking_code || 'N/A'}</p>
     <p><strong>Title:</strong> ${lastSubmitted.value.title || ''}</p>

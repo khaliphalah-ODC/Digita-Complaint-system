@@ -308,9 +308,7 @@ import AppFooter from '../components/AppFooter.vue';
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
-
-.page-root { font-family: 'DM Sans', sans-serif; }
+.page-root { font-family: 'Times New Roman', Times, serif; }
 
 /* ── Hero ──────────────────────────────────── */
 .hero-section {
@@ -322,8 +320,23 @@ import AppFooter from '../components/AppFooter.vue';
 .hero-overlay {
   background: linear-gradient(135deg, rgba(10,28,64,0.88) 0%, rgba(15,52,100,0.82) 50%, rgba(30,60,110,0.75) 100%);
 }
-.hero-title {
-  font-family: 'Georgia', 'Times New Roman';
+.grid-lines {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+.orb { border-radius: 50%; filter: blur(80px); pointer-events: none; }
+.orb-a {
+  right: 5%; top: 15%; width: 420px; height: 420px;
+  background: radial-gradient(circle, rgba(249,115,22,0.18), transparent 70%);
+}
+.orb-b {
+  left: 20%; bottom: 15%; width: 280px; height: 280px;
+  background: radial-gradient(circle, rgba(56,189,248,0.12), transparent 70%);
+}
+.hero-h1 {
+  font-family: 'Times New Roman', Times, serif;
   letter-spacing: -0.02em;
 }
 /* ── Animations ────────────────────────────── */
@@ -345,7 +358,7 @@ import AppFooter from '../components/AppFooter.vue';
   letter-spacing: 0.24em; text-transform: uppercase; color: #f97316;
 }
 .section-title {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'Times New Roman', Times, serif;
   font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 900;
   color: #0f2444; line-height: 1.1;
 }
@@ -354,7 +367,7 @@ import AppFooter from '../components/AppFooter.vue';
   letter-spacing: 0.24em; text-transform: uppercase; color: #fb923c;
 }
 .section-title-light {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'Times New Roman', Times, serif;
   font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 900;
   color: white; line-height: 1.1;
 }
@@ -367,7 +380,7 @@ import AppFooter from '../components/AppFooter.vue';
   background: #f8fafc;
 }
 .mission-stat-num {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'Times New Roman', Times, serif;
   font-size: 2rem; font-weight: 900; line-height: 1;
 }
 .mission-stat-label {

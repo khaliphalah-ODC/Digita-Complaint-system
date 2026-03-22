@@ -30,13 +30,21 @@ const props = defineProps({
     type: String,
     default: ''
   },
+  compact: {
+    type: Boolean,
+    default: false
+  },
+  emptyMessage: {
+    type: String,
+    default: 'No meaningful data is available for this chart yet.'
+  },
   theme: {
     type: String,
     default: 'light'
   }
 });
 
-const palette = ['#1f4db7', '#4f8df7', '#7fb3ff', '#163462', '#245bcf', '#0f1f39'];
+const palette = ['#2563eb', '#3b82f6', '#60a5fa', '#0f172a', '#16a34a', '#f59e0b'];
 
 const normalizedSeries = computed(() => {
   return (props.series || []).map((item, index) => ({
@@ -46,6 +54,8 @@ const normalizedSeries = computed(() => {
   }));
 });
 
+const hasMeaningfulData = computed(() => normalizedSeries.value.some((item) => item.value > 0));
+
 const chartData = computed(() => ({
   labels: normalizedSeries.value.map((item) => item.label),
   datasets: [
@@ -53,9 +63,9 @@ const chartData = computed(() => ({
       label: props.title || 'Analytics',
       data: normalizedSeries.value.map((item) => item.value),
       backgroundColor: normalizedSeries.value.map((item) => item.tone),
-      borderRadius: 14,
+      borderRadius: 8,
       borderSkipped: false,
-      maxBarThickness: 44
+      maxBarThickness: 40
     }
   ]
 }));
@@ -68,7 +78,7 @@ const chartOptions = computed(() => ({
       display: false
     },
     tooltip: {
-      backgroundColor: props.theme === 'dark' ? 'rgba(10, 28, 54, 0.96)' : '#0f172a',
+      backgroundColor: '#0f172a',
       titleColor: '#ffffff',
       bodyColor: '#ffffff',
       callbacks: {
@@ -84,7 +94,7 @@ const chartOptions = computed(() => ({
         display: false
       },
       ticks: {
-        color: props.theme === 'dark' ? '#d7e7ff' : '#475569',
+        color: '#64748b',
         font: {
           size: 11,
           weight: '600'
@@ -94,10 +104,10 @@ const chartOptions = computed(() => ({
     y: {
       beginAtZero: true,
       grid: {
-        color: props.theme === 'dark' ? 'rgba(215,231,255,0.12)' : '#e2e8f0'
+        color: '#e2e8f0'
       },
       ticks: {
-        color: props.theme === 'dark' ? '#aac7f3' : '#64748b',
+        color: '#64748b',
         precision: 0
       }
     }
@@ -106,32 +116,34 @@ const chartOptions = computed(() => ({
 </script>
 
 <template>
-  <section :class="theme === 'dark' ? 'app-dark-panel rounded-[30px] p-5' : 'app-shell-panel rounded-[30px] p-5'">
+  <section class="app-chart-card">
     <header class="mb-5">
-      <p v-if="title" :class="theme === 'dark' ? 'text-lg font-bold text-white' : 'text-lg font-bold text-slate-900'">{{ title }}</p>
-      <p v-if="subtitle" :class="theme === 'dark' ? 'mt-1 text-sm text-white/58' : 'mt-1 text-sm text-slate-600'">{{ subtitle }}</p>
+      <p v-if="title" class="text-lg font-semibold text-[var(--app-title-color)]">{{ title }}</p>
+      <p v-if="subtitle" class="mt-1 text-sm text-[var(--app-muted-color)]">{{ subtitle }}</p>
     </header>
 
-    <div v-if="normalizedSeries.length" class="space-y-4">
-      <div :class="theme === 'dark' ? 'h-[300px] rounded-[24px] bg-white/[0.03] p-4' : 'h-[300px] rounded-[24px] bg-slate-50 p-4'">
+    <div v-if="normalizedSeries.length && hasMeaningfulData" class="space-y-4">
+      <div class="app-chart-stage" :class="props.compact ? 'h-[190px]' : 'h-[240px]'">
         <Bar :data="chartData" :options="chartOptions" />
       </div>
 
-      <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
+      <div v-if="!props.compact" class="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div
           v-for="item in normalizedSeries"
           :key="`${item.label}-legend`"
-          :class="theme === 'dark' ? 'flex items-center justify-between rounded-[20px] border border-white/8 bg-white/[0.04] px-4 py-3' : 'app-ink-card flex items-center justify-between rounded-[20px] px-4 py-3'"
+          class="app-metric-tile flex items-center justify-between px-4 py-3"
         >
           <div class="flex items-center gap-3">
             <span class="h-3 w-3 rounded-full" :style="{ backgroundColor: item.tone }" />
-            <span :class="theme === 'dark' ? 'text-sm font-semibold text-white/82' : 'text-sm font-semibold text-slate-700'">{{ item.label }}</span>
+            <span class="text-sm font-medium text-[var(--app-text-color)]">{{ item.label }}</span>
           </div>
-          <span :class="theme === 'dark' ? 'text-sm font-black text-white' : 'text-sm font-black text-slate-900'">{{ item.value }}{{ valueSuffix }}</span>
+          <span class="text-sm font-semibold text-[var(--app-title-color)]">{{ item.value }}{{ valueSuffix }}</span>
         </div>
       </div>
     </div>
 
-    <p v-else :class="theme === 'dark' ? 'text-sm text-white/60' : 'text-sm text-slate-500'">No analytics data available yet.</p>
+    <div v-else class="app-empty-state text-sm">
+      {{ emptyMessage }}
+    </div>
   </section>
 </template>

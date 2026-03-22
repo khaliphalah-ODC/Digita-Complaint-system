@@ -16,6 +16,11 @@ const router = useRouter();
 const loading = ref(false);
 const saving = ref(false);
 const error = ref('');
+const createFormErrors = reactive({
+  general: '',
+  email: '',
+  admin_email: ''
+});
 const organizations = ref([]);
 const resetKey = ref(0);
 const search = ref('');
@@ -44,6 +49,30 @@ const ensureSuccess = (payload, fallbackMessage) => {
   return payload.data;
 };
 
+const resetCreateFormErrors = () => {
+  createFormErrors.general = '';
+  createFormErrors.email = '';
+  createFormErrors.admin_email = '';
+};
+
+const applyCreateOrganizationError = (requestError) => {
+  resetCreateFormErrors();
+  const status = Number(requestError?.response?.status || 0);
+  const message = String(requestError?.response?.data?.message || '');
+
+  if (status === 409 && message === 'Organization email already exists') {
+    createFormErrors.email = 'This organization email is already in use.';
+    return;
+  }
+
+  if (status === 409 && message === 'Organization admin email already exists') {
+    createFormErrors.admin_email = 'This organization admin email is already in use.';
+    return;
+  }
+
+  createFormErrors.general = extractApiError(requestError, 'Failed to create organization');
+};
+
 const fetchOrganizations = async () => {
   loading.value = true;
   error.value = '';
@@ -60,12 +89,13 @@ const fetchOrganizations = async () => {
 const createOrganization = async (payload) => {
   saving.value = true;
   error.value = '';
+  resetCreateFormErrors();
   try {
     await api.post('/organization', payload);
     resetKey.value += 1;
     await fetchOrganizations();
   } catch (requestError) {
-    error.value = extractApiError(requestError, 'Failed to create organization');
+    applyCreateOrganizationError(requestError);
   } finally {
     saving.value = false;
   }
@@ -101,7 +131,7 @@ const blockerEntries = computed(() => {
     accessments: 'Assessments',
     escalations: 'Escalations',
     notifications: 'Notifications',
-    status_logs: 'Status Logs'
+    status_logs: 'Status logs'
   };
 
   return Object.entries(deleteConflict.blockers || {}).map(([key, count]) => ({
@@ -157,107 +187,145 @@ const deleteOrganization = async (row) => {
 const filteredOrganizations = computed(() => {
   const keyword = search.value.trim().toLowerCase();
   if (!keyword) return organizations.value;
-  return organizations.value.filter((row) => {
-    return (
-      String(row.name || '').toLowerCase().includes(keyword) ||
-      String(row.organization_type || '').toLowerCase().includes(keyword) ||
-      String(row.email || '').toLowerCase().includes(keyword)
-    );
-  });
+  return organizations.value.filter((row) => (
+    String(row.name || '').toLowerCase().includes(keyword) ||
+    String(row.organization_type || '').toLowerCase().includes(keyword) ||
+    String(row.email || '').toLowerCase().includes(keyword)
+  ));
 });
 
 const managementSummary = computed(() => {
-  const activeOrganizations = organizations.value.filter((row) => String(row.status).toLowerCase() === 'active').length;
-  const inactiveOrganizations = organizations.value.length - activeOrganizations;
+  const active = organizations.value.filter((row) => String(row.status).toLowerCase() === 'active').length;
+  const withoutAdmin = organizations.value.filter((row) => !row.organization_admin?.full_name && !row.organization_admin?.email).length;
+
   return {
     total: organizations.value.length,
-    active: activeOrganizations,
-    inactive: inactiveOrganizations
+    active,
+    inactive: organizations.value.length - active,
+    withoutAdmin
   };
 });
 
-onMounted(async () => {
-  await fetchOrganizations();
-});
+onMounted(fetchOrganizations);
 </script>
 
 <template>
-  <section class="app-dark-stage w-full space-y-5 rounded-[34px] p-4 sm:p-6">
+  <section class="app-admin-page">
+    <div class="app-page-shell app-admin-page-shell">
+      <div class="app-workspace-stack">
     <PageHeader
-      theme="dark"
-      kicker="Directory Operations"
       title="Organization Management"
-      description="Manage organization records, monitor the triage queue, and keep platform directory data clean."
+      description="Create, review, and update organization records that control platform coverage and org-admin assignment."
     >
       <template #actions>
-        <button class="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-medium text-white/84" @click="fetchOrganizations">
-          Refresh Directory
+        <button
+          class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          @click="fetchOrganizations"
+        >
+          Refresh
         </button>
       </template>
     </PageHeader>
 
     <section class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <article class="rounded-[26px] border border-white/8 bg-white/[0.04] p-5">
-        <p class="text-xs uppercase tracking-wide text-white/46">Total Organizations</p>
-        <p class="mt-2 text-3xl font-black text-white">{{ managementSummary.total }}</p>
-        <p class="text-sm text-white/58">All organizations in the platform directory.</p>
+      <article class="app-section-card app-metric-card">
+        <p class="text-sm font-medium text-slate-500">Total organizations</p>
+        <p class="mt-2 text-3xl font-semibold text-slate-900">{{ managementSummary.total }}</p>
+        <p class="mt-2 text-sm text-slate-600">Current platform directory size.</p>
       </article>
-      <article class="rounded-[26px] border border-white/8 bg-white/[0.04] p-5">
-        <p class="text-xs uppercase tracking-wide text-white/46">Active</p>
-        <p class="mt-2 text-3xl font-black text-emerald-300">{{ managementSummary.active }}</p>
-        <p class="text-sm text-white/58">Organizations currently able to receive routed complaints.</p>
+      <article class="app-section-card app-metric-card">
+        <p class="text-sm font-medium text-slate-500">Active</p>
+        <p class="mt-2 text-3xl font-semibold text-slate-900">{{ managementSummary.active }}</p>
+        <p class="mt-2 text-sm text-slate-600">Organizations available for complaint routing.</p>
       </article>
-      <article class="rounded-[26px] border border-white/8 bg-white/[0.04] p-5">
-        <p class="text-xs uppercase tracking-wide text-white/46">Inactive</p>
-        <p class="mt-2 text-3xl font-black text-white">{{ managementSummary.inactive }}</p>
-        <p class="text-sm text-white/58">Organizations currently suspended or inactive.</p>
+      <article class="app-section-card app-metric-card">
+        <p class="text-sm font-medium text-slate-500">Inactive</p>
+        <p class="mt-2 text-3xl font-semibold text-slate-900">{{ managementSummary.inactive }}</p>
+        <p class="mt-2 text-sm text-slate-600">Records currently suspended or unavailable.</p>
+      </article>
+      <article class="app-section-card app-metric-card">
+        <p class="text-sm font-medium text-slate-500">Missing org-admin</p>
+        <p class="mt-2 text-3xl font-semibold text-slate-900">{{ managementSummary.withoutAdmin }}</p>
+        <p class="mt-2 text-sm text-slate-600">Organizations that still need admin assignment.</p>
       </article>
     </section>
 
-    <OrganizationCreateForm :loading="saving" :show-status="true" :reset-key="resetKey" title="Create Organization (Admin)" theme="dark" @submit="createOrganization" />
+    <OrganizationCreateForm
+      :loading="saving"
+      :show-status="true"
+      :reset-key="resetKey"
+      :errors="createFormErrors"
+      title="Create Organization"
+      @submit="createOrganization"
+    />
 
-    <section class="app-dark-panel rounded-[30px] p-5">
-      <div class="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <h2 class="text-lg font-bold text-white">Organizations</h2>
-        <input v-model="search" placeholder="Search organization..." class="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-white/36">
+    <section class="app-section-card">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-900">Organization directory</h2>
+          <p class="mt-1 text-sm text-slate-600">Search records, review status, and update organization details inline.</p>
+        </div>
+        <div class="w-full max-w-sm">
+          <label class="mb-2 block text-sm font-medium text-slate-700">Search</label>
+          <input
+            v-model="search"
+            placeholder="Search by name, type, or email"
+            class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-500"
+          >
+        </div>
       </div>
 
-      <p v-if="loading" class="text-sm text-white/58">Loading organizations...</p>
-      <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
-      <p v-else-if="filteredOrganizations.length === 0" class="text-sm text-white/58">No organizations found.</p>
+      <p v-if="loading" class="mt-4 text-sm text-slate-500">Loading organizations...</p>
+      <p v-else-if="error" class="mt-4 text-sm text-red-600">{{ error }}</p>
+      <p v-else-if="filteredOrganizations.length === 0" class="mt-4 text-sm text-slate-500">No organizations found.</p>
 
-      <div v-else class="overflow-x-auto">
+      <div v-else class="mt-4 overflow-x-auto rounded-xl border border-slate-200">
         <table class="min-w-full text-left text-sm">
-          <thead class="text-white/46">
+          <thead class="bg-slate-50 text-slate-500">
             <tr>
-              <th class="pb-2 pr-3">Name</th>
-              <th class="pb-2 pr-3">Type</th>
-              <th class="pb-2 pr-3">Email</th>
-              <th class="pb-2 pr-3">Organization Admin</th>
-              <th class="pb-2 pr-3">Status</th>
-              <th class="pb-2">Actions</th>
+              <th class="px-4 py-3 font-medium">Name</th>
+              <th class="px-4 py-3 font-medium">Type</th>
+              <th class="px-4 py-3 font-medium">Email</th>
+              <th class="px-4 py-3 font-medium">Org Admin</th>
+              <th class="px-4 py-3 font-medium">Status</th>
+              <th class="px-4 py-3 font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="row in filteredOrganizations" :key="row.organization_id" class="border-t border-white/8 align-top text-white/82">
+            <tr v-for="row in filteredOrganizations" :key="row.organization_id" class="border-t border-slate-200 align-top text-slate-700 first:border-t-0">
               <template v-if="Number(editingId) === Number(row.organization_id)">
-                <td class="py-2 pr-3"><input v-model="editForm.name" class="w-full rounded border border-white/10 bg-white/[0.04] px-2 py-1 text-white"></td>
-                <td class="py-2 pr-3"><input v-model="editForm.organization_type" class="w-full rounded border border-white/10 bg-white/[0.04] px-2 py-1 text-white"></td>
-                <td class="py-2 pr-3"><input v-model="editForm.email" class="w-full rounded border border-white/10 bg-white/[0.04] px-2 py-1 text-white"></td>
-                <td class="py-2 pr-3">{{ row.organization_admin?.full_name || 'Not assigned' }}</td>
-                <td class="py-2 pr-3">
-                  <select v-model="editForm.status" class="rounded border border-white/10 bg-white/[0.04] px-2 py-1 text-white">
+                <td class="px-4 py-3">
+                  <input v-model="editForm.name" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500">
+                </td>
+                <td class="px-4 py-3">
+                  <input v-model="editForm.organization_type" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500">
+                </td>
+                <td class="px-4 py-3">
+                  <input v-model="editForm.email" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500">
+                </td>
+                <td class="px-4 py-3">{{ row.organization_admin?.full_name || 'Not assigned' }}</td>
+                <td class="px-4 py-3">
+                  <select v-model="editForm.status" class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500">
                     <option value="active">active</option>
                     <option value="inactive">inactive</option>
                   </select>
                 </td>
-                <td class="py-2">
-                  <div class="flex items-center gap-2">
-                    <button type="button" :disabled="saving" class="inline-flex items-center gap-2 rounded bg-[var(--app-primary)] px-2.5 py-1.5 text-xs font-semibold text-white" @click="saveEdit(row)">
+                <td class="px-4 py-3">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      :disabled="saving"
+                    class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+                      @click="saveEdit(row)"
+                    >
                       <font-awesome-icon :icon="faFloppyDisk" class="text-sm" />
                       <span>Save</span>
                     </button>
-                    <button type="button" class="inline-flex items-center gap-2 rounded border border-white/10 px-2.5 py-1.5 text-xs font-semibold text-white/78" @click="cancelEdit">
+                    <button
+                      type="button"
+                      class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                      @click="cancelEdit"
+                    >
                       <font-awesome-icon :icon="faXmark" class="text-sm" />
                       <span>Cancel</span>
                     </button>
@@ -265,16 +333,23 @@ onMounted(async () => {
                 </td>
               </template>
               <template v-else>
-                <td class="py-2 pr-3">{{ row.name }}</td>
-                <td class="py-2 pr-3">{{ row.organization_type }}</td>
-                <td class="py-2 pr-3">{{ row.email }}</td>
-                <td class="py-2 pr-3">{{ row.organization_admin?.full_name || 'Not assigned' }}</td>
-                <td class="py-2 pr-3">{{ row.status }}</td>
-                <td class="py-2">
+                <td class="px-4 py-3 font-medium text-slate-900">{{ row.name }}</td>
+                <td class="px-4 py-3">{{ row.organization_type }}</td>
+                <td class="px-4 py-3">{{ row.email }}</td>
+                <td class="px-4 py-3">{{ row.organization_admin?.full_name || 'Not assigned' }}</td>
+                <td class="px-4 py-3">
+                  <span
+                    class="inline-flex rounded-lg px-2.5 py-1 text-xs font-medium"
+                    :class="String(row.status).toLowerCase() === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700'"
+                  >
+                    {{ row.status }}
+                  </span>
+                </td>
+                <td class="px-4 py-3">
                   <div class="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
-                      class="inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-3 py-1.5 text-xs font-semibold text-blue-200 transition hover:bg-white/[0.12]"
+                      class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
                       title="View details"
                       aria-label="View organization details"
                       @click="router.push(`/admin/organizations/${row.organization_id}`)"
@@ -284,7 +359,7 @@ onMounted(async () => {
                     </button>
                     <button
                       type="button"
-                      class="inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-3 py-1.5 text-xs font-semibold text-blue-200 transition hover:bg-white/[0.12]"
+                      class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
                       title="Update organization"
                       aria-label="Update organization"
                       @click="startEdit(row)"
@@ -294,7 +369,7 @@ onMounted(async () => {
                     </button>
                     <button
                       type="button"
-                      class="inline-flex items-center gap-2 rounded-full bg-red-500/14 px-3 py-1.5 text-xs font-semibold text-red-200 transition hover:bg-red-500/24"
+                      class="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-100"
                       title="Delete organization"
                       aria-label="Delete organization"
                       @click="deleteOrganization(row)"
@@ -313,18 +388,18 @@ onMounted(async () => {
 
     <div
       v-if="deleteConflict.visible"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4"
       @click.self="closeDeleteConflict"
     >
-      <section class="w-full max-w-lg rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(14,33,61,0.98),rgba(20,52,99,0.96))] p-6 text-white shadow-[0_30px_90px_rgba(2,6,23,0.45)]">
+      <section class="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
         <div class="flex items-start justify-between gap-4">
           <div>
-            <p class="text-[0.74rem] font-bold uppercase tracking-[0.18em] text-blue-200/90">Delete Blocked</p>
-            <h3 class="mt-2 text-2xl font-black text-white">{{ deleteConflict.organizationName }}</h3>
+            <p class="text-sm font-medium text-red-600">Delete blocked</p>
+            <h3 class="mt-1 text-xl font-semibold text-slate-900">{{ deleteConflict.organizationName }}</h3>
           </div>
           <button
             type="button"
-            class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/6 text-white/74 hover:bg-white/10"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
             aria-label="Close delete conflict modal"
             @click="closeDeleteConflict"
           >
@@ -332,37 +407,35 @@ onMounted(async () => {
           </button>
         </div>
 
-        <p class="mt-4 text-sm leading-6 text-white/72">
-          {{ deleteConflict.message }}
-        </p>
+        <p class="mt-4 text-sm leading-6 text-slate-600">{{ deleteConflict.message }}</p>
 
         <div class="mt-5 space-y-3">
           <article
             v-for="item in blockerEntries"
             :key="item.key"
-            class="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.05] px-4 py-3"
+            class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
           >
-            <span class="text-sm font-semibold text-white/84">{{ item.label }}</span>
-            <span class="rounded-full bg-blue-200 px-3 py-1 text-xs font-black text-[var(--app-primary-ink)]">
-              {{ item.count }}
-            </span>
+            <span class="text-sm font-medium text-slate-800">{{ item.label }}</span>
+            <span class="rounded-lg bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-800">{{ item.count }}</span>
           </article>
         </div>
 
-        <p class="mt-5 text-sm text-white/60">
+        <p class="mt-5 text-sm text-slate-600">
           Reassign or remove the linked records first, or keep the organization inactive instead of deleting it.
         </p>
 
         <div class="mt-6 flex justify-end">
           <button
             type="button"
-            class="rounded-full bg-[var(--app-primary)] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[var(--app-primary-ink)]"
+            class="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
             @click="closeDeleteConflict"
           >
             Close
           </button>
         </div>
       </section>
+    </div>
+      </div>
     </div>
   </section>
 </template>

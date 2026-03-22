@@ -115,7 +115,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <section class="space-y-6">
+  <section class="app-admin-page">
+    <div class="app-workspace-stack">
     <header class="rounded-[30px] border border-slate-200 bg-white/80 p-5 shadow-[0_26px_60px_rgba(15,23,42,0.15)]">
       <p class="app-kicker text-[var(--app-primary)]">Organization Analytics</p>
       <h1 class="mt-2 text-3xl font-black text-slate-900">Operational Pulse</h1>
@@ -163,5 +164,6 @@ onUnmounted(() => {
         />
       </div>
     </section>
+    </div>
   </section>
 </template>

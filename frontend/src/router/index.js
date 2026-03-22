@@ -6,32 +6,32 @@ import ForgotPasswordPage from '../pages/ForgotPasswordPage.vue';
 import ChangePasswordPage from '../pages/ChangePasswordPage.vue';
 import SubmitComplaintPage from '../pages/SubmitComplaintPage.vue';
 import TrackComplaintPage from '../pages/TrackComplaintPage.vue';
-import UserDashboardPage from '../pages/UserDashboardPage.vue';
-import OrgAdminDashboardPage from '../pages/orgAdmin/AuthorityDashboardPage.vue';
+import UserDashboardPage from '../pages/user/DashboardPage.vue';
+import OrgAdminDashboardPage from '../pages/orgAdmin/DashboardPage.vue';
 import OrgAdminAnalyticsPage from '../pages/orgAdmin/AnalyticsPage.vue';
 import SignUpPage from '../pages/SignUpPage.vue';
-import SuperAdminDashboardPage from '../pages/superAdmin/AdminDashboardPage.vue';
-import SuperAdminAuditLogsPage from '../pages/superAdmin/AuditLogsPage.vue';
+import VerifyEmailPage from '../pages/VerifyEmailPage.vue';
+
+import SuperAdminDashboardPage from '../pages/superAdmin/DashboardPage.vue';
 import SuperAdminReportsPage from '../pages/superAdmin/ReportsPage.vue';
 import SuperAdminSettingsPage from '../pages/superAdmin/SettingsPage.vue';
 import SuperAdminTriageQueuePage from '../pages/superAdmin/TriageQueuePage.vue';
-import SuperAdminUserManagementPage from '../pages/superAdmin/UserManagementPage.vue';
-import ResourcePage from '../pages/ResourcePage.vue';
-import OrganizationPage from '../pages/OrganizationPage.vue';
+import OrganizationPage from '../pages/user/OrganizationPage.vue';
 import SuperAdminOrganizationManagementPage from '../pages/superAdmin/OrganizationManagementPage.vue';
 import SuperAdminOrganizationDetailPage from '../pages/superAdmin/OrganizationDetailPage.vue';
-import FeedbackPage from '../pages/FeedbackPage.vue';
+import FeedbackPage from '../pages/user/FeedbackPage.vue';
 import OrgAdminUserManagementPage from '../pages/orgAdmin/UserManagementPage.vue';
-import OrgAdminComplaintsPage from '../pages/orgAdmin/AdminComplaintsPage.vue';
+import OrgAdminComplaintsPage from '../pages/orgAdmin/ComplaintsPage.vue';
 import OrgAdminComplaintDetailPage from '../pages/orgAdmin/ComplaintDetailPage.vue';
 import OrgAdminDepartmentManagementPage from '../pages/orgAdmin/DepartmentManagementPage.vue';
-import OrgAdminAccessmentManagementPage from '../pages/orgAdmin/AccessmentManagementPage.vue';
+import OrgAdminAssessmentManagementPage from '../pages/orgAdmin/AssessmentManagementPage.vue';
 import OrgAdminEscalationManagementPage from '../pages/orgAdmin/EscalationManagementPage.vue';
 import OrgAdminNotificationManagementPage from '../pages/orgAdmin/NotificationManagementPage.vue';
-import OrgAdminAuditLogsPage from '../pages/orgAdmin/AuditLogsPage.vue';
+import OrgAdminTestimonialManagementPage from '../pages/orgAdmin/TestimonialManagementPage.vue';
+import SharedAuditLogsPage from '../pages/admin/shared/AuditLogsPage.vue';
 import AboutView from '../pages/AboutView.vue';
 import FeaturesPage from '../pages/FeaturesView.vue';
-import TestimonialPage from '../pages/TestimonialPage.vue';
+import TestimonialPage from '../pages/user/TestimonialPage.vue';
 
 const readAuthClaimsFromToken = () => {
   const token = localStorage.getItem('token');
@@ -69,12 +69,6 @@ const routes = [
     component: FeaturesPage
   },
   {
-    path: '/testimonial',
-    name: 'testimonial',
-    component: TestimonialPage,
-    meta: { requiresAuth: true }
-  },
-  {
     path: '/signin',
     name: 'signin',
     component: LoginPage,
@@ -92,6 +86,14 @@ const routes = [
     component: SignUpPage,
     meta: { guestOnly: true }
   },
+  
+  {
+  path: '/verify-email',
+    name: 'verify-email',
+    component: VerifyEmailPage,
+    meta: { guestOnly: true }
+  },
+
   {
     path: '/forgot-password',
     name: 'forgot-password',
@@ -121,15 +123,16 @@ const routes = [
       { path: 'change-password', name: 'change-password', component: ChangePasswordPage, meta: { allowPasswordResetRequired: true } },
 
       { path: 'admin/dashboard', name: 'admin-dashboard', component: SuperAdminDashboardPage, meta: { requiresAdmin: true } },
-      { path: 'admin/users', name: 'admin-users', component: SuperAdminUserManagementPage, meta: { requiresAdmin: true } },
+      { path: 'admin/users', redirect: '/admin/dashboard' },
       { path: 'admin/organizations', name: 'admin-organizations', component: SuperAdminOrganizationManagementPage, meta: { requiresAdmin: true } },
       { path: 'admin/triage', name: 'admin-triage', component: SuperAdminTriageQueuePage, meta: { requiresAdmin: true } },
       { path: 'admin/organizations/:id', name: 'admin-organization-detail', component: SuperAdminOrganizationDetailPage, meta: { requiresAdmin: true } },
       { path: 'admin/departments', redirect: '/admin/dashboard' },
       { path: 'admin/accessments', redirect: '/admin/dashboard' },
+      { path: 'admin/assessments', redirect: '/admin/dashboard' },
       { path: 'admin/escalations', redirect: '/admin/dashboard' },
       { path: 'admin/reports', name: 'admin-reports', component: SuperAdminReportsPage, meta: { requiresAdmin: true } },
-      { path: 'admin/audit-logs', name: 'admin-audit-logs', component: SuperAdminAuditLogsPage, meta: { requiresAdmin: true } },
+      { path: 'admin/audit-logs', name: 'admin-audit-logs', component: SharedAuditLogsPage, meta: { requiresAdmin: true } },
       { path: 'admin/settings', name: 'admin-settings', component: SuperAdminSettingsPage, meta: { requiresAdmin: true } },
       { path: 'admin/complaints', redirect: '/admin/dashboard' },
       { path: 'admin/complaints/:id', redirect: '/admin/dashboard' },
@@ -140,17 +143,21 @@ const routes = [
       { path: 'org-admin/complaints/:id', name: 'org-admin-complaint-detail', component: OrgAdminComplaintDetailPage, meta: { requiresOrgAdmin: true } },
       { path: 'org-admin/analytics', name: 'org-admin-analytics', component: OrgAdminAnalyticsPage, meta: { requiresOrgAdmin: true } },
       { path: 'org-admin/departments', name: 'org-admin-departments', component: OrgAdminDepartmentManagementPage, meta: { requiresOrgAdmin: true } },
-      { path: 'org-admin/accessments', name: 'org-admin-accessments', component: OrgAdminAccessmentManagementPage, meta: { requiresOrgAdmin: true } },
+      { path: 'org-admin/accessments', redirect: '/org-admin/assessments' },
+      { path: 'org-admin/assessments', name: 'org-admin-assessments', component: OrgAdminAssessmentManagementPage, meta: { requiresOrgAdmin: true } },
       { path: 'org-admin/escalations', name: 'org-admin-escalations', component: OrgAdminEscalationManagementPage, meta: { requiresOrgAdmin: true } },
+      { path: 'org-admin/testimonials', name: 'org-admin-testimonials', component: OrgAdminTestimonialManagementPage, meta: { requiresOrgAdmin: true } },
       { path: 'org-admin/notifications', name: 'org-admin-notifications', component: OrgAdminNotificationManagementPage, meta: { requiresOrgAdmin: true } },
-      { path: 'org-admin/status-logs', name: 'org-admin-status-logs', component: OrgAdminAuditLogsPage, meta: { requiresOrgAdmin: true } },
+      { path: 'org-admin/status-logs', name: 'org-admin-status-logs', component: SharedAuditLogsPage, meta: { requiresOrgAdmin: true } },
       { path: 'users', redirect: '/org-admin/users' },
       { path: 'organizations', name: 'organizations', component: OrganizationPage, meta: { requiresOrganizationContext: true } },
       { path: 'departments', redirect: '/org-admin/departments' },
-      { path: 'accessments', redirect: '/org-admin/accessments' },
+      { path: 'accessments', redirect: '/org-admin/assessments' },
+      { path: 'assessments', redirect: '/org-admin/assessments' },
       { path: 'escalations', redirect: '/org-admin/escalations' },
       { path: 'status-logs', redirect: '/org-admin/status-logs' },
       { path: 'feedback', name: 'feedback', component: FeedbackPage, meta: { requiresUserOnly: true } },
+      { path: 'testimonial', name: 'testimonial', component: TestimonialPage, meta: { requiresUserOnly: true } },
       { path: 'notifications', redirect: '/org-admin/notifications' },
     ]
   }
@@ -171,10 +178,12 @@ router.beforeEach((to) => {
     '/admin/complaints',
     '/admin/departments',
     '/admin/accessments',
+    '/admin/assessments',
     '/admin/escalations',
     '/admin/notifications',
     '/departments',
     '/accessments',
+    '/assessments',
     '/escalations',
     '/status-logs',
     '/notifications',
@@ -244,7 +253,7 @@ router.beforeEach((to) => {
     return '/admin/dashboard';
   }
 
-  if (isOrgAdminRole(role) && (to.path === '/admin/dashboard' || to.path === '/admin/users' || to.path === '/admin/organizations')) {
+  if (isOrgAdminRole(role) && (to.path === '/admin/dashboard' || to.path === '/admin/organizations')) {
     return '/org-admin/dashboard';
   }
 

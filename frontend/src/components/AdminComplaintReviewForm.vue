@@ -69,20 +69,20 @@ const submit = () => {
 <template>
   <section class="app-shell-panel rounded-[30px] p-5">
     <p class="app-kicker">Response Desk</p>
-    <h2 class="mt-2 text-2xl font-bold text-slate-900">Review & Respond</h2>
+    <h2 class="mt-2 text-2xl font-semibold text-slate-900">Review & Respond</h2>
     <p class="mb-4 text-sm text-slate-600">Update complaint status, priority, and admin response.</p>
 
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
       <label class="space-y-1">
         <span class="text-xs font-semibold text-slate-600">Status</span>
-        <select v-model="form.status" class="w-full rounded-2xl border border-slate-300 bg-white px-3 py-3 text-sm">
+        <select v-model="form.status" class="app-select">
           <option v-for="status in statusOptions" :key="status.value" :value="status.value">{{ status.label }}</option>
         </select>
       </label>
 
       <label class="space-y-1">
         <span class="text-xs font-semibold text-slate-600">Priority</span>
-        <select v-model="form.priority" class="w-full rounded-2xl border border-slate-300 bg-white px-3 py-3 text-sm">
+        <select v-model="form.priority" class="app-select">
           <option v-for="priority in priorityOptions" :key="priority" :value="priority">{{ priority }}</option>
         </select>
       </label>
@@ -94,19 +94,19 @@ const submit = () => {
         v-model="form.admin_response"
         rows="4"
         placeholder="Type response to reporter..."
-        class="w-full rounded-2xl border border-slate-300 bg-white px-3 py-3 text-sm"
+        class="app-textarea"
       />
     </label>
 
     <div class="mt-4 flex flex-col gap-2 md:flex-row">
       <button
         :disabled="saving || !canSave"
-        class="rounded-full bg-[var(--app-primary)] px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
+        class="app-btn-primary disabled:opacity-60"
         @click="submit"
       >
         {{ saving ? 'Saving...' : 'Save Review' }}
       </button>
-      <button class="rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700" @click="$emit('open-chat')">
+      <button class="app-btn-secondary" @click="$emit('open-chat')">
         Open Support Chat
       </button>
     </div>

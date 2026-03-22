@@ -31,8 +31,34 @@ FROM testimonials
 ORDER BY created_at DESC;
 `;
 
+export const fetchTestimonialsByOrganizationQuery = `
+SELECT
+  testimonials.id,
+  testimonials.user_id,
+  testimonials.display_name,
+  testimonials.role_label,
+  testimonials.message,
+  testimonials.rating,
+  testimonials.is_approved,
+  testimonials.created_at,
+  users.organization_id
+FROM testimonials
+INNER JOIN users ON users.id = testimonials.user_id
+WHERE users.organization_id = ?
+ORDER BY testimonials.created_at DESC;
+`;
+
 export const fetchTestimonialByIdQuery = `
 SELECT * FROM testimonials WHERE id = ?;
+`;
+
+export const fetchTestimonialByIdWithOrganizationQuery = `
+SELECT
+  testimonials.*,
+  users.organization_id
+FROM testimonials
+INNER JOIN users ON users.id = testimonials.user_id
+WHERE testimonials.id = ?;
 `;
 
 export const approveTestimonialQuery = `

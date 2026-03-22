@@ -1,7 +1,7 @@
 // statusLog.controller controller: handles HTTP request/response flow for this module.
 import complaintDB from '../model/connect.js';
 import { sendSuccess, sendError } from '../utils/response.js';
-import { fetchAccessmentByIdQuery } from '../model/accessment.model.js';
+import { fetchAccessmentByIdQuery } from '../model/assessment.model.js';
 import {
   statusLogsQuery,
   createStatusLogQuery,
@@ -73,15 +73,15 @@ export const createStatusLog = (req, res) => {
   const { accessment_id, old_status = null, new_status, notes = null } = req.body;
 
   if (!accessment_id || !new_status) {
-    return sendError(res, 400, 'accessment_id and new_status are required');
+    return sendError(res, 400, 'assessment_id and new_status are required');
   }
 
   complaintDB.get(fetchAccessmentByIdQuery, [accessment_id], (accessmentErr, accessmentRow) => {
     if (accessmentErr) {
-      return sendError(res, 500, 'Failed to validate accessment', accessmentErr.message);
+      return sendError(res, 500, 'Failed to validate assessment', accessmentErr.message);
     }
     if (!accessmentRow) {
-      return sendError(res, 404, 'Accessment not found');
+      return sendError(res, 404, 'Assessment not found');
     }
     if (String(accessmentRow.organization_id) !== String(req.user.organization_id)) {
       return sendError(res, 403, 'Access denied');
@@ -154,10 +154,10 @@ export const getStatusLogsByAccessmentId = (req, res) => {
 
   complaintDB.get(fetchAccessmentByIdQuery, [req.params.accessmentId], (accessmentErr, accessmentRow) => {
     if (accessmentErr) {
-      return sendError(res, 500, 'Failed to validate accessment', accessmentErr.message);
+      return sendError(res, 500, 'Failed to validate assessment', accessmentErr.message);
     }
     if (!accessmentRow) {
-      return sendError(res, 404, 'Accessment not found');
+      return sendError(res, 404, 'Assessment not found');
     }
     if (String(accessmentRow.organization_id) !== String(req.user.organization_id)) {
       return sendError(res, 403, 'Access denied');
@@ -165,7 +165,7 @@ export const getStatusLogsByAccessmentId = (req, res) => {
 
     complaintDB.all(fetchStatusLogsByAccessmentIdQuery, [req.params.accessmentId], (err, rows) => {
       if (err) {
-        return sendError(res, 500, 'Failed to fetch status logs by accessment', err.message);
+        return sendError(res, 500, 'Failed to fetch status logs by assessment', err.message);
       }
       return sendSuccess(res, 200, 'Status logs retrieved successfully', rows);
     });
@@ -250,10 +250,10 @@ export const deleteStatusLogsByAccessmentId = (req, res) => {
 
   complaintDB.get(fetchAccessmentByIdQuery, [req.params.accessmentId], (accessmentErr, accessmentRow) => {
     if (accessmentErr) {
-      return sendError(res, 500, 'Failed to validate accessment', accessmentErr.message);
+      return sendError(res, 500, 'Failed to validate assessment', accessmentErr.message);
     }
     if (!accessmentRow) {
-      return sendError(res, 404, 'Accessment not found');
+      return sendError(res, 404, 'Assessment not found');
     }
     if (String(accessmentRow.organization_id) !== String(req.user.organization_id)) {
       return sendError(res, 403, 'Access denied');

@@ -75,6 +75,8 @@ const getOrgAdminByOrganizationId = (organizationId, callback) => {
   );
 };
 
+const isUniqueConstraintError = (error) => /SQLITE_CONSTRAINT|UNIQUE constraint failed/i.test(String(error?.message || error || ''));
+
 const authorizeOrganizationOwnership = (req, res, organizationId, onAllowed) => {
   if (req.user?.role === 'super_admin') {
     onAllowed();
@@ -129,7 +131,7 @@ const createOrganizationAdminAccount = (organizationId, payload, callback) => {
       const hashedPassword = await bcrypt.hash(DEFAULT_ORG_ADMIN_PASSWORD, 10);
       complaintDB.run(
         createUserQuery,
-        [organizationId, null, fullName, email, hashedPassword, 1, 1, 'active', 'org_admin'],
+        [organizationId, null, fullName, email, hashedPassword, 1, 'active', 'org_admin'],
         function onCreate(createErr) {
           if (createErr) {
             callback(createErr);
@@ -171,13 +173,30 @@ export const createOrganization = (req, res) => {
     [name, organization_type, email, phone, address, logo, status],
     function onCreate(err) {
       if (err) {
+        if (isUniqueConstraintError(err)) {
+          return sendError(res, 409, 'Organization email already exists');
+        }
         return sendError(res, 500, 'Failed to create organization', err.message);
       }
 
       const organizationId = this.lastID;
       createOrganizationAdminAccount(organizationId, req.body, (adminErr, adminRow) => {
         if (adminErr) {
-          return sendError(res, 500, 'Organization created but failed to create organization admin', adminErr.message);
+          complaintDB.run(deleteOrganizationById, [organizationId], (rollbackErr) => {
+            if (rollbackErr) {
+              return sendError(
+                res,
+                500,
+                'Organization created but failed to create organization admin',
+                `${adminErr.message}. Rollback also failed: ${rollbackErr.message}`
+              );
+            }
+            if (isUniqueConstraintError(adminErr) || /already exists/i.test(String(adminErr.message || adminErr))) {
+              return sendError(res, 409, 'Organization admin email already exists');
+            }
+            return sendError(res, 500, 'Failed to create organization admin', adminErr.message);
+          });
+          return;
         }
 
         complaintDB.get(selectOrganizationById, [organizationId], (getErr, row) => {
@@ -226,6 +245,9 @@ export const createOrganizationAdmin = (req, res) => {
 
       createOrganizationAdminAccount(Number(req.params.id), req.body, (createErr, adminRow) => {
         if (createErr) {
+          if (isUniqueConstraintError(createErr) || /already exists/i.test(String(createErr.message || createErr))) {
+            return sendError(res, 409, 'Organization admin email already exists');
+          }
           return sendError(res, 500, 'Failed to create organization admin', createErr.message);
         }
         return sendSuccess(res, 201, 'Organization admin created successfully', {

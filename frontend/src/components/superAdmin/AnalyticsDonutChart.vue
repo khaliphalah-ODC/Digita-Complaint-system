@@ -22,13 +22,13 @@ const props = defineProps({
     type: String,
     default: 'Total'
   },
-  theme: {
+  emptyMessage: {
     type: String,
-    default: 'light'
+    default: 'No meaningful data is available for this chart yet.'
   }
 });
 
-const palette = ['#1f4db7', '#4f8df7', '#7fb3ff', '#163462', '#245bcf', '#0f1f39'];
+const palette = ['#2563eb', '#3b82f6', '#60a5fa', '#0f172a', '#16a34a', '#f59e0b'];
 
 const normalizedSeries = computed(() => {
   return (props.series || []).map((item, index) => ({
@@ -39,6 +39,7 @@ const normalizedSeries = computed(() => {
 });
 
 const total = computed(() => normalizedSeries.value.reduce((sum, item) => sum + item.value, 0));
+const hasMeaningfulData = computed(() => total.value > 0);
 
 const chartData = computed(() => ({
   labels: normalizedSeries.value.map((item) => item.label),
@@ -47,7 +48,7 @@ const chartData = computed(() => ({
       data: normalizedSeries.value.map((item) => item.value),
       backgroundColor: normalizedSeries.value.map((item) => item.tone),
       borderWidth: 0,
-      hoverOffset: 8
+      hoverOffset: 4
     }
   ]
 }));
@@ -61,9 +62,10 @@ const chartOptions = computed(() => ({
       display: false
     },
     tooltip: {
-      backgroundColor: props.theme === 'dark' ? 'rgba(10, 28, 54, 0.96)' : '#0f172a',
+      backgroundColor: '#0f172a',
       titleColor: '#ffffff',
       bodyColor: '#ffffff',
+      displayColors: false,
       callbacks: {
         label(context) {
           const value = Number(context.raw || 0);
@@ -77,43 +79,51 @@ const chartOptions = computed(() => ({
 </script>
 
 <template>
-  <section :class="theme === 'dark' ? 'app-dark-panel rounded-[30px] p-5' : 'app-shell-panel rounded-[30px] p-5'">
-    <header class="mb-5">
-      <p v-if="title" :class="theme === 'dark' ? 'text-lg font-bold text-white' : 'text-lg font-bold text-slate-900'">{{ title }}</p>
-      <p v-if="subtitle" :class="theme === 'dark' ? 'mt-1 text-sm text-white/58' : 'mt-1 text-sm text-slate-600'">{{ subtitle }}</p>
+  <section class="app-chart-card">
+    <header class="mb-3">
+      <p v-if="title" class="text-base font-semibold text-[var(--app-title-color)]">{{ title }}</p>
+      <p v-if="subtitle" class="mt-1 text-sm text-[var(--app-muted-color)]">{{ subtitle }}</p>
     </header>
 
-    <div v-if="normalizedSeries.length" class="grid gap-5 lg:grid-cols-[220px,1fr] lg:items-center">
-      <div class="relative mx-auto h-[220px] w-[220px]">
+    <div
+      v-if="normalizedSeries.length && hasMeaningfulData"
+      class="app-chart-stage grid gap-4 lg:grid-cols-[170px,1fr] lg:items-center"
+    >
+      <div class="relative mx-auto h-[150px] w-[150px]">
         <Doughnut :data="chartData" :options="chartOptions" />
         <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div class="text-center">
-            <p :class="theme === 'dark' ? 'text-[11px] font-semibold uppercase tracking-[0.25em] text-white/50' : 'text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-500'">{{ centerLabel }}</p>
-            <p :class="theme === 'dark' ? 'mt-1 text-3xl font-black text-white' : 'mt-1 text-3xl font-black text-slate-900'">{{ total }}</p>
+            <p class="text-[11px] font-medium text-[var(--app-muted-color)]">{{ centerLabel }}</p>
+            <p class="mt-1 text-xl font-semibold text-[var(--app-title-color)]">{{ total }}</p>
           </div>
         </div>
       </div>
 
-      <div class="grid gap-3">
+      <div class="grid gap-2">
         <article
           v-for="segment in normalizedSeries"
           :key="`${segment.label}-row`"
-          :class="theme === 'dark' ? 'flex items-center justify-between rounded-[20px] border border-white/8 bg-white/[0.04] px-4 py-3' : 'app-ink-card flex items-center justify-between rounded-[20px] px-4 py-3'"
+          class="app-metric-tile flex items-center justify-between px-3 py-2.5"
         >
-          <div class="flex items-center gap-3">
-            <span class="h-3 w-3 rounded-full" :style="{ backgroundColor: segment.tone }" />
+          <div class="flex items-center gap-2.5">
+            <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: segment.tone }" />
             <div>
-              <p :class="theme === 'dark' ? 'text-sm font-semibold text-white/84' : 'text-sm font-semibold text-slate-800'">{{ segment.label }}</p>
-              <p :class="theme === 'dark' ? 'text-xs text-white/50' : 'text-xs text-slate-500'">
-                {{ total > 0 ? ((segment.value / total) * 100).toFixed(1) : '0.0' }}% share
+              <p class="text-sm text-[var(--app-text-color)]">{{ segment.label }}</p>
+              <p class="text-[11px] text-[var(--app-muted-color)]">
+                {{ total > 0 ? ((segment.value / total) * 100).toFixed(1) : '0.0' }}%
               </p>
             </div>
           </div>
-          <p :class="theme === 'dark' ? 'text-lg font-black text-white' : 'text-lg font-black text-slate-900'">{{ segment.value }}</p>
+          <p class="text-sm font-semibold text-[var(--app-title-color)]">{{ segment.value }}</p>
         </article>
       </div>
     </div>
 
-    <p v-else :class="theme === 'dark' ? 'text-sm text-white/60' : 'text-sm text-slate-500'">No analytics data available yet.</p>
+    <div
+      v-else
+      class="app-empty-state text-xs"
+    >
+      {{ emptyMessage }}
+    </div>
   </section>
 </template>

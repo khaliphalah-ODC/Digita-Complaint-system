@@ -15,6 +15,8 @@ import {
   registerUser,
   requestPasswordReset,
   resetPasswordWithToken,
+  verifyEmail,
+  resendVerificationEmail,
   updateUser,
   updateUserRole
 } from '../controllers/user.controller.js';
@@ -24,6 +26,8 @@ import { passwordEncryption } from '../middleware/passwordEncryption.js';
 import {
   validate,
   passwordOnlySchema,
+  emailVerificationSchema,
+  emailOnlySchema,
   resetPasswordSchema,
   changePasswordSchema,
   userCreateSchema
@@ -31,10 +35,17 @@ import {
 
 const router = express.Router();
 
-router.post('/register', validate(passwordOnlySchema), passwordEncryption, registerUser);
+//router.post('/register', validate(passwordOnlySchema), passwordEncryption, registerUser);
+router.post('/register', validate(userCreateSchema), passwordEncryption, registerUser);
+// router.post('/verify-email', verifyEmail);
+// router.post('/resend-verification', resendVerificationEmail);
+router.post('/verify-email', validate(emailVerificationSchema), verifyEmail);
+router.post('/resend-verification', validate(emailOnlySchema), resendVerificationEmail);
+router.post('/forgot-password/request', validate(emailOnlySchema), requestPasswordReset);
+
 router.post('/login', loginUser);
 router.post('/google-login', loginWithGoogle);
-router.post('/forgot-password/request', requestPasswordReset);
+//router.post('/forgot-password/request', requestPasswordReset);
 router.post('/forgot-password', validate(resetPasswordSchema), passwordEncryption, resetPasswordWithToken);
 router.get('/me', verifyToken, getCurrentUser);
 router.post('/logout', verifyToken, logoutUser);

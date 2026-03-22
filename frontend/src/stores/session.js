@@ -10,6 +10,7 @@ export const useSessionStore = defineStore('session', () => {
   const currentUser = ref(null);
   const currentOrganizationName = ref('');
   const errorMessage = ref('');
+  const pendingVerificationEmail = ref('');
   const loadingLogin = ref(false);
   const loadingRegister = ref(false);
   const loadingPasswordChange = ref(false);
@@ -195,9 +196,13 @@ export const useSessionStore = defineStore('session', () => {
       }
 
       applyAuthPayload(data);
+      pendingVerificationEmail.value = '';
       loginForm.value.password = '';
     } catch (error) {
       errorMessage.value = getReadableError(error, 'Login failed');
+      if (/verify your email/i.test(errorMessage.value)) {
+        pendingVerificationEmail.value = String(loginForm.value.email || '').trim().toLowerCase();
+      }
     } finally {
       loadingLogin.value = false;
     }
@@ -208,10 +213,17 @@ export const useSessionStore = defineStore('session', () => {
     loadingRegister.value = true;
 
     try {
-      const response = await api.post(`${USERS_API_BASE}/register`, payload, { skipAuth: true });
+      const normalizedPayload = {
+        ...payload,
+        email: String(payload?.email || '').trim().toLowerCase()
+      };
+      const response = await api.post(`${USERS_API_BASE}/register`, normalizedPayload, { skipAuth: true });
       const data = ensureSuccess(unwrapResponse(response), 'Sign up failed');
-
-      applyAuthPayload(data);
+      token.value = '';
+      currentUser.value = null;
+      currentOrganizationName.value = '';
+      localStorage.removeItem('token');
+      pendingVerificationEmail.value = normalizedPayload.email;
       return data;
     } catch (error) {
       errorMessage.value = getReadableError(error, 'Sign up failed');
@@ -230,6 +242,7 @@ export const useSessionStore = defineStore('session', () => {
       token.value = '';
       currentUser.value = null;
       currentOrganizationName.value = '';
+      pendingVerificationEmail.value = '';
       localStorage.removeItem('token');
     }
   };
@@ -293,6 +306,7 @@ export const useSessionStore = defineStore('session', () => {
       const response = await api.post(`${USERS_API_BASE}/google-login`, { credential }, { skipAuth: true });
       const data = ensureSuccess(unwrapResponse(response), 'Google login failed');
       applyAuthPayload(data);
+      pendingVerificationEmail.value = '';
       return data;
     } catch (error) {
       errorMessage.value = getReadableError(error, 'Google login failed');
@@ -334,7 +348,7 @@ export const useSessionStore = defineStore('session', () => {
     }));
 
     const statusLogItems = statusLogs.map((row) => ({
-      text: `Status log for accessment #${row.accessment_id}: ${row.old_status || 'none'} -> ${row.new_status}`,
+      text: `Status log for assessment #${row.accessment_id}: ${row.old_status || 'none'} -> ${row.new_status}`,
       tone: 'bg-blue-100 text-blue-900',
       when: normalizeDate(row.created_at) || new Date(0)
     }));
@@ -506,6 +520,7 @@ export const useSessionStore = defineStore('session', () => {
     currentUser,
     currentOrganizationName,
     errorMessage,
+    pendingVerificationEmail,
     loadingLogin,
     loadingRegister,
     loadingPasswordChange,

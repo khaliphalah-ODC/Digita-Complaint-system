@@ -1,101 +1,84 @@
 <script setup>
+import { ref } from 'vue';
 import { RouterLink } from 'vue-router';
+import { socialLinks } from '../config/socialLinks';
+import { useUiToastStore } from '../stores/uiToast';
+
+const email = ref('');
+const uiToast = useUiToastStore();
+
+const subscribe = () => {
+  if (!String(email.value || '').trim()) {
+    uiToast.error('Enter an email address for the newsletter.');
+    return;
+  }
+  uiToast.success('Newsletter signup captured.');
+  email.value = '';
+};
 </script>
 
 <template>
-  <!-- ─── FOOTER (full-width, replaces AppFooter) ─── -->
-    <footer class="site-footer">
-      <div class="footer-accent-bar"></div>
-      <div class="footer-glow footer-glow-left"></div>
-      <div class="footer-glow footer-glow-right"></div>
+  <footer class="mt-6 pb-3">
+    <div class="app-content-wrap app-shell-gutter">
+      <div class="app-footer-panel w-full px-5 py-6 sm:px-6 md:px-8">
+    <div class="flex w-full flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+      <div class="max-w-xl">
+        <p class="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--app-primary)]">Platform Updates</p>
+        <h3 class="mt-2 text-2xl font-semibold text-[var(--app-title-color)]">Complaint Management System</h3>
+        <p class="mt-2 text-sm leading-6 text-[var(--app-muted-color)]">
+          Submit, monitor, and resolve complaints with a clear organization workflow for users, organization admins, and super admins.
+        </p>
 
-      <div class="footer-inner">
-        <div class="footer-grid">
-
-          <!-- Brand -->
-          <div class="footer-col">
-            <div class="footer-brand">
-              <svg class="brand-icon" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M20 2H4c-1.103 0-2 .897-2 2v18l4-4h14c1.103 0 2-.897 2-2V4c0-1.103-.897-2-2-2zm-6 11h-4v-2h4v2zm0-4H8V7h6v2z"/>
-              </svg>
-              <span class="brand-name">ComplaintTrack</span>
-            </div>
-            <p class="brand-desc">A friendly platform that promotes organization Transparency and efficiency by allowing employees, students, and citizens to raise issues clearly and organizations to resolve them fast.</p>
-            <div class="social-row">
-              <a href="#" class="social-icon" aria-label="Facebook">
-                <svg class="si-svg" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                </svg>
-              </a>
-              <a href="#" class="social-icon" aria-label="Twitter">
-                <svg class="si-svg" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
-                </svg>
-              </a>
-              <a href="#" class="social-icon" aria-label="GitHub">
-                <svg class="si-svg" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
-                </svg>
-              </a>
-            </div>
+        <div class="mt-5">
+          <p class="text-sm font-semibold text-[var(--app-title-color)]">Quick Links</p>
+          <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[var(--app-muted-color)]">
+            <RouterLink to="/" class="transition hover:text-[var(--app-primary)]">
+              Home
+            </RouterLink>
+            <RouterLink to="/about" class="transition hover:text-[var(--app-primary)]">
+              About
+            </RouterLink>
+            <RouterLink to="/features" class="transition hover:text-[var(--app-primary)]">
+              Features
+            </RouterLink>
           </div>
+        </div>
+      </div>
 
-          <!-- Quick Links -->
-          <div class="footer-col">
-            <h4 class="footer-heading">Quick Links</h4>
-            <ul class="footer-links">
-              <li><a href="#" class="footer-link">Home</a></li>
-             <!-- <RouterLink to="/features" class="footer-link">Features</RouterLink>-->
-              <li><a href="#features" class="footer-link">Features</a></li>
-              <li><a href="#how-it-works" class="footer-link">How It Works</a></li>
-              <RouterLink to="/about" class="footer-link">About</RouterLink>
-              <!--<li><a href="#" class="footer-link">About</a></li> -->
-              <li><a href="#" class="footer-link">Contact</a></li>
-            </ul>
-          </div>
+      <div class="min-w-0 flex-1 lg:max-w-md">
+        <p class="text-sm font-semibold text-[var(--app-title-color)]">Newsletter</p>
+        <p class="mt-1 text-sm text-[var(--app-muted-color)]">Receive product updates, complaint workflow improvements, and release notes.</p>
+        <form class="mt-3 flex flex-col gap-3 sm:flex-row" @submit.prevent="subscribe">
+          <input
+            v-model="email"
+            type="email"
+            placeholder="Enter your email"
+            class="app-input"
+          >
+          <button
+            type="submit"
+            class="app-btn-primary"
+          >
+            Subscribe
+          </button>
+        </form>
+      </div>
 
-          <!-- Account -->
-          <div class="footer-col">
-            <h4 class="footer-heading">Account</h4>
-            <ul class="footer-links">
-              <li><RouterLink to="/login" class="footer-link">Login</RouterLink></li>
-              <li><RouterLink to="/register" class="footer-link">Register</RouterLink></li>
-             <!-- <li><RouterLink to="/submit-complaint" class="footer-link">Submit Complaint</RouterLink></li>-->
-             <!-- <li><RouterLink to="/track-complaint" class="footer-link">Track Complaint</RouterLink></li>-->
-            </ul>
-          </div>
-
-          <!-- Support -->
-          <div class="footer-col">
-            <h4 class="footer-heading">Support</h4>
-            <ul class="footer-contact-list">
-              <li class="footer-contact-item">
-                <div class="contact-icon">
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                  </svg>
-                </div>
-                <span class="contact-text"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="6a191f1a1a05181e2a0905071a060b03041e1e180b090144090507">[email&#160;protected]</a></span>
-              </li>
-              <li class="footer-contact-item">
-                <div class="contact-icon">
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/>
-                  </svg>
-                </div>
-                <span class="contact-text"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="d7bfb2bba797b4b8baa7bbb6beb9a3a3a5b6b4bcf9b4b8ba">[email&#160;protected]</a></span>
-              </li>
-            </ul>
-            <div class="newsletter-box">
-              <p class="newsletter-title">Get system updates</p>
-              <p class="newsletter-sub">Stay informed about new features.</p>
-              <div class="newsletter-row">
-                <input type="email" placeholder="your@email.com" class="newsletter-input" />
-                <button class="newsletter-btn">&#8594;</button>
-              </div>
-            </div>
-          </div>
-
+      <div>
+        <p class="text-sm font-semibold text-[var(--app-title-color)]">Follow</p>
+        <div class="mt-3 flex items-center gap-3 text-[var(--app-primary)]">
+          <a :href="socialLinks.facebook" target="_blank" rel="noreferrer" class="flex h-10 w-10 items-center justify-center rounded-[var(--app-radius-md)] border border-[var(--app-line)] bg-[var(--app-surface)] hover:bg-[var(--app-primary-mist)]">
+            <font-awesome-icon :icon="['fab', 'facebook-f']" />
+          </a>
+          <a :href="socialLinks.x" target="_blank" rel="noreferrer" class="flex h-10 w-10 items-center justify-center rounded-[var(--app-radius-md)] border border-[var(--app-line)] bg-[var(--app-surface)] hover:bg-[var(--app-primary-mist)]">
+            <font-awesome-icon :icon="['fab', 'x-twitter']" />
+          </a>
+          <a :href="socialLinks.instagram" target="_blank" rel="noreferrer" class="flex h-10 w-10 items-center justify-center rounded-[var(--app-radius-md)] border border-[var(--app-line)] bg-[var(--app-surface)] hover:bg-[var(--app-primary-mist)]">
+            <font-awesome-icon :icon="['fab', 'instagram']" />
+          </a>
+          <a :href="socialLinks.linkedin" target="_blank" rel="noreferrer" class="flex h-10 w-10 items-center justify-center rounded-[var(--app-radius-md)] border border-[var(--app-line)] bg-[var(--app-surface)] hover:bg-[var(--app-primary-mist)]">
+            <font-awesome-icon :icon="['fab', 'linkedin-in']" />
+          </a>
         </div>
 
         <div class="footer-bottom">
@@ -106,7 +89,10 @@ import { RouterLink } from 'vue-router';
           </div>
         </div>
       </div>
-    </footer>
+    </div>
+    </div>
+    </div>
+  </footer>
 </template>
 
 <style scoped>

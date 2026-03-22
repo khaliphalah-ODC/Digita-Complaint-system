@@ -12,24 +12,43 @@ defineProps({
     type: String,
     default: ''
   },
-  theme: {
+  title: {
     type: String,
-    default: 'light'
+    default: 'Activity Feed'
+  },
+  description: {
+    type: String,
+    default: 'Recent platform events relevant to super-admin oversight.'
   }
 });
 </script>
 
 <template>
-  <section :class="theme === 'dark' ? 'app-dark-panel mt-5 rounded-[30px] p-5' : 'app-shell-panel mt-5 rounded-[30px] p-5'">
-    <p :class="theme === 'dark' ? 'app-dark-kicker' : 'app-kicker'">Platform Pulse</p>
-    <h2 :class="theme === 'dark' ? 'mb-3 mt-2 text-2xl font-bold text-white' : 'mb-3 mt-2 text-2xl font-bold text-slate-900'">Activity Feed</h2>
-    <p v-if="loading" :class="theme === 'dark' ? 'mb-3 text-sm text-white/60' : 'mb-3 text-sm text-slate-500'">Loading activity...</p>
+  <section class="app-section-card">
+    <header class="mb-4">
+      <div>
+        <h2 class="text-lg font-semibold text-slate-900">{{ title }}</h2>
+        <p class="mt-1 text-[0.98rem] text-slate-600">{{ description }}</p>
+      </div>
+    </header>
+
+    <p v-if="loading" class="mb-3 text-sm text-slate-500">Loading activity...</p>
     <p v-else-if="error" class="mb-3 text-sm text-red-600">{{ error }}</p>
-    <p v-else-if="items.length === 0" :class="theme === 'dark' ? 'mb-3 text-sm text-white/60' : 'mb-3 text-sm text-slate-500'">No recent activity.</p>
-    <ul class="space-y-3">
-      <li v-for="item in items" :key="`${item.text}-${item.date}`" :class="theme === 'dark' ? 'flex flex-col items-start justify-between gap-2 rounded-[22px] border border-white/8 bg-white/[0.04] px-4 py-3 sm:flex-row sm:items-center' : 'flex flex-col items-start justify-between gap-2 rounded-[22px] border border-slate-200/70 bg-white/70 px-4 py-3 sm:flex-row sm:items-center'">
-        <span class="rounded-lg px-2 py-1 text-sm" :class="item.tone">{{ item.text }}</span>
-        <span :class="theme === 'dark' ? 'text-sm text-white/50' : 'text-sm text-slate-500'">{{ item.date }}</span>
+    <p v-else-if="items.length === 0" class="mb-3 text-sm text-slate-500">No recent activity.</p>
+
+    <ul v-else class="space-y-3">
+      <li
+        v-for="item in items"
+        :key="`${item.text}-${item.date}`"
+        class="flex flex-col gap-2 rounded-[18px] border border-[var(--app-line)] bg-[var(--app-surface-soft)] px-4 py-4 sm:flex-row sm:items-start sm:justify-between"
+      >
+        <div class="flex items-start gap-3">
+          <span class="mt-1 h-2.5 w-2.5 rounded-full bg-[var(--app-primary)]" />
+          <div>
+            <p class="text-[0.98rem] font-medium text-slate-800">{{ item.text }}</p>
+          </div>
+        </div>
+        <span class="text-[0.96rem] text-slate-500">{{ item.date }}</span>
       </li>
     </ul>
   </section>

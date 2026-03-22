@@ -1,8 +1,8 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import api, { extractApiError, unwrapResponse } from '../services/api.js';
-import { useSessionStore } from '../stores/session.js';
+import api, { extractApiError, unwrapResponse } from '../../services/api.js';
+import { useSessionStore } from '../../stores/session.js';
 
 const router = useRouter();
 const session = useSessionStore();
@@ -29,9 +29,9 @@ const isUserWorkspace = computed(() => session.currentUser?.role === 'user');
 const panelClass = computed(() => (isUserWorkspace.value ? 'user-shell-panel rounded-[30px] p-4' : 'app-shell-panel rounded-[30px] p-4'));
 const statCardClass = computed(() => (isUserWorkspace.value ? 'user-shell-card rounded-[26px] p-4' : 'app-ink-card rounded-[26px] p-4'));
 const softTextClass = computed(() => (isUserWorkspace.value ? 'text-sm text-[var(--app-muted-color)]' : 'text-sm text-slate-600'));
-const headingClass = computed(() => (isUserWorkspace.value ? 'mt-2 text-2xl font-bold text-[var(--app-primary-ink)]' : 'mt-2 text-2xl font-bold text-slate-900'));
-const inputClass = computed(() => (isUserWorkspace.value ? 'rounded-2xl border border-[#c6d8f8] bg-white px-3 py-2 text-sm text-[var(--app-primary-ink)]' : 'rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm'));
-const secondaryButtonClass = computed(() => (isUserWorkspace.value ? 'rounded-full border border-[#c6d8f8] bg-white px-4 py-2 text-sm font-semibold text-[var(--app-primary-ink)] hover:bg-[#eef4ff]' : 'rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700'));
+const headingClass = computed(() => (isUserWorkspace.value ? 'mt-2 text-3xl font-semibold text-[var(--app-primary-ink)]' : 'mt-2 text-3xl font-semibold text-slate-900'));
+const inputClass = computed(() => (isUserWorkspace.value ? 'app-input text-[var(--app-primary-ink)]' : 'app-input'));
+const secondaryButtonClass = computed(() => 'app-btn-secondary');
 const feedbackSummary = computed(() => {
   const rows = feedbackRows.value || [];
   const total = rows.length;
@@ -166,7 +166,7 @@ onMounted(async () => {
     v-if="isAdminFamily"
     class="app-shell-panel w-full rounded-[30px] px-6 py-10 text-center md:px-8"
   >
-    <h1 class="text-3xl font-black tracking-tight text-slate-800">Feedback Is User Only</h1>
+    <h1 class="text-3xl font-semibold tracking-tight text-slate-800">Feedback Is User Only</h1>
     <p class="mt-2 text-sm text-slate-600">
       Feedback submission and history are only available to regular users for their own complaint experience.
     </p>
@@ -191,22 +191,22 @@ onMounted(async () => {
     </header>
 
     <section class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-      <article :class="statCardClass">
-        <p class="text-xs uppercase tracking-wide text-[var(--app-muted-color)]">Average Rating</p>
-        <p class="mt-2 text-3xl font-black text-[var(--app-primary)]">{{ feedbackSummary.averageRating }}</p>
+      <article :class="`${statCardClass} p-5`">
+        <p class="text-xs uppercase tracking-[0.12em] text-[var(--app-muted-color)]">Average Rating</p>
+        <p class="mt-3 text-3xl font-semibold text-[var(--app-primary)]">{{ feedbackSummary.averageRating }}</p>
       </article>
-      <article :class="statCardClass">
-        <p class="text-xs uppercase tracking-wide text-[var(--app-muted-color)]">Total Feedback</p>
-        <p class="mt-2 text-3xl font-black text-[var(--app-primary-ink)]">{{ feedbackSummary.total }}</p>
+      <article :class="`${statCardClass} p-5`">
+        <p class="text-xs uppercase tracking-[0.12em] text-[var(--app-muted-color)]">Total Feedback</p>
+        <p class="mt-3 text-3xl font-semibold text-[var(--app-primary-ink)]">{{ feedbackSummary.total }}</p>
       </article>
-      <article :class="statCardClass">
-        <p class="text-xs uppercase tracking-wide text-[var(--app-muted-color)]">Last 7 Days</p>
-        <p class="mt-2 text-3xl font-black text-[var(--app-primary)]">{{ feedbackSummary.recentCount }}</p>
+      <article :class="`${statCardClass} p-5`">
+        <p class="text-xs uppercase tracking-[0.12em] text-[var(--app-muted-color)]">Last 7 Days</p>
+        <p class="mt-3 text-3xl font-semibold text-[var(--app-primary)]">{{ feedbackSummary.recentCount }}</p>
       </article>
     </section>
 
     <section :class="panelClass">
-      <h2 class="mb-3 text-lg font-bold text-[var(--app-primary-ink)]">{{ editingId ? 'Edit Feedback' : 'Create Feedback' }}</h2>
+      <h2 class="mb-4 text-xl font-semibold text-[var(--app-primary-ink)]">{{ editingId ? 'Edit Feedback' : 'Create Feedback' }}</h2>
       <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
         <select v-model="form.complaint_id" :class="inputClass">
           <option value="">Select complaint</option>
@@ -229,7 +229,7 @@ onMounted(async () => {
         />
 
         <div class="flex gap-2 md:col-span-2">
-          <button :disabled="saving" class="rounded-full bg-[var(--app-primary)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60" @click="saveFeedback">
+          <button :disabled="saving" class="app-btn-primary disabled:opacity-60" @click="saveFeedback">
             {{ saving ? 'Saving...' : editingId ? 'Update Feedback' : 'Submit Feedback' }}
           </button>
           <button :class="secondaryButtonClass" @click="resetForm">
@@ -240,26 +240,26 @@ onMounted(async () => {
     </section>
 
     <section :class="panelClass">
-      <h2 class="mb-3 text-lg font-bold text-[var(--app-primary-ink)]">Feedback Records</h2>
+      <h2 class="mb-4 text-xl font-semibold text-[var(--app-primary-ink)]">Feedback Records</h2>
       <p v-if="loading" class="text-sm text-[var(--app-muted-color)]">Loading feedback...</p>
       <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
       <p v-else-if="feedbackRows.length === 0" class="text-sm text-[var(--app-muted-color)]">No feedback found.</p>
 
       <div v-else class="space-y-3">
-        <article v-for="row in feedbackRows" :key="row.id" :class="statCardClass">
+        <article v-for="row in feedbackRows" :key="row.id" :class="`${statCardClass} p-5`">
           <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
             <div>
-              <p class="text-sm font-semibold text-[var(--app-primary-ink)]">{{ row.complaint_title || `Complaint #${row.complaint_id}` }}</p>
+              <p class="text-[0.98rem] font-semibold text-[var(--app-primary-ink)]">{{ row.complaint_title || `Complaint #${row.complaint_id}` }}</p>
               <p class="text-xs text-[var(--app-muted-color)]">{{ row.complaint_tracking_code || 'No tracking code' }}</p>
-              <p class="mt-2 text-sm text-[var(--app-primary-ink)]">{{ row.comment || 'No comment provided.' }}</p>
+              <p class="mt-2 text-[0.98rem] text-[var(--app-primary-ink)]">{{ row.comment || 'No comment provided.' }}</p>
               <p class="mt-1 text-xs text-[var(--app-muted-color)]">
                 By {{ row.user_full_name || `User #${row.user_id}` }} | {{ row.created_at }}
               </p>
             </div>
-            <div class="flex items-center gap-2">
-              <span class="rounded-md bg-[var(--app-primary-mist)] px-2 py-1 text-xs font-semibold text-[var(--app-primary-ink)]">Rating: {{ row.rating }}/5</span>
-              <button class="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700" @click="startEdit(row)">Edit</button>
-              <button class="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700" @click="deleteFeedback(row)">Delete</button>
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="app-badge app-badge-neutral">Rating: {{ row.rating }}/5</span>
+              <button class="app-btn-secondary px-3 py-1 text-xs" @click="startEdit(row)">Edit</button>
+              <button class="inline-flex items-center justify-center rounded-full border border-[var(--app-danger)]/20 bg-[var(--app-danger-soft)] px-3 py-1 text-xs font-semibold text-[var(--app-danger)]" @click="deleteFeedback(row)">Delete</button>
             </div>
           </div>
         </article>

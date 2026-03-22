@@ -12,6 +12,8 @@ const session = useSessionStore();
 
 const form = computed(() => session.loginForm);
 const showPassword = ref(false);
+const hasVerificationPrompt = computed(() => /verify your email/i.test(session.errorMessage || ''));
+const verificationEmail = computed(() => String(form.value?.email || session.pendingVerificationEmail || '').trim().toLowerCase());
 
 const redirectAfterAuth = () => {
   if (session.currentUser?.role === 'super_admin') {
@@ -41,6 +43,16 @@ const submitGoogle = async (credential) => {
   } catch (_error) {
     // Store tracks and displays the message.
   }
+};
+
+const goToVerificationHelp = () => {
+  if (!verificationEmail.value) return;
+  router.push({
+    path: '/verify-email',
+    query: {
+      email: verificationEmail.value
+    }
+  });
 };
 </script>
 
@@ -126,6 +138,19 @@ const submitGoogle = async (credential) => {
             <p v-if="session.errorMessage" class="mt-4 rounded-[14px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
               {{ session.errorMessage }}
             </p>
+
+            <div v-if="hasVerificationPrompt && verificationEmail" class="mt-4 rounded-[14px] border border-[var(--app-line)] bg-[var(--app-surface-soft)] px-4 py-4 text-left">
+              <p class="text-sm text-slate-600">
+                Your account still needs email verification. Open the verification page to resend the email or complete verification.
+              </p>
+              <button
+                type="button"
+                class="app-btn-secondary mt-3"
+                @click="goToVerificationHelp"
+              >
+                Open Verification Page
+              </button>
+            </div>
 
             <button
               type="submit"

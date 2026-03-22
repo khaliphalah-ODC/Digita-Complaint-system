@@ -53,8 +53,8 @@ const statusBadgeClass = computed(() => {
   const status = complaint.value?.status;
   if (status === 'resolved') return 'bg-[var(--app-accent-soft)] text-[var(--app-primary-ink)]';
   if (status === 'closed') return 'bg-slate-100 text-slate-700';
-  if (status === 'in_review') return 'bg-[var(--app-primary-mist)] text-[var(--app-primary-ink)]';
-  return 'bg-blue-100 text-blue-700';
+  if (status === 'in_review') return 'bg-[var(--app-pending-soft)] text-[var(--app-pending)]';
+  return 'bg-[var(--app-primary-mist)] text-[var(--app-primary-ink)]';
 });
 
 const reporterName = computed(() => {
@@ -111,7 +111,7 @@ const downloadReceiptPdf = () => {
   if (!complaint.value) return;
 
   const html = `<!doctype html><html><head><meta charset="utf-8" /><title>Complaint Receipt</title></head>
-  <body style="font-family: Arial, sans-serif; padding: 24px;">
+  <body style="font-family: 'Times New Roman', Times, serif; padding: 24px;">
     <h2>Complaint Tracking Receipt</h2>
     <p><strong>Tracking:</strong> ${complaint.value.tracking_code || 'N/A'}</p>
     <p><strong>Status:</strong> ${prettyStatus(complaint.value.status)}</p>
@@ -152,8 +152,8 @@ onUnmounted(() => {
   <section :class="shellClass">
     <header class="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div class="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-        <h1 class="break-all text-2xl font-black text-slate-800 sm:text-4xl">{{ complaint?.tracking_code || 'TRK-000-000' }}</h1>
-        <span class="rounded-full px-3 py-1 text-sm font-semibold" :class="statusBadgeClass">
+        <h1 class="break-all text-3xl font-semibold text-slate-800 sm:text-4xl">{{ complaint?.tracking_code || 'TRK-000-000' }}</h1>
+        <span class="app-badge px-3 py-1 text-sm" :class="statusBadgeClass">
           {{ prettyStatus(complaint?.status) }}
         </span>
       </div>
@@ -162,32 +162,32 @@ onUnmounted(() => {
         <input
           v-model="trackingInput"
           placeholder="Enter tracking code"
-          class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm uppercase outline-none focus:border-[var(--app-primary)]"
+          class="app-input uppercase"
         >
-        <button class="rounded-xl bg-[var(--app-primary)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--app-primary-ink)]" @click="searchByCode">
+        <button class="app-btn-primary rounded-xl px-4 py-2" @click="searchByCode">
           Track
         </button>
       </div>
     </header>
 
-    <p v-if="loading" class="rounded-2xl border border-slate-200 bg-[var(--app-primary-mist)] px-3 py-2 text-sm text-slate-600">Loading complaint...</p>
-    <p v-else-if="error" class="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{{ error }}</p>
+    <p v-if="loading" class="rounded-2xl border border-[var(--app-line)] bg-[var(--app-primary-mist)] px-4 py-3 text-sm text-slate-600">Loading complaint...</p>
+    <p v-else-if="error" class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ error }}</p>
 
     <template v-else-if="complaint">
       <div class="mb-5 grid grid-cols-1 gap-3 md:grid-cols-2">
         <article :class="cardClass">
-          <p class="text-xs text-slate-500">Organization:</p>
-          <p class="text-sm font-semibold text-slate-700">{{ complaint.organization_name || 'N/A' }}</p>
+          <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Organization</p>
+          <p class="mt-2 text-[0.98rem] font-semibold text-slate-700">{{ complaint.organization_name || 'N/A' }}</p>
           <p class="mt-1 text-xs text-slate-500">Department: {{ complaint.department_name || 'Not specified' }}</p>
           <p class="text-xs text-slate-500">{{ complaint.organization_address || '' }}</p>
         </article>
         <article :class="`${cardClass} text-left md:text-right`">
-          <p class="text-xs text-slate-500">Handled by:</p>
-          <p class="text-sm font-semibold text-slate-700">{{ complaint.reviewer_name || 'Pending assignment' }}</p>
+          <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Handled by</p>
+          <p class="mt-2 text-[0.98rem] font-semibold text-slate-700">{{ complaint.reviewer_name || 'Pending assignment' }}</p>
         </article>
       </div>
 
-      <div class="mb-6 rounded-[24px] border border-slate-200 bg-[var(--app-primary-mist)] px-4 py-3">
+      <div class="mb-6 rounded-[24px] border border-[var(--app-line)] bg-[var(--app-surface-soft)] px-4 py-4">
         <div class="grid grid-cols-5 items-center gap-2 text-center text-[11px] font-semibold text-slate-600">
           <span v-for="step in workflowSteps" :key="`${step.key}-label`">{{ step.label }}</span>
         </div>
@@ -212,25 +212,25 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <section :class="isUserWorkspace ? 'user-shell-card rounded-[26px] p-4 md:p-5' : 'app-ink-card rounded-[26px] p-4 md:p-5'">
-        <h2 class="text-2xl font-black text-slate-800 sm:text-3xl">Complaint Title: {{ complaint.title }}</h2>
+      <section :class="isUserWorkspace ? 'user-shell-card rounded-[26px] p-5 md:p-6' : 'app-ink-card rounded-[26px] p-5 md:p-6'">
+        <h2 class="text-2xl font-semibold text-slate-800 sm:text-3xl">Complaint Title: {{ complaint.title }}</h2>
 
-        <div class="mt-3 flex flex-wrap items-center gap-2">
-          <span class="rounded-full bg-[var(--app-primary-mist)] px-3 py-1 text-xs font-semibold text-[var(--app-primary-ink)]">{{ prettyStatus(complaint.status) }}</span>
-          <span class="rounded-md bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">Category</span>
-          <span class="rounded-md bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{{ complaint.category || 'N/A' }}</span>
-          <span class="rounded-md bg-[var(--app-accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--app-primary-ink)]">{{ complaint.priority || 'medium' }}</span>
+        <div class="mt-4 flex flex-wrap items-center gap-2">
+          <span class="app-badge app-badge-warning">{{ prettyStatus(complaint.status) }}</span>
+          <span class="app-badge app-badge-neutral">Category</span>
+          <span class="app-badge app-badge-neutral">{{ complaint.category || 'N/A' }}</span>
+          <span class="app-badge app-badge-escalated">{{ complaint.priority || 'medium' }}</span>
         </div>
 
         <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-[1fr,0.8fr]">
-          <article class="rounded-[22px] border border-slate-200 bg-white/80 p-4 text-sm text-slate-700">
+          <article class="rounded-[22px] border border-[var(--app-line)] bg-white/90 p-5 text-[0.98rem] leading-8 text-slate-700">
             <p>{{ complaint.description || complaint.complaint }}</p>
             <p class="mt-4 text-xs text-slate-500">Submitted by: {{ reporterName }}</p>
           </article>
 
-          <article class="rounded-[22px] border border-[var(--app-accent-soft)] bg-[var(--app-primary-mist)] p-4">
-            <p class="text-lg font-bold text-slate-800">Resolution</p>
-            <p class="mt-2 text-sm text-slate-700">
+          <article class="rounded-[22px] border border-[var(--app-line)] bg-[var(--app-surface-soft)] p-5">
+            <p class="text-lg font-semibold text-slate-800">Resolution</p>
+            <p class="mt-2 text-[0.98rem] text-slate-700">
               {{ complaint.admin_response || 'Admin response pending. Your complaint is being reviewed.' }}
             </p>
             <p class="mt-2 text-xs text-slate-500">(Resolved on: {{ formatDate(resolvedDate) }})</p>
@@ -239,10 +239,10 @@ onUnmounted(() => {
       </section>
 
       <footer class="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-between">
-        <button class="rounded-full bg-[var(--app-primary)] px-6 py-2 text-sm font-semibold text-white hover:bg-[var(--app-primary-ink)]" @click="showChatModal = true">
+        <button class="app-btn-primary" @click="showChatModal = true">
           Message Support
         </button>
-        <button class="rounded-full border border-slate-400 px-6 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100" @click="downloadReceiptPdf">
+        <button class="app-btn-secondary" @click="downloadReceiptPdf">
           Download Receipt (PDF)
         </button>
       </footer>

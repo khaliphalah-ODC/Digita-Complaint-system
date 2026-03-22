@@ -2,7 +2,7 @@
 defineProps({
   kicker: {
     type: String,
-    default: 'Platform Oversight'
+    default: ''
   },
   title: {
     type: String,
@@ -20,16 +20,14 @@ defineProps({
 </script>
 
 <template>
-  <header :class="theme === 'dark' ? 'app-dark-panel rounded-[32px] px-6 py-6' : 'app-shell-panel rounded-[32px] px-6 py-6'">
-    <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-      <div class="max-w-3xl">
-        <p :class="theme === 'dark' ? 'app-dark-kicker' : 'app-kicker'">{{ kicker }}</p>
-        <h1 :class="theme === 'dark' ? 'mt-2 text-3xl font-black text-white sm:text-4xl' : 'mt-2 text-3xl font-black text-slate-900 sm:text-4xl'">{{ title }}</h1>
-        <p v-if="description" :class="theme === 'dark' ? 'mt-3 text-sm leading-7 text-white/62' : 'mt-3 text-sm leading-7 text-slate-600'">
-          {{ description }}
-        </p>
+  <header class="app-page-header">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div class="min-w-0 space-y-3">
+        <p v-if="kicker" class="app-kicker">{{ kicker }}</p>
+        <h1 class="text-[clamp(1.9rem,2.8vw,2.75rem)] font-semibold tracking-[-0.035em] text-[var(--app-title-color)]">{{ title }}</h1>
+        <p v-if="description" class="max-w-4xl text-[0.97rem] leading-7 text-[var(--app-muted-color)]">{{ description }}</p>
       </div>
-      <div class="flex flex-wrap items-center gap-3">
+      <div class="flex flex-wrap items-center gap-2.5 lg:justify-end">
         <slot name="actions" />
       </div>
     </div>
