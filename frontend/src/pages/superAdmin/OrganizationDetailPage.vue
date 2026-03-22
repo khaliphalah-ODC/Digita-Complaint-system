@@ -77,29 +77,31 @@ onMounted(load);
 </script>
 
 <template>
-  <section class="space-y-6 bg-slate-50 p-4 sm:p-6">
-    <PageHeader
-      title="Organization Detail"
-      description="Structured overview of the organization record, directory information, and administrator assignment."
-    >
-      <template #actions>
-        <button class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50" @click="load">
-          Refresh
-        </button>
-        <button class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50" @click="exportSnapshotPdf">
-          Export snapshot
-        </button>
-        <button class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700" @click="router.push('/admin/organizations')">
-          Back to organizations
-        </button>
-      </template>
-    </PageHeader>
+  <section class="app-admin-page">
+    <div class="app-page-shell app-admin-page-shell">
+      <div class="app-workspace-stack">
+        <PageHeader
+          title="Organization Detail"
+          description="Structured overview of the organization record, directory information, and administrator assignment."
+        >
+          <template #actions>
+            <button class="app-btn-secondary" @click="load">
+              Refresh
+            </button>
+            <button class="app-btn-secondary" @click="exportSnapshotPdf">
+              Export snapshot
+            </button>
+            <button class="app-btn-primary" @click="router.push('/admin/organizations')">
+              Back to organizations
+            </button>
+          </template>
+        </PageHeader>
 
-    <p v-if="loading" class="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500 shadow-sm">Loading organization detail...</p>
-    <p v-else-if="error" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm">{{ error }}</p>
+        <p v-if="loading" class="app-section-card text-sm text-slate-500">Loading organization detail...</p>
+        <p v-else-if="error" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm">{{ error }}</p>
 
-    <template v-else-if="organization">
-      <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <template v-else-if="organization">
+          <section class="app-section-card">
         <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div class="flex items-start gap-4">
             <img
@@ -137,10 +139,10 @@ onMounted(load);
             <p class="mt-1 text-sm text-slate-600">{{ organization.organization_admin?.email || 'No admin email available' }}</p>
           </article>
         </div>
-      </section>
+          </section>
 
-      <section class="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr,0.9fr]">
-        <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section class="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr,0.9fr]">
+            <article class="app-section-card">
           <h3 class="text-lg font-semibold text-slate-900">Directory summary</h3>
           <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <article
@@ -152,9 +154,9 @@ onMounted(load);
               <p class="mt-2 text-sm font-semibold text-slate-900">{{ item.value }}</p>
             </article>
           </div>
-        </article>
+            </article>
 
-        <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <article class="app-section-card">
           <h3 class="text-lg font-semibold text-slate-900">Contact and location</h3>
           <div class="mt-4 space-y-4 text-sm text-slate-600">
             <div>
@@ -178,27 +180,29 @@ onMounted(load);
               View on map
             </a>
           </div>
-        </article>
-      </section>
+            </article>
+          </section>
 
-      <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 class="text-lg font-semibold text-slate-900">Administrator assignment</h3>
-        <p class="mt-1 text-sm text-slate-600">Current organization-admin coverage for this directory record.</p>
-        <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-          <article class="rounded-xl border border-slate-200 p-4">
-            <p class="text-sm font-medium text-slate-500">Organization admin</p>
-            <p class="mt-2 text-sm font-semibold text-slate-900">{{ organization.organization_admin?.full_name || 'Not assigned' }}</p>
-          </article>
-          <article class="rounded-xl border border-slate-200 p-4">
-            <p class="text-sm font-medium text-slate-500">Admin email</p>
-            <p class="mt-2 text-sm font-semibold text-slate-900">{{ organization.organization_admin?.email || 'N/A' }}</p>
-          </article>
-          <article class="rounded-xl border border-slate-200 p-4">
-            <p class="text-sm font-medium text-slate-500">Admin status</p>
-            <p class="mt-2 text-sm font-semibold text-slate-900">{{ organization.organization_admin?.status || 'N/A' }}</p>
-          </article>
-        </div>
-      </section>
-    </template>
+          <section class="app-section-card">
+            <h3 class="text-lg font-semibold text-slate-900">Administrator assignment</h3>
+            <p class="mt-1 text-sm text-slate-600">Current organization-admin coverage for this directory record.</p>
+            <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+              <article class="rounded-xl border border-slate-200 p-4">
+                <p class="text-sm font-medium text-slate-500">Organization admin</p>
+                <p class="mt-2 text-sm font-semibold text-slate-900">{{ organization.organization_admin?.full_name || 'Not assigned' }}</p>
+              </article>
+              <article class="rounded-xl border border-slate-200 p-4">
+                <p class="text-sm font-medium text-slate-500">Admin email</p>
+                <p class="mt-2 text-sm font-semibold text-slate-900">{{ organization.organization_admin?.email || 'N/A' }}</p>
+              </article>
+              <article class="rounded-xl border border-slate-200 p-4">
+                <p class="text-sm font-medium text-slate-500">Admin status</p>
+                <p class="mt-2 text-sm font-semibold text-slate-900">{{ organization.organization_admin?.status || 'N/A' }}</p>
+              </article>
+            </div>
+          </section>
+        </template>
+      </div>
+    </div>
   </section>
 </template>

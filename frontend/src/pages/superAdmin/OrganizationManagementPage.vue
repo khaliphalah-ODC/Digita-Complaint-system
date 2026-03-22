@@ -210,7 +210,9 @@ onMounted(fetchOrganizations);
 </script>
 
 <template>
-  <section class="space-y-6 bg-slate-50 p-4 sm:p-6">
+  <section class="app-admin-page">
+    <div class="app-page-shell app-admin-page-shell">
+      <div class="app-workspace-stack">
     <PageHeader
       title="Organization Management"
       description="Create, review, and update organization records that control platform coverage and org-admin assignment."
@@ -226,22 +228,22 @@ onMounted(fetchOrganizations);
     </PageHeader>
 
     <section class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <article class="app-section-card app-metric-card">
         <p class="text-sm font-medium text-slate-500">Total organizations</p>
         <p class="mt-2 text-3xl font-semibold text-slate-900">{{ managementSummary.total }}</p>
         <p class="mt-2 text-sm text-slate-600">Current platform directory size.</p>
       </article>
-      <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <article class="app-section-card app-metric-card">
         <p class="text-sm font-medium text-slate-500">Active</p>
         <p class="mt-2 text-3xl font-semibold text-slate-900">{{ managementSummary.active }}</p>
         <p class="mt-2 text-sm text-slate-600">Organizations available for complaint routing.</p>
       </article>
-      <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <article class="app-section-card app-metric-card">
         <p class="text-sm font-medium text-slate-500">Inactive</p>
         <p class="mt-2 text-3xl font-semibold text-slate-900">{{ managementSummary.inactive }}</p>
         <p class="mt-2 text-sm text-slate-600">Records currently suspended or unavailable.</p>
       </article>
-      <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <article class="app-section-card app-metric-card">
         <p class="text-sm font-medium text-slate-500">Missing org-admin</p>
         <p class="mt-2 text-3xl font-semibold text-slate-900">{{ managementSummary.withoutAdmin }}</p>
         <p class="mt-2 text-sm text-slate-600">Organizations that still need admin assignment.</p>
@@ -257,7 +259,7 @@ onMounted(fetchOrganizations);
       @submit="createOrganization"
     />
 
-    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section class="app-section-card">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h2 class="text-lg font-semibold text-slate-900">Organization directory</h2>
@@ -432,6 +434,8 @@ onMounted(fetchOrganizations);
           </button>
         </div>
       </section>
+    </div>
+      </div>
     </div>
   </section>
 </template>

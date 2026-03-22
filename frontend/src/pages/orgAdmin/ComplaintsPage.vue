@@ -152,9 +152,9 @@ onMounted(fetchComplaints);
 </script>
 
 <template>
-  <section class="min-h-full p-3 sm:p-4">
-    <div class="app-page-shell mx-auto max-w-7xl p-3 sm:p-4">
-      <div class="space-y-4 rounded-[var(--app-radius-xl)] border border-[var(--app-line)] bg-[rgba(255,255,255,0.42)] p-4 sm:p-5">
+  <section class="app-admin-page">
+    <div class="app-page-shell app-admin-page-shell">
+      <div class="app-workspace-stack">
         <PageHeader
           kicker="Case Queue"
           title="Organization Complaints"
@@ -176,20 +176,20 @@ onMounted(fetchComplaints);
 
         <section class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
           <article v-for="item in summaryCards" :key="item.label" class="app-section-card">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--app-muted-color)]">{{ item.label }}</p>
-            <p class="mt-2 text-3xl font-semibold text-[var(--app-title-color)]">{{ loading ? '...' : item.value }}</p>
-            <p class="mt-2 text-sm text-[var(--app-muted-color)]">{{ item.detail }}</p>
+            <p class="app-metric-label">{{ item.label }}</p>
+            <p class="app-metric-value">{{ loading ? '...' : item.value }}</p>
+            <p class="app-metric-detail">{{ item.detail }}</p>
           </article>
         </section>
 
         <section class="app-section-card">
           <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-            <div>
+            <div class="app-section-heading">
               <p class="app-kicker">Filters</p>
-              <h2 class="mt-2 text-xl font-semibold text-[var(--app-title-color)]">Complaint Workflow Table</h2>
-              <p class="mt-1 text-sm text-[var(--app-muted-color)]">Filter the queue by keyword, status, and priority, then continue review from the detailed complaint view.</p>
+              <h2 class="app-section-title">Complaint Workflow Table</h2>
+              <p class="app-section-description">Filter the queue by keyword, status, and priority, then continue review from the detailed complaint view.</p>
             </div>
-            <div class="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:min-w-[38rem]">
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:min-w-[34rem]">
               <input v-model="search" placeholder="Search complaint or tracking..." class="app-input">
               <select v-model="statusFilter" class="app-select">
                 <option value="all">All status</option>

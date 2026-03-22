@@ -13,6 +13,7 @@ const route = useRoute();
 const isLoggedIn = computed(() => session.isLoggedIn);
 const isSuperAdmin = computed(() => session.currentUser?.role === 'super_admin');
 const isOrgAdmin = computed(() => session.currentUser?.role === 'org_admin');
+const isAdminWorkspace = computed(() => isSuperAdmin.value || isOrgAdmin.value);
 const isStandardUserShell = computed(() => isLoggedIn.value && !isSuperAdmin.value && !isOrgAdmin.value);
 const isOrganizationLinkedUser = computed(
   () => session.currentUser?.role === 'user' && Boolean(session.currentUser?.organization_id)
@@ -34,12 +35,12 @@ const workspaceTitle = computed(() => {
 
 const paddingClass = computed(() => (
   isLoggedIn.value
-    ? 'flex-1 px-3 pb-4 pt-24 sm:px-4 sm:pb-5 sm:pt-24 md:px-6 md:pb-6 md:pt-28 lg:px-8 lg:pb-8 lg:pt-24'
-    : 'flex-1 px-3 pb-4 pt-28 sm:px-4 sm:pb-5 sm:pt-28 md:px-6 md:pb-6 md:pt-32 lg:px-8 lg:pb-8 lg:pt-36'
+    ? 'app-shell-gutter flex-1 pb-4 pt-24 sm:pb-5 sm:pt-24 md:pb-6 md:pt-28 lg:pb-8 lg:pt-24'
+    : 'app-shell-gutter flex-1 pb-4 pt-28 sm:pb-5 sm:pt-28 md:pb-6 md:pt-32 lg:pb-8 lg:pt-36'
 ));
 
 const contentClass = computed(() => (
-  `${isOrgAdmin.value ? 'org-admin-shell ' : ''}${isStandardUserShell.value ? 'user-shell ' : ''}${paddingClass.value}`
+  `${isAdminWorkspace.value ? 'app-admin-main ' : ''}${isOrgAdmin.value ? 'org-admin-shell ' : ''}${isStandardUserShell.value ? 'user-shell ' : ''}${paddingClass.value}`
 ));
 
 const mobileNavOpen = ref(false);
@@ -55,7 +56,7 @@ const profileAvatar = computed(() => {
 });
 
 const layoutRootClass = computed(() => (
-  `${isStandardUserShell.value ? 'user-shell ' : ''}${isOrgAdmin.value ? 'org-admin-shell ' : ''}min-h-screen w-full overflow-x-hidden bg-transparent text-[var(--app-text-color)]`
+  `${isAdminWorkspace.value ? 'app-admin-shell ' : ''}${isStandardUserShell.value ? 'user-shell ' : ''}${isOrgAdmin.value ? 'org-admin-shell ' : ''}min-h-screen w-full overflow-x-hidden bg-transparent text-[var(--app-text-color)]`
 ));
 
 // const mainClass = computed(() => {
@@ -148,8 +149,8 @@ onMounted(session.fetchCurrentUser);
 
       <main :class="mainClass">
         <div :class="headerWrapClass">
-          <header class="border-b border-[var(--app-nav-border)] bg-[rgba(255,255,255,0.88)] px-3 py-3 shadow-[0_14px_40px_rgba(17,28,48,0.06)] backdrop-blur-2xl sm:px-4 md:px-6 lg:px-7">
-            <div class="flex flex-wrap items-center justify-between gap-3">
+          <header class="app-shell-gutter border-b border-[var(--app-nav-border)] bg-[rgba(255,255,255,0.88)] py-3 shadow-[0_14px_40px_rgba(17,28,48,0.06)] backdrop-blur-2xl">
+            <div class="app-content-wrap flex flex-wrap items-center justify-between gap-3">
               <div class="flex min-w-0 items-start gap-3">
                 <button
                   v-if="isLoggedIn"

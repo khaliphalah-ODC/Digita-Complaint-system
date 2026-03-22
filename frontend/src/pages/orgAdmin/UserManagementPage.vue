@@ -279,9 +279,9 @@ watch(assignableRoles, normalizeRoleFilters, { immediate: false });
 </script>
 
 <template>
-  <section class="min-h-full p-3 sm:p-4">
-    <div class="app-page-shell mx-auto max-w-7xl p-3 sm:p-4">
-      <div class="space-y-4 rounded-[var(--app-radius-xl)] border border-[var(--app-line)] bg-[rgba(255,255,255,0.42)] p-4 sm:p-5">
+  <section class="app-admin-page">
+    <div class="app-page-shell app-admin-page-shell">
+      <div class="app-workspace-stack">
         <PageHeader
           kicker="Identity Operations"
           title="Organization Users"
@@ -303,18 +303,18 @@ watch(assignableRoles, normalizeRoleFilters, { immediate: false });
 
         <section class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
           <article v-for="item in summaryCards" :key="item.label" class="app-section-card">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--app-muted-color)]">{{ item.label }}</p>
-            <p class="mt-2 text-3xl font-semibold text-[var(--app-title-color)]">{{ loading ? '...' : item.value }}</p>
-            <p class="mt-2 text-sm text-[var(--app-muted-color)]">{{ item.detail }}</p>
+            <p class="app-metric-label">{{ item.label }}</p>
+            <p class="app-metric-value">{{ loading ? '...' : item.value }}</p>
+            <p class="app-metric-detail">{{ item.detail }}</p>
           </article>
         </section>
 
         <section class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.05fr),minmax(320px,0.95fr)]">
           <section ref="userFormSection" class="app-section-card">
-            <div class="mb-4">
+            <div class="app-section-heading mb-4">
               <p class="app-kicker">User Form</p>
-              <h2 class="mt-2 text-xl font-semibold text-[var(--app-title-color)]">{{ editingId ? 'Edit User' : 'Create User' }}</h2>
-              <p class="mt-1 text-sm text-[var(--app-muted-color)]">Keep role and status updates scoped to your organization while maintaining a clean identity workflow.</p>
+              <h2 class="app-section-title">{{ editingId ? 'Edit User' : 'Create User' }}</h2>
+              <p class="app-section-description">Keep role and status updates scoped to your organization while maintaining a clean identity workflow.</p>
             </div>
 
             <form class="grid grid-cols-1 gap-3 md:grid-cols-2" @submit.prevent="saveUser">
@@ -342,10 +342,10 @@ watch(assignableRoles, normalizeRoleFilters, { immediate: false });
           </section>
 
           <section v-if="isOrgAdmin" class="app-section-card">
-            <div class="mb-4">
+            <div class="app-section-heading mb-4">
               <p class="app-kicker">Assign Existing</p>
-              <h2 class="mt-2 text-xl font-semibold text-[var(--app-title-color)]">Claim Existing User</h2>
-              <p class="mt-1 text-sm text-[var(--app-muted-color)]">Attach a self-registered user account to your organization using their email address.</p>
+              <h2 class="app-section-title">Claim Existing User</h2>
+              <p class="app-section-description">Attach a self-registered user account to your organization using their email address.</p>
             </div>
 
             <form class="grid grid-cols-1 gap-3 md:grid-cols-[1fr,auto]" @submit.prevent="assignExistingUser">
@@ -368,12 +368,12 @@ watch(assignableRoles, normalizeRoleFilters, { immediate: false });
 
         <section class="app-section-card">
           <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-            <div>
+            <div class="app-section-heading">
               <p class="app-kicker">Directory</p>
-              <h2 class="mt-2 text-xl font-semibold text-[var(--app-title-color)]">User Table</h2>
-              <p class="mt-1 text-sm text-[var(--app-muted-color)]">Filter by name, role, and status, then update or remove users directly from the directory.</p>
+              <h2 class="app-section-title">User Table</h2>
+              <p class="app-section-description">Filter by name, role, and status, then update or remove users directly from the directory.</p>
             </div>
-            <div class="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:min-w-[40rem]">
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:min-w-[34rem]">
               <input v-model="search" placeholder="Search name/email" class="app-input">
               <select v-model="roleFilter" class="app-select">
                 <option value="all">All roles</option>

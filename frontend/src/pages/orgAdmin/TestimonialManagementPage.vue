@@ -79,7 +79,8 @@ onMounted(fetchTestimonials);
 </script>
 
 <template>
-  <section class="space-y-5">
+  <section class="app-admin-page">
+    <div class="app-workspace-stack">
     <div class="org-admin-gradient-panel">
       <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -196,5 +197,6 @@ onMounted(fetchTestimonials);
         </div>
       </section>
     </section>
+    </div>
   </section>
 </template>

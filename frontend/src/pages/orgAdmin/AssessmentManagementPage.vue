@@ -167,7 +167,9 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="space-y-5">
+  <section class="app-admin-page">
+    <div class="app-page-shell app-admin-page-shell">
+      <div class="app-workspace-stack">
     <header class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
       <div>
         <h1 :class="titleClass">Assessment Management</h1>
@@ -257,5 +259,7 @@ onMounted(async () => {
         </div>
       </div>
     </section>
+      </div>
+    </div>
   </section>
 </template>

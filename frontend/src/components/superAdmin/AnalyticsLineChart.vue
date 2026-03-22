@@ -123,14 +123,14 @@ const chartOptions = computed(() => ({
 </script>
 
 <template>
-  <section class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+  <section class="app-chart-card">
     <header class="mb-3">
-      <p v-if="title" class="text-sm font-semibold text-slate-900">{{ title }}</p>
-      <p v-if="subtitle" class="mt-0.5 text-xs text-slate-500">{{ subtitle }}</p>
+      <p v-if="title" class="text-base font-semibold text-[var(--app-title-color)]">{{ title }}</p>
+      <p v-if="subtitle" class="mt-1 text-sm text-[var(--app-muted-color)]">{{ subtitle }}</p>
     </header>
 
     <div v-if="normalizedSeries.length && hasMeaningfulData">
-      <div :class="compact ? 'h-[150px]' : 'h-[190px]'">
+      <div class="app-chart-stage" :class="compact ? 'h-[175px]' : 'h-[220px]'">
         <Line :data="chartData" :options="chartOptions" />
       </div>
 
@@ -138,17 +138,17 @@ const chartOptions = computed(() => ({
         <article
           v-for="point in normalizedSeries"
           :key="`${point.label}-metric`"
-          class="rounded-lg border border-slate-200 bg-white px-2.5 py-2"
+          class="app-metric-tile px-3 py-2.5"
         >
-          <p class="text-[11px] text-slate-500">{{ point.label }}</p>
-          <p class="mt-1 text-sm font-semibold text-slate-900">{{ point.value }}</p>
+          <p class="text-[11px] text-[var(--app-muted-color)]">{{ point.label }}</p>
+          <p class="mt-1 text-sm font-semibold text-[var(--app-title-color)]">{{ point.value }}</p>
         </article>
       </div>
     </div>
 
     <div
       v-else
-      class="rounded-lg border border-dashed border-slate-300 bg-white px-3 py-5 text-xs text-slate-500"
+      class="app-empty-state text-xs"
     >
       {{ emptyMessage }}
     </div>

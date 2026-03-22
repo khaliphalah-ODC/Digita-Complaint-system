@@ -18,8 +18,9 @@ const subscribe = () => {
 </script>
 
 <template>
-  <footer class="mt-6 px-3 pb-3 sm:px-4 md:px-8">
-    <div class="app-footer-panel w-full px-5 py-6 sm:px-6 md:px-8">
+  <footer class="mt-6 pb-3">
+    <div class="app-content-wrap app-shell-gutter">
+      <div class="app-footer-panel w-full px-5 py-6 sm:px-6 md:px-8">
     <div class="flex w-full flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
       <div class="max-w-xl">
         <p class="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--app-primary)]">Platform Updates</p>
@@ -81,6 +82,7 @@ const subscribe = () => {
         </div>
         
       </div>
+    </div>
     </div>
     </div>
   </footer>

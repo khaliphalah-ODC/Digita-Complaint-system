@@ -30,8 +30,8 @@ const dashboardRoute = computed(() => {
 const wrapperClass = computed(() => (props.fixed ? 'fixed inset-x-0 top-0 z-40' : ''));
 const shellClass = computed(() => (
   props.fixed
-    ? 'app-shell-panel px-4 py-3.5 sm:px-5 md:px-7'
-    : 'app-shell-panel mb-6 w-full px-4 py-3.5 sm:px-5 md:px-7'
+    ? 'app-shell-panel app-shell-gutter py-3.5'
+    : 'app-shell-panel app-shell-gutter mb-6 w-full py-3.5'
 ));
 const mobileToggleClass = computed(() => (
   mobileMenuOpen.value
@@ -71,7 +71,7 @@ watch(() => route.fullPath, () => {
 <template>
   <div :class="wrapperClass">
     <header :class="shellClass">
-      <nav class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <nav class="app-content-wrap flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
         <div class="flex items-start justify-between gap-3">
           <RouterLink to="/" class="logo-link min-w-0 flex items-center gap-2.5 no-underline">

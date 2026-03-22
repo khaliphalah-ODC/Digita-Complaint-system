@@ -84,52 +84,54 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="space-y-6 bg-slate-50 p-4 sm:p-6">
-    <PageHeader
-      title="Triage Queue"
-      description="Assign anonymous complaints to the correct organization so they can enter the normal review flow."
-    >
-      <template #actions>
-        <button class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50" @click="fetchUnassignedComplaints">
-          Refresh
-        </button>
-      </template>
-    </PageHeader>
+  <section class="app-admin-page">
+    <div class="app-page-shell app-admin-page-shell">
+      <div class="app-workspace-stack">
+        <PageHeader
+          title="Triage Queue"
+          description="Assign anonymous complaints to the correct organization so they can enter the normal review flow."
+        >
+          <template #actions>
+            <button class="app-btn-secondary" @click="fetchUnassignedComplaints">
+              Refresh
+            </button>
+          </template>
+        </PageHeader>
 
-    <section class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <article class="app-section-card">
         <p class="text-sm font-medium text-slate-500">Waiting in queue</p>
         <p class="mt-2 text-3xl font-semibold text-slate-900">{{ triageSummary.total }}</p>
         <p class="mt-2 text-sm text-slate-600">Complaints still waiting for organization assignment.</p>
-      </article>
-      <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          </article>
+          <article class="app-section-card">
         <p class="text-sm font-medium text-slate-500">Active organizations</p>
         <p class="mt-2 text-3xl font-semibold text-slate-900">{{ triageSummary.activeOrganizations }}</p>
         <p class="mt-2 text-sm text-slate-600">Available destinations for routing.</p>
-      </article>
-      <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          </article>
+          <article class="app-section-card">
         <p class="text-sm font-medium text-slate-500">Urgent complaints</p>
         <p class="mt-2 text-3xl font-semibold text-slate-900">{{ triageSummary.urgent }}</p>
         <p class="mt-2 text-sm text-slate-600">Queue items marked with urgent priority.</p>
-      </article>
-      <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          </article>
+          <article class="app-section-card">
         <p class="text-sm font-medium text-slate-500">Anonymous</p>
         <p class="mt-2 text-3xl font-semibold text-slate-900">{{ triageSummary.anonymous }}</p>
         <p class="mt-2 text-sm text-slate-600">Complaints submitted without a visible reporter identity.</p>
-      </article>
-    </section>
+          </article>
+        </section>
 
-    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div class="mb-4">
-        <h2 class="text-lg font-semibold text-slate-900">Queue Items</h2>
-        <p class="mt-1 text-sm text-slate-600">Review each complaint summary, choose the destination organization, and assign it into the main workflow.</p>
-      </div>
+        <section class="app-section-card">
+          <div class="mb-4">
+            <h2 class="text-lg font-semibold text-slate-900">Queue Items</h2>
+            <p class="mt-1 text-sm text-slate-600">Review each complaint summary, choose the destination organization, and assign it into the main workflow.</p>
+          </div>
 
-      <p v-if="loading" class="text-sm text-slate-500">Loading unassigned complaints...</p>
-      <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
-      <p v-else-if="unassignedComplaints.length === 0" class="text-sm text-slate-500">No unassigned anonymous complaints.</p>
+          <p v-if="loading" class="text-sm text-slate-500">Loading unassigned complaints...</p>
+          <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
+          <p v-else-if="unassignedComplaints.length === 0" class="text-sm text-slate-500">No unassigned anonymous complaints.</p>
 
-      <div v-else class="space-y-3">
+          <div v-else class="space-y-3">
         <article
           v-for="row in unassignedComplaints"
           :key="row.id"
@@ -187,7 +189,9 @@ onMounted(async () => {
             </div>
           </div>
         </article>
+          </div>
+        </section>
       </div>
-    </section>
+    </div>
   </section>
 </template>

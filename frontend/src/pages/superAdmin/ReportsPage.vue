@@ -205,35 +205,37 @@ onMounted(fetchReports);
 </script>
 
 <template>
-  <section class="space-y-6 bg-slate-50 p-4 sm:p-6">
+  <section class="app-admin-page">
+    <div class="app-page-shell app-admin-page-shell">
+      <div class="app-workspace-stack">
     <PageHeader
       title="Reports"
       description="Platform-level reporting for complaint flow, escalations, feedback, and monthly movement."
     >
       <template #actions>
-        <button class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50" @click="fetchReports">
+        <button class="app-btn-secondary" @click="fetchReports">
           Refresh
         </button>
       </template>
     </PageHeader>
 
     <section class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <article class="app-section-card app-metric-card">
         <p class="text-sm font-medium text-slate-500">Total complaints</p>
         <p class="mt-2 text-3xl font-semibold text-slate-900">{{ analyticsSummary.totalComplaints }}</p>
         <p class="mt-2 text-sm text-slate-600">All complaints represented in the reporting feed.</p>
       </article>
-      <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <article class="app-section-card app-metric-card">
         <p class="text-sm font-medium text-slate-500">Open complaints</p>
         <p class="mt-2 text-3xl font-semibold text-slate-900">{{ analyticsSummary.openComplaints }}</p>
         <p class="mt-2 text-sm text-slate-600">Submitted and in-review complaints still moving through the flow.</p>
       </article>
-      <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <article class="app-section-card app-metric-card">
         <p class="text-sm font-medium text-slate-500">Escalations</p>
         <p class="mt-2 text-3xl font-semibold text-slate-900">{{ analyticsSummary.totalEscalations }}</p>
         <p class="mt-2 text-sm text-slate-600">Current escalation workload represented in reports.</p>
       </article>
-      <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <article class="app-section-card app-metric-card">
         <p class="text-sm font-medium text-slate-500">Average feedback</p>
         <p class="mt-2 text-3xl font-semibold text-slate-900">{{ analyticsSummary.averageFeedback }}</p>
         <p class="mt-2 text-sm text-slate-600">Average rating from recorded feedback submissions.</p>
@@ -244,7 +246,7 @@ onMounted(fetchReports);
     <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
 
     <section class="space-y-6">
-      <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section class="app-section-card">
         <div class="mb-4">
           <h2 class="text-lg font-semibold text-slate-900">Attention Needed</h2>
           <p class="mt-1 text-sm text-slate-600">The most important reporting signals to review before moving into charts.</p>
@@ -314,7 +316,7 @@ onMounted(fetchReports);
           </article>
         </div>
 
-        <section class="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section class="mb-6 app-section-card">
           <h3 class="text-base font-semibold text-slate-900">Attention Needed</h3>
           <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
             <article
@@ -341,7 +343,7 @@ onMounted(fetchReports);
           <p class="mt-1 text-sm text-slate-600">Feedback supports supervision, but it should not outweigh the complaint and escalation message.</p>
         </div>
         <div class="grid grid-cols-1 gap-6 xl:grid-cols-[0.8fr,1.2fr]">
-          <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section class="app-section-card">
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <article class="rounded-xl border border-slate-200 p-4">
                 <p class="text-sm font-medium text-slate-500">Feedback submissions</p>
@@ -386,5 +388,7 @@ onMounted(fetchReports);
         </div>
       </section>
     </section>
+      </div>
+    </div>
   </section>
 </template>

@@ -229,17 +229,17 @@ onUnmounted(stopPolling);
 <template>
   <div
     v-if="visible"
-    class="fixed inset-0 z-50 flex items-end justify-center bg-[#0f1f39]/45 p-4 md:items-center"
+    class="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(17,28,48,0.34)] p-3 backdrop-blur-md md:items-center md:p-5"
     @click.self="emit('close')"
   >
-    <section class="flex h-[82vh] min-h-0 w-full max-w-3xl flex-col overflow-hidden rounded-[28px] border border-white/20 bg-[#eef4ff] md:h-[78vh]">
-      <header class="flex items-center justify-between border-b border-slate-200 bg-[linear-gradient(135deg,#0f1f39_0%,#163462_48%,#1f4db7_100%)] px-4 py-4 text-white">
+    <section class="flex h-[78vh] min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-[calc(var(--app-radius-xl)+6px)] border border-[var(--app-line)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(250,248,244,0.98))] shadow-[var(--app-shadow-lg)] md:h-[76vh]">
+      <header class="flex items-center justify-between border-b border-[var(--app-line)] bg-[linear-gradient(135deg,rgba(24,58,99,0.96)_0%,rgba(36,74,121,0.96)_48%,rgba(43,90,142,0.96)_100%)] px-4 py-4 text-white sm:px-6">
         <div class="flex min-w-0 items-center gap-3">
-          <div class="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/10 text-sm font-bold">
+          <div class="flex h-11 w-11 items-center justify-center rounded-[var(--app-radius-lg)] border border-white/20 bg-white/12 text-sm font-bold shadow-[0_10px_24px_rgba(0,0,0,0.12)]">
             {{ normalizedCurrentRole === 'admin' ? 'CT' : 'SP' }}
           </div>
           <div class="min-w-0">
-            <h3 class="truncate text-lg font-bold">{{ title }}</h3>
+            <h3 class="truncate text-lg font-semibold">{{ title }}</h3>
             <div class="flex flex-wrap items-center gap-2 text-xs text-white/75">
               <span class="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
               <span>{{ otherPartyLabel }} • {{ activeStatus }}</span>
@@ -248,22 +248,22 @@ onUnmounted(stopPolling);
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <button class="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white" @click="exitChat">
+          <button class="app-btn-secondary min-h-[38px] border-white/20 bg-white/12 px-3 py-1.5 text-xs text-white hover:bg-white/18 hover:text-white" @click="exitChat">
             Close
           </button>
         </div>
       </header>
 
-      <div class="flex min-h-0 flex-1 flex-col bg-[linear-gradient(180deg,#eef4ff_0%,#e2ecff_100%)] px-4 py-3">
-        <p v-if="loading" class="text-sm text-slate-500">Loading messages...</p>
+      <div class="flex min-h-0 flex-1 flex-col bg-[linear-gradient(180deg,var(--app-bg-soft)_0%,var(--app-bg)_100%)] p-3 sm:p-4">
+        <p v-if="loading" class="app-empty-state text-sm">Loading messages...</p>
         <p v-else-if="error" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{{ error }}</p>
 
         <div
           v-else
           ref="messageViewport"
-          class="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-[24px] border border-white/30 bg-[linear-gradient(180deg,#f8fbff_0%,#edf4ff_100%)] p-3 sm:p-4"
+          class="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-[var(--app-radius-xl)] border border-[var(--app-line)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(251,250,248,0.98))] p-3 shadow-[var(--app-shadow-sm)] sm:p-4"
         >
-          <p v-if="messages.length === 0" class="text-sm text-slate-500">No messages yet. Start the conversation.</p>
+          <p v-if="messages.length === 0" class="app-empty-state text-sm">No messages yet. Start the conversation.</p>
           <div
             v-for="msg in messages"
             :key="msg.id"
@@ -295,17 +295,17 @@ onUnmounted(stopPolling);
                 </button>
                 <div
                   v-if="actionMenuId === msg.id && editingId !== msg.id"
-                  class="absolute right-3 top-12 z-10 flex min-w-[9rem] flex-col rounded-2xl border border-[#c6d6f6] bg-[#f7faff] p-2"
+                  class="absolute right-3 top-12 z-10 flex min-w-[9rem] flex-col rounded-[var(--app-radius-lg)] border border-[var(--app-line)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(250,248,244,0.98))] p-2 shadow-[var(--app-shadow)]"
                 >
                   <button
-                    class="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-[var(--app-primary-ink)] hover:bg-[#e6efff]"
+                    class="flex items-center gap-2 rounded-[var(--app-radius-md)] px-3 py-2 text-left text-xs font-semibold text-[var(--app-primary-ink)] hover:bg-[var(--app-primary-mist)]"
                     @click="startEdit(msg)"
                   >
                     <font-awesome-icon :icon="['fas', 'pen']" />
                     Edit Message
                   </button>
                   <button
-                    class="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-red-700 hover:bg-[#fff1f1]"
+                    class="flex items-center gap-2 rounded-[var(--app-radius-md)] px-3 py-2 text-left text-xs font-semibold text-red-700 hover:bg-[#fff1f1]"
                     :disabled="deletingId === msg.id"
                     @click="deleteMessage(msg)"
                   >
@@ -314,26 +314,26 @@ onUnmounted(stopPolling);
                   </button>
                 </div>
                 <div
-                  class="rounded-[22px] px-4 py-3 text-sm"
+                  class="rounded-[22px] px-4 py-3 text-sm shadow-[0_10px_24px_rgba(17,28,48,0.06)]"
                   :class="isOwnMessage(msg)
-                    ? 'rounded-br-md bg-[linear-gradient(135deg,#163462_0%,#1f4db7_100%)] pr-8 text-white'
-                    : 'rounded-bl-md border border-slate-200 bg-white text-slate-800'"
+                    ? 'rounded-br-md border border-transparent bg-[linear-gradient(135deg,#183a63_0%,#2a568a_100%)] pr-8 text-white'
+                    : 'rounded-bl-md border border-[var(--app-line)] bg-[var(--app-surface-soft)] text-[var(--app-text-color)]'"
                 >
                 <template v-if="editingId === msg.id">
                   <textarea
                     v-model="editDraft"
                     rows="3"
-                    class="w-full rounded-2xl border border-white/20 bg-white/10 px-3 py-2 text-sm outline-none"
+                    class="app-input min-h-[96px] rounded-[var(--app-radius-lg)] border-white/20 bg-white/12 px-3 py-2 text-sm text-white placeholder:text-white/65"
                   />
                   <div class="mt-3 flex flex-wrap gap-2">
                     <button
-                      class="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-[var(--app-primary-ink)]"
+                      class="app-btn-secondary min-h-[34px] px-3 py-1.5 text-xs"
                       @click="saveEdit(msg)"
                     >
                       Save
                     </button>
                     <button
-                      class="rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white"
+                      class="app-btn-ghost min-h-[34px] border border-white/25 bg-white/10 px-3 py-1.5 text-xs text-white hover:bg-white/16 hover:text-white"
                       @click="cancelEdit"
                     >
                       Cancel
@@ -352,17 +352,17 @@ onUnmounted(stopPolling);
             </article>
             <div
               v-if="isOwnMessage(msg)"
-              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#163462_0%,#1f4db7_100%)] text-xs font-bold text-white"
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--app-radius-lg)] bg-[linear-gradient(135deg,#183a63_0%,#2a568a_100%)] text-xs font-bold text-white"
             >
               {{ avatarLabel(msg) }}
             </div>
           </div>
 
           <div v-if="typingIndicatorVisible" class="flex items-end gap-2">
-            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--app-primary-mist)] text-xs font-bold text-[var(--app-primary-ink)]">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--app-radius-lg)] bg-[var(--app-primary-mist)] text-xs font-bold text-[var(--app-primary-ink)]">
               {{ normalizedCurrentRole === 'admin' ? 'CT' : 'SP' }}
             </div>
-            <div class="rounded-[22px] rounded-bl-md border border-[#d8e4fb] bg-[#f7faff] px-4 py-3">
+            <div class="rounded-[20px] rounded-bl-md border border-[var(--app-line)] bg-[var(--app-surface-soft)] px-4 py-3">
               <div class="flex items-center gap-1.5">
                 <span class="h-2.5 w-2.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.2s]"></span>
                 <span class="h-2.5 w-2.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.1s]"></span>
@@ -372,16 +372,17 @@ onUnmounted(stopPolling);
           </div>
         </div>
 
-        <div class="mt-3 flex flex-col gap-2 rounded-[24px] border border-white/30 bg-[linear-gradient(180deg,#f7faff_0%,#edf4ff_100%)] p-3 sm:flex-row sm:items-end">
-          <input
+        <div class="mt-3 flex flex-col gap-3 rounded-[var(--app-radius-xl)] border border-[var(--app-line)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(250,248,244,0.98))] p-3 shadow-[var(--app-shadow-sm)] sm:flex-row sm:items-end">
+          <textarea
             v-model="input"
             placeholder="Write a message..."
-            class="w-full rounded-2xl border border-[#c6d6f6] bg-white px-4 py-3 text-sm text-[var(--app-primary-ink)] outline-none transition-colors focus:border-[var(--app-primary)]"
-            @keyup.enter="sendMessage"
-          >
+            rows="2"
+            class="app-input min-h-[54px] w-full rounded-[var(--app-radius-lg)] px-4 py-3 text-sm"
+            @keydown.enter.exact.prevent="sendMessage"
+          />
           <button
             :disabled="sending || deletingId !== null || editingId !== null"
-            class="rounded-full bg-blue-500 px-5 py-3 text-sm font-semibold text-white hover:bg-[var(--app-primary-ink)] disabled:opacity-60"
+            class="app-btn-primary min-h-[46px] rounded-[var(--app-radius-lg)] px-5 py-3 text-sm disabled:opacity-60"
             @click="sendMessage"
           >
             {{ sending ? 'Sending...' : 'Send Message' }}

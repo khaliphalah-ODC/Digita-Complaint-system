@@ -352,9 +352,9 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <section class="min-h-full p-3 sm:p-4">
-    <div class="app-page-shell mx-auto max-w-7xl p-3 sm:p-4">
-      <div class="space-y-4 rounded-[var(--app-radius-xl)] border border-[var(--app-line)] bg-[rgba(255,255,255,0.42)] p-4 sm:p-5">
+  <section class="app-admin-page">
+    <div class="app-page-shell app-admin-page-shell">
+      <div class="app-workspace-stack">
         <PageHeader
           kicker="Organization Operations"
           title="Organization Admin Dashboard"
@@ -384,10 +384,10 @@ onUnmounted(() => {
             class="app-section-card"
           >
             <div class="flex items-center justify-between gap-3">
-              <div>
-                <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--app-muted-color)]">{{ item.label }}</p>
-                <p class="mt-2 text-3xl font-semibold text-[var(--app-title-color)]">{{ loading ? '...' : item.value }}</p>
-                <p class="mt-2 text-sm text-[var(--app-muted-color)]">{{ item.detail }}</p>
+              <div class="app-metric-card">
+                <p class="app-metric-label">{{ item.label }}</p>
+                <p class="app-metric-value">{{ loading ? '...' : item.value }}</p>
+                <p class="app-metric-detail">{{ item.detail }}</p>
               </div>
               <div class="flex h-11 w-11 items-center justify-center rounded-[var(--app-radius-lg)] bg-[var(--app-primary-mist)] text-lg">
                 {{ item.icon }}
@@ -398,10 +398,10 @@ onUnmounted(() => {
 
         <section class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.15fr),minmax(320px,0.85fr)]">
           <section class="app-section-card">
-            <div class="mb-4">
+            <div class="app-section-heading mb-4">
               <p class="app-kicker">Complaints Needing Attention</p>
-              <h2 class="mt-2 text-xl font-semibold text-[var(--app-title-color)]">Operational Priorities</h2>
-              <p class="mt-1 text-sm text-[var(--app-muted-color)]">Focus first on overdue complaints, unresolved escalations, and cases that are still waiting for assignment or response.</p>
+              <h2 class="app-section-title">Operational Priorities</h2>
+              <p class="app-section-description">Focus first on overdue complaints, unresolved escalations, and cases that are still waiting for assignment or response.</p>
             </div>
 
             <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -424,10 +424,10 @@ onUnmounted(() => {
           </section>
 
           <section class="app-section-card">
-            <div class="mb-4">
+            <div class="app-section-heading mb-4">
               <p class="app-kicker">Quick Actions</p>
-              <h2 class="mt-2 text-xl font-semibold text-[var(--app-title-color)]">Team Workflow Shortcuts</h2>
-              <p class="mt-1 text-sm text-[var(--app-muted-color)]">Jump directly into the org-level tools needed for daily complaint and staff operations.</p>
+              <h2 class="app-section-title">Team Workflow Shortcuts</h2>
+              <p class="app-section-description">Jump directly into the org-level tools needed for daily complaint and staff operations.</p>
             </div>
 
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -446,10 +446,10 @@ onUnmounted(() => {
 
         <section class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.4fr),minmax(320px,0.9fr)]">
           <section class="app-section-card">
-            <div class="mb-4">
+            <div class="app-section-heading mb-4">
               <p class="app-kicker">Operational Analytics</p>
-              <h2 class="mt-2 text-xl font-semibold text-[var(--app-title-color)]">Complaint Volume, Status, and Department Load</h2>
-              <p class="mt-1 text-sm text-[var(--app-muted-color)]">Charts here are meant to help staffing, routing, and follow-up inside this organization.</p>
+              <h2 class="app-section-title">Complaint Volume, Status, and Department Load</h2>
+              <p class="app-section-description">Charts here are meant to help staffing, routing, and follow-up inside this organization.</p>
             </div>
 
             <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
@@ -482,10 +482,10 @@ onUnmounted(() => {
         <section class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,0.95fr),minmax(0,1.05fr)]">
           <section class="app-section-card">
             <div class="mb-4 flex items-end justify-between gap-3">
-              <div>
+              <div class="app-section-heading">
                 <p class="app-kicker">Recent Activity</p>
-                <h2 class="mt-2 text-xl font-semibold text-[var(--app-title-color)]">Latest Organization Updates</h2>
-                <p class="mt-1 text-sm text-[var(--app-muted-color)]">Recent complaint updates, escalations, status changes, and staff activity.</p>
+                <h2 class="app-section-title">Latest Organization Updates</h2>
+                <p class="app-section-description">Recent complaint updates, escalations, status changes, and staff activity.</p>
               </div>
               <p class="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--app-muted-color)]">{{ lastUpdatedLabel }}</p>
             </div>
@@ -512,11 +512,11 @@ onUnmounted(() => {
           </section>
 
           <section class="app-section-card">
-            <div class="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-              <div>
+            <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div class="app-section-heading">
                 <p class="app-kicker">User Management</p>
-                <h2 class="mt-2 text-xl font-semibold text-[var(--app-title-color)]">Organization Staff Overview</h2>
-                <p class="mt-1 text-sm text-[var(--app-muted-color)]">This view stays limited to users inside your organization only.</p>
+                <h2 class="app-section-title">Organization Staff Overview</h2>
+                <p class="app-section-description">This view stays limited to users inside your organization only.</p>
               </div>
               <RouterLink to="/org-admin/users" class="app-btn-secondary">
                 Manage Users
@@ -564,11 +564,11 @@ onUnmounted(() => {
         </section>
 
         <section class="app-section-card">
-          <div class="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-            <div>
+          <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div class="app-section-heading">
               <p class="app-kicker">Recent Complaints</p>
-              <h2 class="mt-2 text-xl font-semibold text-[var(--app-title-color)]">Practical Workflow Queue</h2>
-              <p class="mt-1 text-sm text-[var(--app-muted-color)]">Recent complaints with the operational details needed for review, assignment, and status updates.</p>
+              <h2 class="app-section-title">Practical Workflow Queue</h2>
+              <p class="app-section-description">Recent complaints with the operational details needed for review, assignment, and status updates.</p>
             </div>
             <RouterLink to="/org-admin/complaints" class="app-btn-secondary">
               View All Complaints

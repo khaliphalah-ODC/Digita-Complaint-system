@@ -325,9 +325,9 @@ onMounted(refreshDashboard);
 </script>
 
 <template>
-  <section class="min-h-full p-3 sm:p-4">
-    <div class="app-page-shell mx-auto max-w-7xl p-3 sm:p-4">
-      <div class="space-y-4 rounded-[var(--app-radius-xl)] border border-[var(--app-line)] bg-[rgba(255,255,255,0.42)] p-4 sm:p-5">
+  <section class="app-admin-page">
+    <div class="app-page-shell app-admin-page-shell">
+      <div class="app-workspace-stack">
         <PageHeader
           kicker="System Supervision"
           title="Super Admin Dashboard"
@@ -357,12 +357,12 @@ onMounted(refreshDashboard);
             class="app-section-card"
           >
             <div class="flex items-center justify-between gap-3">
-              <div>
-                <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--app-muted-color)]">{{ item.label }}</p>
-                <div class="mt-2 flex items-end gap-2">
-                  <p class="text-3xl font-semibold leading-none text-[var(--app-title-color)]">{{ item.value }}</p>
+              <div class="app-metric-card">
+                <p class="app-metric-label">{{ item.label }}</p>
+                <div class="flex items-end gap-2">
+                  <p class="app-metric-value">{{ item.value }}</p>
                 </div>
-                <p class="mt-2 text-sm text-[var(--app-muted-color)]">{{ item.detail }}</p>
+                <p class="app-metric-detail">{{ item.detail }}</p>
               </div>
               <div class="flex h-11 w-11 items-center justify-center rounded-[var(--app-radius-lg)] bg-[var(--app-primary-mist)] text-lg">
                 {{ item.icon }}
@@ -373,10 +373,10 @@ onMounted(refreshDashboard);
 
         <section class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.5fr),minmax(320px,0.9fr)]">
           <section class="app-section-card">
-            <div class="mb-4">
+            <div class="app-section-heading mb-4">
               <p class="app-kicker">Main Analytics</p>
-              <h2 class="mt-2 text-xl font-semibold text-[var(--app-title-color)]">Read-Only Complaint and Escalation Trends</h2>
-              <p class="mt-1 text-sm text-[var(--app-muted-color)]">These charts support supervision only. Complaint handling remains outside the Super Admin dashboard.</p>
+              <h2 class="app-section-title">Read-Only Complaint and Escalation Trends</h2>
+              <p class="app-section-description">These charts support supervision only. Complaint handling remains outside the Super Admin dashboard.</p>
             </div>
 
             <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
@@ -398,10 +398,10 @@ onMounted(refreshDashboard);
           </section>
 
           <section class="app-section-card">
-            <div class="mb-4">
+            <div class="app-section-heading mb-4">
               <p class="app-kicker">System Alerts</p>
-              <h2 class="mt-2 text-xl font-semibold text-[var(--app-title-color)]">Platform-Level Monitoring</h2>
-              <p class="mt-1 text-sm text-[var(--app-muted-color)]">Alerts here highlight supervision issues across organizations, not complaint casework.</p>
+              <h2 class="app-section-title">Platform-Level Monitoring</h2>
+              <p class="app-section-description">Alerts here highlight supervision issues across organizations, not complaint casework.</p>
             </div>
 
             <div class="space-y-3">
@@ -426,11 +426,11 @@ onMounted(refreshDashboard);
 
         <section class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.4fr),minmax(320px,0.95fr)]">
           <section class="app-section-card">
-            <div class="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-              <div>
+            <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div class="app-section-heading">
                 <p class="app-kicker">Organization Insights</p>
-                <h2 class="mt-2 text-xl font-semibold text-[var(--app-title-color)]">Organization Overview Table</h2>
-                <p class="mt-1 text-sm text-[var(--app-muted-color)]">Primary supervision view for organization health, complaint load, response signal, and escalation exposure.</p>
+                <h2 class="app-section-title">Organization Overview Table</h2>
+                <p class="app-section-description">Primary supervision view for organization health, complaint load, response signal, and escalation exposure.</p>
               </div>
               <RouterLink to="/admin/organizations" class="app-btn-secondary">
                 Manage Organizations
@@ -482,10 +482,10 @@ onMounted(refreshDashboard);
 
           <div class="space-y-4">
             <section class="app-section-card">
-              <div class="mb-4">
+              <div class="app-section-heading mb-4">
                 <p class="app-kicker">Underperforming Organizations</p>
-                <h2 class="mt-2 text-xl font-semibold text-[var(--app-title-color)]">Organizations Needing Attention</h2>
-                <p class="mt-1 text-sm text-[var(--app-muted-color)]">High pending volume, elevated escalation exposure, inactive status, or missing org-admin coverage.</p>
+                <h2 class="app-section-title">Organizations Needing Attention</h2>
+                <p class="app-section-description">High pending volume, elevated escalation exposure, inactive status, or missing org-admin coverage.</p>
               </div>
 
               <div v-if="underperformingOrganizations.length" class="space-y-3">
@@ -525,10 +525,10 @@ onMounted(refreshDashboard);
 
         <section class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.1fr),minmax(320px,1fr)]">
           <section class="app-section-card">
-            <div class="mb-4">
+            <div class="app-section-heading mb-4">
               <p class="app-kicker">Organization Management</p>
-              <h2 class="mt-2 text-xl font-semibold text-[var(--app-title-color)]">Limited Super Admin Actions</h2>
-              <p class="mt-1 text-sm text-[var(--app-muted-color)]">Super Admin actions are restricted to organization lifecycle and platform supervision only.</p>
+              <h2 class="app-section-title">Limited Super Admin Actions</h2>
+              <p class="app-section-description">Super Admin actions are restricted to organization lifecycle and platform supervision only.</p>
             </div>
 
             <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -545,10 +545,10 @@ onMounted(refreshDashboard);
           </section>
 
           <section class="app-section-card">
-            <div class="mb-4">
+            <div class="app-section-heading mb-4">
               <p class="app-kicker">Supporting Signals</p>
-              <h2 class="mt-2 text-xl font-semibold text-[var(--app-title-color)]">Coverage and Escalation Monitoring</h2>
-              <p class="mt-1 text-sm text-[var(--app-muted-color)]">Secondary indicators that help the platform team spot organizational risk early.</p>
+              <h2 class="app-section-title">Coverage and Escalation Monitoring</h2>
+              <p class="app-section-description">Secondary indicators that help the platform team spot organizational risk early.</p>
             </div>
 
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">

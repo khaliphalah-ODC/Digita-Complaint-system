@@ -177,9 +177,9 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="min-h-full p-3 sm:p-4">
-    <div class="app-page-shell mx-auto max-w-7xl p-3 sm:p-4">
-      <div class="space-y-4 rounded-[var(--app-radius-xl)] border border-[var(--app-line)] bg-[rgba(255,255,255,0.42)] p-4 sm:p-5">
+  <section class="app-admin-page">
+    <div class="app-page-shell app-admin-page-shell">
+      <div class="app-workspace-stack">
         <PageHeader
           kicker="Department Structure"
           title="Department Management"
@@ -201,18 +201,18 @@ onMounted(async () => {
 
         <section class="grid grid-cols-1 gap-3 md:grid-cols-3">
           <article v-for="item in summaryCards" :key="item.label" class="app-section-card">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--app-muted-color)]">{{ item.label }}</p>
-            <p class="mt-2 text-3xl font-semibold text-[var(--app-title-color)]">{{ loading ? '...' : item.value }}</p>
-            <p class="mt-2 text-sm text-[var(--app-muted-color)]">{{ item.detail }}</p>
+            <p class="app-metric-label">{{ item.label }}</p>
+            <p class="app-metric-value">{{ loading ? '...' : item.value }}</p>
+            <p class="app-metric-detail">{{ item.detail }}</p>
           </article>
         </section>
 
         <section class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.05fr),minmax(320px,0.95fr)]">
           <section class="app-section-card">
-            <div class="mb-4">
+            <div class="app-section-heading mb-4">
               <p class="app-kicker">Department Form</p>
-              <h2 class="mt-2 text-xl font-semibold text-[var(--app-title-color)]">{{ editingId ? 'Edit Department' : 'Create Department' }}</h2>
-              <p class="mt-1 text-sm text-[var(--app-muted-color)]">Use departments to improve complaint routing and clarify ownership inside the organization.</p>
+              <h2 class="app-section-title">{{ editingId ? 'Edit Department' : 'Create Department' }}</h2>
+              <p class="app-section-description">Use departments to improve complaint routing and clarify ownership inside the organization.</p>
             </div>
 
             <form class="grid grid-cols-1 gap-3 md:grid-cols-2" @submit.prevent="saveDepartment">
@@ -245,10 +245,10 @@ onMounted(async () => {
           </section>
 
           <section class="app-section-card">
-            <div class="mb-4">
+            <div class="app-section-heading mb-4">
               <p class="app-kicker">Quick Notes</p>
-              <h2 class="mt-2 text-xl font-semibold text-[var(--app-title-color)]">Routing Readiness</h2>
-              <p class="mt-1 text-sm text-[var(--app-muted-color)]">Departments work best when they are clearly named, actively maintained, and connected to the complaints they support.</p>
+              <h2 class="app-section-title">Routing Readiness</h2>
+              <p class="app-section-description">Departments work best when they are clearly named, actively maintained, and connected to the complaints they support.</p>
             </div>
 
             <div class="space-y-3">
@@ -266,10 +266,10 @@ onMounted(async () => {
 
         <section class="app-section-card">
           <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-            <div>
+            <div class="app-section-heading">
               <p class="app-kicker">Directory</p>
-              <h2 class="mt-2 text-xl font-semibold text-[var(--app-title-color)]">Department Table</h2>
-              <p class="mt-1 text-sm text-[var(--app-muted-color)]">Search and manage departments with a cleaner, organization-focused directory.</p>
+              <h2 class="app-section-title">Department Table</h2>
+              <p class="app-section-description">Search and manage departments with a cleaner, organization-focused directory.</p>
             </div>
             <input v-model="search" placeholder="Search departments..." class="app-input lg:max-w-sm">
           </div>

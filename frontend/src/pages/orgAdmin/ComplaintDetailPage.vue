@@ -53,7 +53,9 @@ onMounted(fetchComplaint);
 </script>
 
 <template>
-  <section class="w-full space-y-5">
+  <section class="app-admin-page">
+    <div class="app-page-shell app-admin-page-shell">
+      <div class="space-y-5">
     <header class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
       <div>
         <p class="app-kicker">Case Review</p>
@@ -128,5 +130,7 @@ onMounted(fetchComplaint);
       :title="`Live Chat - ${complaint?.title || `Complaint #${complaint?.id || ''}`}`"
       @close="showChat = false"
     />
+      </div>
+    </div>
   </section>
 </template>

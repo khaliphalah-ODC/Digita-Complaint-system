@@ -68,7 +68,7 @@ onMounted(fetchLogs);
 </script>
 
 <template>
-  <section class="app-page-shell space-y-5 rounded-[var(--app-radius-xl)] p-4 sm:p-6">
+  <section class="app-page-shell app-admin-page-shell space-y-5 rounded-[var(--app-radius-xl)]">
     <PageHeader
       kicker="Oversight History"
       title="Audit Logs"

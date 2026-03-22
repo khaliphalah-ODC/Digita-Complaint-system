@@ -79,22 +79,22 @@ const chartOptions = computed(() => ({
 </script>
 
 <template>
-  <section class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+  <section class="app-chart-card">
     <header class="mb-3">
-      <p v-if="title" class="text-sm font-semibold text-slate-900">{{ title }}</p>
-      <p v-if="subtitle" class="mt-0.5 text-xs text-slate-500">{{ subtitle }}</p>
+      <p v-if="title" class="text-base font-semibold text-[var(--app-title-color)]">{{ title }}</p>
+      <p v-if="subtitle" class="mt-1 text-sm text-[var(--app-muted-color)]">{{ subtitle }}</p>
     </header>
 
     <div
       v-if="normalizedSeries.length && hasMeaningfulData"
-      class="grid gap-4 lg:grid-cols-[170px,1fr] lg:items-center"
+      class="app-chart-stage grid gap-4 lg:grid-cols-[170px,1fr] lg:items-center"
     >
       <div class="relative mx-auto h-[150px] w-[150px]">
         <Doughnut :data="chartData" :options="chartOptions" />
         <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div class="text-center">
-            <p class="text-[11px] font-medium text-slate-500">{{ centerLabel }}</p>
-            <p class="mt-1 text-xl font-semibold text-slate-900">{{ total }}</p>
+            <p class="text-[11px] font-medium text-[var(--app-muted-color)]">{{ centerLabel }}</p>
+            <p class="mt-1 text-xl font-semibold text-[var(--app-title-color)]">{{ total }}</p>
           </div>
         </div>
       </div>
@@ -103,25 +103,25 @@ const chartOptions = computed(() => ({
         <article
           v-for="segment in normalizedSeries"
           :key="`${segment.label}-row`"
-          class="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2"
+          class="app-metric-tile flex items-center justify-between px-3 py-2.5"
         >
           <div class="flex items-center gap-2.5">
             <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: segment.tone }" />
             <div>
-              <p class="text-sm text-slate-800">{{ segment.label }}</p>
-              <p class="text-[11px] text-slate-500">
+              <p class="text-sm text-[var(--app-text-color)]">{{ segment.label }}</p>
+              <p class="text-[11px] text-[var(--app-muted-color)]">
                 {{ total > 0 ? ((segment.value / total) * 100).toFixed(1) : '0.0' }}%
               </p>
             </div>
           </div>
-          <p class="text-sm font-semibold text-slate-900">{{ segment.value }}</p>
+          <p class="text-sm font-semibold text-[var(--app-title-color)]">{{ segment.value }}</p>
         </article>
       </div>
     </div>
 
     <div
       v-else
-      class="rounded-lg border border-dashed border-slate-300 bg-white px-3 py-5 text-xs text-slate-500"
+      class="app-empty-state text-xs"
     >
       {{ emptyMessage }}
     </div>

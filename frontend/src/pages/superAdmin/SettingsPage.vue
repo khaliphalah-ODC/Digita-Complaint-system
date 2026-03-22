@@ -60,50 +60,54 @@ const settingGroups = [
 </script>
 
 <template>
-  <section class="space-y-6 bg-slate-50 p-4 sm:p-6">
-    <PageHeader
-      title="Settings"
-      description="Overview of the platform rules and configuration areas that shape super-admin oversight."
-    />
+  <section class="app-admin-page">
+    <div class="app-page-shell app-admin-page-shell">
+      <div class="app-workspace-stack">
+        <PageHeader
+          title="Settings"
+          description="Overview of the platform rules and configuration areas that shape super-admin oversight."
+        />
 
-    <section class="grid grid-cols-1 gap-4 md:grid-cols-3">
-      <article
-        v-for="card in overviewCards"
-        :key="card.title"
-        class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
-      >
-        <p class="text-sm font-medium text-slate-500">{{ card.title }}</p>
-        <p class="mt-2 text-xl font-semibold text-slate-900">{{ card.value }}</p>
-        <p class="mt-2 text-sm text-slate-600">{{ card.detail }}</p>
-      </article>
-    </section>
-
-    <section class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-      <article
-        v-for="group in settingGroups"
-        :key="group.title"
-        class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-      >
-        <h2 class="text-lg font-semibold text-slate-900">{{ group.title }}</h2>
-        <p class="mt-1 text-sm text-slate-600">{{ group.description }}</p>
-        <ul class="mt-4 space-y-3">
-          <li
-            v-for="item in group.items"
-            :key="item"
-            class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+        <section class="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <article
+            v-for="card in overviewCards"
+            :key="card.title"
+            class="app-section-card"
           >
-            {{ item }}
-          </li>
-        </ul>
-      </article>
-    </section>
+            <p class="text-sm font-medium text-slate-500">{{ card.title }}</p>
+            <p class="mt-2 text-xl font-semibold text-slate-900">{{ card.value }}</p>
+            <p class="mt-2 text-sm text-slate-600">{{ card.detail }}</p>
+          </article>
+        </section>
 
-    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 class="text-lg font-semibold text-slate-900">Configuration Direction</h2>
-      <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-        This screen now reads like a real settings overview instead of a decorative placeholder. It keeps the current project
-        believable for academic review while leaving clean room for future editable forms, policy toggles, and audit-linked controls.
-      </p>
-    </section>
+        <section class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <article
+            v-for="group in settingGroups"
+            :key="group.title"
+            class="app-section-card"
+          >
+            <h2 class="text-lg font-semibold text-slate-900">{{ group.title }}</h2>
+            <p class="mt-1 text-sm text-slate-600">{{ group.description }}</p>
+            <ul class="mt-4 space-y-3">
+              <li
+                v-for="item in group.items"
+                :key="item"
+                class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+              >
+                {{ item }}
+              </li>
+            </ul>
+          </article>
+        </section>
+
+        <section class="app-section-card">
+          <h2 class="text-lg font-semibold text-slate-900">Configuration Direction</h2>
+          <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
+            This screen now reads like a real settings overview instead of a decorative placeholder. It keeps the current project
+            believable for academic review while leaving clean room for future editable forms, policy toggles, and audit-linked controls.
+          </p>
+        </section>
+      </div>
+    </div>
   </section>
 </template>

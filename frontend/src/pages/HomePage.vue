@@ -1,265 +1,377 @@
 <script setup>
-import { ref, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
+import { Swiper, SwiperSlide } from 'swiper/vue';
+import { Autoplay, EffectFade, Pagination } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/effect-fade';
+import 'swiper/css/pagination';
 import AuthTopNav from '../components/AuthTopNav.vue';
 import AppFooter from '../components/AppFooter.vue';
-import api, { unwrapResponse } from '../services/api';
+import TestimonialsSection from '../components/TestimonialsSection.vue';
+import heroImage1 from '../asset/heroImage/image1.avif';
+import heroImage2 from '../asset/heroImage/Gemini_Generated_Image_96bcsk96bcsk96bc.png';
+import heroImage3 from '../asset/heroImage/image3.png';
+import heroImage4 from '../asset/heroImage/image4.png';
 
-const testimonials = ref([]);
-const loadingTestimonials = ref(true);
-
-onMounted(async () => {
-  try {
-    const response = await api.get('/testimonials/public', { skipAuth: true });
-    const payload = unwrapResponse(response);
-    const rows = Array.isArray(payload) ? payload : payload.data ?? [];
-    testimonials.value = rows.slice(0, 6);
-  } catch (error) {
-    console.error('Failed to load testimonials:', error);
-  } finally {
-    loadingTestimonials.value = false;
-  }
-});
-
-const avatarColors = ['#f97316', '#059669', '#7c3aed', '#0284c7', '#dc2626', '#d97706'];
-const avatarColor = (i) => avatarColors[i % avatarColors.length];
+const heroModules = [Autoplay, EffectFade, Pagination];
+const heroSlides = [heroImage1, heroImage2, heroImage3, heroImage4];
+const benefitCards = [
+  {
+    title: 'Submit complaints easily',
+    description: 'Use a guided form to report issues and send them to the right organization.',
+    icon: ['fas', 'file-lines'],
+  },
+  {
+    title: 'Track progress clearly',
+    description: 'Follow status updates, timelines, and responses without confusion.',
+    icon: ['fas', 'chart-line'],
+  },
+  {
+    title: 'Stay protected',
+    description: 'Choose anonymous options when needed and report with more confidence.',
+    icon: ['fas', 'user-shield'],
+  },
+];
 </script>
+
 <template>
   <div class="flex min-h-screen w-screen flex-col font-sans">
     <AuthTopNav fixed />
 
-    <!-- Hero Section -->
     <section class="hero-section relative flex items-center justify-center overflow-hidden pt-20">
+      <Swiper
+        class="hero-swiper absolute inset-0 z-0"
+        :modules="heroModules"
+        :slides-per-view="1"
+        :loop="true"
+        effect="fade"
+        :speed="600"
+        :autoplay="{ delay: 4500, disableOnInteraction: false }"
+        :pagination="{ clickable: true }"
+      >
+        <SwiperSlide
+          v-for="(slide, index) in heroSlides"
+          :key="index"
+          class="hero-slide"
+        >
+          <img
+            :src="slide"
+            alt=""
+            class="hero-image-layer"
+          />
+        </SwiperSlide>
+      </Swiper>
+
       <div class="hero-overlay absolute inset-0 z-10"></div>
+      <div class="hero-glow hero-glow-left absolute inset-y-0 left-0 z-10 w-[48%]"></div>
+      <div class="hero-glow hero-glow-center absolute inset-x-0 top-[12%] z-10 mx-auto h-72 w-72"></div>
 
-      <div class="absolute inset-0 z-0">
-        <svg class="absolute bottom-0 left-0 w-full opacity-10" viewBox="0 0 1440 320" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M0,160 L80,160 L80,80 L160,80 L160,160 L240,160 L240,40 L320,40 L320,160 L400,160 L400,100 L480,100 L480,160 L560,160 L560,60 L640,60 L640,160 L720,160 L720,120 L800,120 L800,160 L880,160 L880,50 L960,50 L960,160 L1040,160 L1040,90 L1120,90 L1120,160 L1200,160 L1200,70 L1280,70 L1280,160 L1360,160 L1360,110 L1440,110 L1440,320 L0,320 Z" fill="white"/>
-        </svg>
-      </div>
+      <div class="hero-content-shell app-shell-gutter absolute inset-0 z-20 flex items-center justify-center pt-16">
+        <div class="hero-content-group flex w-full max-w-3xl flex-col items-center justify-center text-center">
+          <p class="hero-kicker">Trusted complaint reporting and tracking</p>
+          <h1 class="hero-title text-5xl font-black leading-[0.95] tracking-tight text-white sm:text-6xl lg:text-8xl">
+            Submit Your
+            <span class="block text-[#f97316]">Complaints.</span>
+          </h1>
 
-      <div class="relative z-20 mx-auto max-w-5xl px-6 py-20 text-center sm:py-28 lg:py-36">
-        <h1 class="hero-title text-5xl font-black leading-[0.95] tracking-tight text-white sm:text-6xl lg:text-8xl">
-          Submit Your
-          <span class="block text-[#f97316]">Complaints.</span>
-        </h1>
+          <p class="hero-subtitle mx-auto mt-7 max-w-2xl text-base leading-7 text-blue-100/80 sm:text-lg">
+            Report issues, send them to the right organization, and track every step of the response in one clear place.
+          </p>
 
-        <p class="mx-auto mt-6 max-w-2xl text-base leading-7 text-blue-100/80 sm:text-lg">
-           A digital civic platform that allows citizens, students, and customers to report issues directly — and track every step of their resolution in real time.
-        </p>
-      </div>
+          <div class="hero-actions mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <RouterLink to="/submit-complaint" class="hero-btn hero-btn-primary">
+              Submit a Complaint
+            </RouterLink>
+            <RouterLink to="/track-complaint" class="hero-btn hero-btn-secondary">
+              Track a Complaint
+            </RouterLink>
+          </div>
 
-      <!-- Wave divider -->
-      <!--<div class="absolute bottom-0 left-0 right-0 z-20">
-        <svg viewBox="0 0 1440 80" preserveAspectRatio="none" class="w-full" xmlns="http://www.w3.org/2000/svg">
-          <path d="M0,40 C360,80 1080,0 1440,40 L1440,80 L0,80 Z" fill="#f5f7fa"/>
-        </svg>
-      </div>-->
-    </section>
-
-
-    <!-- Cards Section -->
-    <section class="bg-[#f5f7fa] px-4 py-16 sm:px-6 md:px-10 lg:py-24">
-      <div class="mx-auto max-w-6xl">
-        <div class="mb-10 text-center">
-          <p class="text-sm font-bold font-family mt-16 uppercase tracking-[0.22em] text-[#f97316]">How It Works</p>
-          <!--<h2 class="mt-2 text-3xl font-black text-[#0f2444] sm:text-4xl">Three Ways We Help</h2>-->
-        </div>
-
-        <div class="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
-
-          <!-- Card 1 -->
-          <article class="course-card group relative overflow-hidden rounded-2xl bg-white shadow-[0_4px_24px_rgba(15,36,68,0.08)] transition hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(15,36,68,0.15)]">
-            <div class="card-image-wrapper relative h-52 overflow-hidden">
-              <div class="absolute inset-0 flex items-center justify-center card-bg-blue">
-                <svg class="h-24 w-24 text-white opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
-              </div>
-              <span class="badge badge-orange">
-                <font-awesome-icon :icon="['fas', 'file-lines']" class="mr-1" />
-                Submission
-              </span>
-            </div>
-            <div class="p-6">
-              <h3 class="text-xl font-bold font-family text-[#0f2444]">Focused Submission of Complaints</h3>
-              <p class="mt-2 text-sm leading-6 text-slate-500">
-                Purpose-built forms that route directly to the right organization and department — no guesswork.
-              </p>
-             <!--<RouterLink to="/submit-complaint" class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#f97316] transition hover:gap-3">
-                Submit Now
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-              </RouterLink>-->
-            </div>
-          </article>
-
-          <!-- Card 2 -->
-          <article class="course-card group relative overflow-hidden rounded-2xl bg-white shadow-[0_4px_24px_rgba(15,36,68,0.08)] transition hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(15,36,68,0.15)]">
-            <div class="card-image-wrapper relative h-52 overflow-hidden">
-              <div class="absolute inset-0 flex items-center justify-center card-bg-green">
-                <svg class="h-24 w-24 text-white opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                </svg>
-              </div>
-              <span class="badge badge-emerald">
-                <font-awesome-icon :icon="['fas', 'chart-line']" class="mr-1" />
-                Tracking
-              </span>
-            </div>
-            <div class="p-6">
-              <h3 class="text-xl font-bold font-family text-[#0f2444]">Easy Tracking of Complaints</h3>
-              <p class="mt-2 text-sm leading-6 text-slate-500">
-                Tracking codes, timelines, and statuses are visible and clear — without making users decode a confusing system.
-              </p>
-              <!--<RouterLink to="/track-complaint" class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#f97316] transition hover:gap-3">
-                Track a Case
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-              </RouterLink>-->
-            </div>
-          </article>
-
-          <!-- Card 3 -->
-          <article class="course-card group relative overflow-hidden rounded-2xl bg-white shadow-[0_4px_24px_rgba(15,36,68,0.08)] transition hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(15,36,68,0.15)]">
-            <div class="card-image-wrapper relative h-52 overflow-hidden">
-              <div class="absolute inset-0 flex items-center justify-center card-bg-violet">
-                <svg class="h-24 w-24 text-white opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                </svg>
-              </div>
-              <span class="badge badge-violet">
-                <font-awesome-icon :icon="['fas', 'user-shield']" class="mr-1" />
-                Anonymous
-              </span>
-            </div>
-            <div class="p-6">
-              <h3 class="text-xl font-bold font-family text-[#0f2444]">Safe &amp; Anonymous</h3>
-              <p class="mt-2 text-sm leading-6 text-slate-500">
-                Submit Complaint without revealing your identity when needed. Users Privacies matter and so the design ensures your safety is always protected.
-              </p>
-             <!-- <RouterLink to="/submit-complaint" class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#f97316] transition hover:gap-3">
-                Submit Anonymously
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-              </RouterLink>-->
-            </div>
-          </article>
-
+          <div class="hero-trust mt-9 flex flex-wrap items-center justify-center gap-4 text-sm text-blue-100/80">
+            <span class="hero-trust-pill">Direct routing</span>
+            <span class="hero-trust-pill">Status tracking</span>
+            <span class="hero-trust-pill">Anonymous options</span>
+          </div>
         </div>
       </div>
     </section>
 
-   <!-- ─── TESTIMONIALS ──────────────────────────────────────── -->
-<section class="testi-section">
-  <div class="mx-auto max-w-5xl px-6 py-20 sm:px-10 lg:px-16 lg:py-24">
-    <div class="mb-14 text-center">
-      <p class="section-kicker">Testimonials</p>
-      <h2 class="section-title">What Users Say</h2>
-    </div>
-
-    <!-- Loading -->
-    <div v-if="loadingTestimonials" class="flex justify-center py-10">
-      <div class="h-8 w-8 animate-spin rounded-full border-4 border-orange-200 border-t-orange-500"></div>
-    </div>
-
-    <!-- Empty -->
-    <div v-else-if="testimonials.length === 0" class="py-10 text-center">
-      <p class="text-sm text-slate-400">No testimonials yet.</p>
-      <p class="mt-1 text-xs text-slate-300">Log in and share your experience to be the first!</p>
-    </div>
-
-    <!-- Cards -->
-    <div v-else class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      <div v-for="(item, index) in testimonials" :key="item.id" class="testimonial-card">
-        <div class="stars">
-          <span
-            v-for="n in 5"
-            :key="n"
-            :style="{ color: n <= item.rating ? '#f59e0b' : '#e2e8f0' }"
-          >★</span>
+    <section class="benefits-section app-shell-gutter py-16 lg:py-20">
+      <div class="app-container">
+        <div class="mx-auto max-w-3xl text-center">
+          <p class="section-kicker">How It Works</p>
+          <h2 class="section-title">A clearer way to report and follow up on issues</h2>
+          <p class="section-intro">
+            The platform is designed to make complaint reporting easier to start, easier to understand, and easier to trust.
+          </p>
         </div>
-        <p class="mt-4 text-sm leading-7 text-slate-600 italic">"{{ item.message }}"</p>
-        <div class="mt-6 flex items-center gap-3">
-          <div class="avatar" :style="{ background: avatarColor(index) }">
-            {{ item.display_name ? item.display_name.charAt(0).toUpperCase() : 'U' }}
-          </div>
-          <div>
-            <p class="text-sm font-bold text-[#0f2444]">{{ item.display_name || 'Anonymous' }}</p>
-            <p class="text-xs text-slate-400">{{ item.role_label || 'System User' }}</p>
-          </div>
+
+        <div class="mt-10 grid gap-6 md:grid-cols-3">
+          <article
+            v-for="card in benefitCards"
+            :key="card.title"
+            class="benefit-card"
+          >
+            <div class="benefit-icon">
+              <font-awesome-icon :icon="card.icon" />
+            </div>
+            <h3 class="benefit-title">{{ card.title }}</h3>
+            <p class="benefit-description">{{ card.description }}</p>
+          </article>
         </div>
       </div>
-    </div>
-  </div>
-</section>
+    </section>
 
-    <!-- ─── FOOTER (full-width, replaces AppFooter) ─── -->
-   <AppFooter /> 
+    <TestimonialsSection />
+
+    <AppFooter />
   </div>
 </template>
 
 <style scoped>
-/* ── Hero ──────────────────────────────────── */
 .hero-section {
-  min-height: 600px;
-  background-image: url('https://images.unsplash.com/photo-1573497620053-ea5300f94f21?w=1600&q=80');
-  background-size: cover;
-  background-position: center top;
+  height: 82vh;
+  min-height: 560px;
+  max-height: 700px;
+  background: #0f2444;
 }
+
+.hero-content-shell {
+  min-height: 100%;
+}
+
+.hero-swiper,
+.hero-slide {
+  width: 100%;
+  height: 100%;
+}
+
+:deep(.hero-swiper .swiper-wrapper) {
+  height: 100%;
+}
+
+.hero-slide {
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-image-layer {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  display: block;
+  transform: scale(1.01);
+  filter: brightness(0.94) saturate(0.95);
+  animation: heroZoom 14s ease-in-out infinite;
+}
+
 .hero-overlay {
-  background: linear-gradient(135deg, rgba(10,28,64,0.88) 0%, rgba(15,52,100,0.82) 50%, rgba(30,60,110,0.75) 100%);
+  background:
+    linear-gradient(135deg, rgba(9, 26, 61, 0.54) 0%, rgba(17, 47, 94, 0.4) 42%, rgba(28, 63, 115, 0.28) 100%),
+    linear-gradient(180deg, rgba(8, 23, 53, 0.12) 0%, rgba(8, 23, 53, 0.2) 100%);
+  pointer-events: none;
 }
+
+.hero-glow {
+  pointer-events: none;
+  filter: blur(32px);
+}
+
+.hero-glow-left {
+  background:
+    radial-gradient(circle at 30% 42%, rgba(255, 255, 255, 0.08) 0%, rgba(107, 167, 255, 0.05) 24%, rgba(13, 35, 70, 0) 68%);
+}
+
+.hero-glow-center {
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 42%, rgba(255, 255, 255, 0) 72%);
+}
+
+.hero-kicker {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(244, 248, 255, 0.82);
+  text-shadow: 0 10px 28px rgba(8, 23, 53, 0.24);
+}
+
 .hero-title {
   font-family: 'Times New Roman', Times, serif;
   letter-spacing: -0.02em;
+  color: rgba(250, 252, 255, 0.98);
+  text-shadow: 0 16px 42px rgba(7, 18, 45, 0.28);
 }
 
-/* ── Cards ─────────────────────────────────── */
-.course-card { border: 1px solid rgba(15,36,68,0.07); }
-.card-bg-blue   { background: linear-gradient(135deg, #0f2444, #1a4a8a); }
-.card-bg-green  { background: linear-gradient(135deg, #0f2444, #1a4a8a); }
-.card-bg-violet { background: linear-gradient(135deg, #0f2444, #1a4a8a); }
-.badge {
-  position: absolute; bottom: 1rem; right: 1rem;
-  border-radius: 9999px; padding: 0.25rem 0.75rem;
-  font-size: 0.75rem; font-weight: 700; color: white;
-  box-shadow: 0 2px 8px hsl(0, 13%, 96%);
+.hero-subtitle {
+  text-wrap: balance;
+  color: rgba(240, 245, 252, 0.88);
+  max-width: 38rem;
 }
-.font-family{
-  font-family: 'Times New Roman', Times, serif;
-}
-.badge-orange  { background: #f97316; }
-.badge-emerald { background: #f97316; }
-.badge-violet  { background: #f97316; }
 
-/* ── Testimonials ──────────────────────────── */
-.testi-section { width: 100%; background: #ffffff; }
+.hero-btn {
+  display: inline-flex;
+  min-height: 50px;
+  min-width: 198px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding: 0 1.3rem;
+  font-size: 0.97rem;
+  font-weight: 700;
+  transition: transform 0.22s ease, background-color 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.hero-btn:hover {
+  transform: translateY(-2px);
+}
+
+.hero-btn-primary {
+  background: #f97316;
+  color: #fff;
+  box-shadow: 0 14px 32px rgba(249, 115, 22, 0.24);
+}
+
+.hero-btn-primary:hover {
+  background: #ea580c;
+  box-shadow: 0 18px 36px rgba(249, 115, 22, 0.26);
+}
+
+.hero-btn-secondary {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  backdrop-filter: blur(10px);
+}
+
+.hero-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 14px 28px rgba(7, 18, 45, 0.16);
+}
+
+.hero-trust-pill {
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(232, 239, 251, 0.74);
+  padding: 0.45rem 0.85rem;
+  backdrop-filter: blur(10px);
+}
+
+:deep(.hero-swiper .swiper-pagination) {
+  bottom: 1.75rem;
+}
+
+:deep(.hero-swiper .swiper-pagination-bullet) {
+  width: 0.58rem;
+  height: 0.58rem;
+  background: rgba(255, 255, 255, 0.35);
+  opacity: 1;
+}
+
+:deep(.hero-swiper .swiper-pagination-bullet-active) {
+  background: #f97316;
+}
+
+@keyframes heroZoom {
+  0% {
+    transform: scale(1.01);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1.01);
+  }
+}
+
+.benefits-section {
+  background: #f6f4ef;
+}
+
 .section-kicker {
-  display: block; font-size: 0.85rem; font-weight: 700;
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
   font-family: 'Times New Roman', Times, serif;
-  letter-spacing: 0.22em; text-transform: uppercase; color: #f97316;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #f97316;
 }
+
 .section-title {
   margin-top: 0.5rem;
   font-family: 'Times New Roman', Times, serif;
-  font-size: clamp(1.8rem, 4vw, 2.4rem); font-weight: 900;
-  color: #0f2444; line-height: 1.1;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 900;
+  color: #0f2444;
+  line-height: 1.08;
+  text-wrap: balance;
 }
-.testimonial-card {
-  background: white;
-  border: 1px solid rgba(15,36,68,0.07);
-  border-radius: 1.25rem; padding: 1.75rem;
-  box-shadow: 0 4px 20px rgba(15,36,68,0.05);
-  transition: all 0.25s;
-}
-.testimonial-card:hover { transform: translateY(-3px); box-shadow: 0 14px 40px rgba(15,36,68,0.1); }
-.stars { font-size: 0.9rem; letter-spacing: 0.1em; color: #f59e0b; }
-.avatar {
-  display: flex; align-items: center; justify-content: center;
-  width: 2.25rem; height: 2.25rem; border-radius: 9999px;
-  font-size: 0.85rem; font-weight: 700; color: white; flex-shrink: 0;
-}
-.av-orange  { background: #f97316; }
-.av-emerald { background: #059669; }
-.av-violet  { background: #7c3aed; }
 
-/* ── Footer ────────────────────────────────── */
+.section-intro {
+  margin-top: 1rem;
+  color: #5f6f86;
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.benefit-card {
+  border: 1px solid rgba(15, 36, 68, 0.08);
+  border-radius: 1.1rem;
+  background: #fff;
+  padding: 1.75rem;
+  box-shadow: 0 8px 28px rgba(15, 36, 68, 0.05);
+}
+
+.benefit-icon {
+  display: inline-flex;
+  height: 3rem;
+  width: 3rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.9rem;
+  background: rgba(15, 36, 68, 0.08);
+  color: #0f2444;
+  font-size: 1rem;
+}
+
+.benefit-title {
+  margin-top: 1.1rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f2444;
+}
+
+.benefit-description {
+  margin-top: 0.65rem;
+  color: #5f6f86;
+  line-height: 1.7;
+  font-size: 0.97rem;
+}
+
+@media (max-width: 768px) {
+  .hero-section {
+    height: 80vh;
+    min-height: 540px;
+    max-height: 640px;
+  }
+
+  .hero-content-shell {
+    min-height: 100%;
+  }
+
+  .hero-btn {
+    width: 100%;
+  }
+
+  .hero-trust {
+    gap: 0.55rem;
+  }
+
+  .hero-glow-left {
+    width: 70%;
+  }
+}
 </style>
