@@ -818,6 +818,7 @@ button:disabled {
 }
 
 .org-admin-sidebar {
+<<<<<<< Updated upstream
   background: var(--app-nav-surface);
   border-right: 1px solid var(--app-nav-border);
   box-shadow: 0 26px 60px rgba(17, 28, 48, 0.12);
@@ -825,6 +826,15 @@ button:disabled {
 
 .org-admin-sidebar a {
   color: var(--app-nav-text);
+=======
+  background: var(--org-admin-gradient);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 30px 90px rgba(7, 71, 221, 0.35);
+}
+
+.org-admin-sidebar a {
+  color: rgb(255, 255, 255);
+>>>>>>> Stashed changes
 }
 
 .app-nav-shell {
@@ -890,7 +900,11 @@ button:disabled {
 }
 
 .app-auth-form {
+<<<<<<< Updated upstream
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(249, 247, 243, 0.98));
+=======
+  background: linear-gradient(135deg, #0f1f39 0%, #163462 48%, #1f4db7 100%);
+>>>>>>> Stashed changes
 }
 
 .app-auth-title {
@@ -946,6 +960,7 @@ button:disabled {
 }
 
 .app-social-chip {
+<<<<<<< Updated upstream
   background: var(--app-primary);
   box-shadow: 0 10px 20px rgba(17, 28, 48, 0.12);
 }
@@ -968,3 +983,8 @@ button:disabled {
     padding: var(--app-space-3);
   }
 }
+=======
+  background: linear-gradient(135deg, #163462 0%, #1f4db7 100%);
+  box-shadow: 0 10px 20px rgba(16, 33, 60, 0.16);
+}
+>>>>>>> Stashed changes

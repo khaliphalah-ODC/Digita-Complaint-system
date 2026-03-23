@@ -11,8 +11,20 @@ const passwordPolicy = Joi.string()
     'string.pattern.base': 'Password must contain uppercase, lowercase, number and special character.'
   });
 
+// Used for standard /register route
 export const passwordOnlySchema = Joi.object({
-  password: passwordPolicy.required()
+  full_name: Joi.string().min(2).required(),
+  email: Joi.string().email().required(),
+  password: passwordPolicy.required(),
+});
+
+// Used for /join/register route — includes join_code
+export const joinRegisterSchema = Joi.object({
+  full_name: Joi.string().min(2).required(),
+  email: Joi.string().email().required(),
+  password: passwordPolicy.required(),
+  join_code: Joi.string().min(3).required(),
+  department_id: Joi.number().integer().optional().allow(null),
 });
 
 export const emailVerificationSchema = Joi.object({

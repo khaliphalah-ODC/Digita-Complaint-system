@@ -21,10 +21,25 @@ const publicItems = computed(() => [
 ]);
 
 const isLoggedIn = computed(() => session.isLoggedIn);
+
 const dashboardRoute = computed(() => {
   if (session.currentUser?.role === 'super_admin') return '/admin/dashboard';
   if (session.currentUser?.role === 'org_admin') return '/org-admin/dashboard';
   return '/user/dashboard';
+});
+
+const userDisplayName = computed(() => {
+  const name = session.currentUser?.full_name || '';
+  return name.split(' ')[0] || 'Account';
+});
+
+const userInitials = computed(() => {
+  if (!session.currentUser?.full_name) return 'U';
+  return session.currentUser.full_name
+    .split(' ')
+    .slice(0, 2)
+    .map((n) => n[0]?.toUpperCase() || '')
+    .join('');
 });
 
 const wrapperClass = computed(() => (props.fixed ? 'fixed inset-x-0 top-0 z-40' : ''));
@@ -45,6 +60,7 @@ const publicLinkClass = (to) => {
     ? 'inline-flex min-h-[42px] items-center rounded-full bg-[var(--app-primary)] px-4 py-2 text-sm font-semibold text-white shadow-sm'
     : 'inline-flex min-h-[42px] items-center rounded-full px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-[var(--app-primary-mist)] hover:text-slate-900';
 };
+<<<<<<< Updated upstream
 
 const authLinkClass = (to) => {
   const isActive = route.path === to;
@@ -66,6 +82,8 @@ const authLinkClass = (to) => {
 watch(() => route.fullPath, () => {
   mobileMenuOpen.value = false;
 });
+=======
+>>>>>>> Stashed changes
 </script>
 
 <template>
@@ -101,6 +119,7 @@ watch(() => route.fullPath, () => {
         </ul>
 
         <!-- ── Auth Buttons ──────────────────────────────────── -->
+<<<<<<< Updated upstream
         <div class="hidden flex-wrap items-center gap-2 sm:flex sm:gap-3">
           <RouterLink to="/signin" :class="authLinkClass('/signin')">
             Login
@@ -115,6 +134,40 @@ watch(() => route.fullPath, () => {
           >
             Dashboard
           </RouterLink>
+=======
+        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+
+          <!-- NOT logged in: show Login + Sign Up -->
+          <template v-if="!isLoggedIn">
+            <RouterLink
+              to="/signin"
+              class="rounded-full px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100"
+            >
+              Login
+            </RouterLink>
+            <RouterLink
+              to="/signup"
+              class="rounded-full bg-[var(--app-primary)] px-5 py-2 text-sm font-semibold text-white hover:bg-[var(--app-primary-ink)]"
+            >
+              Sign Up
+            </RouterLink>
+          </template>
+
+          <!-- LOGGED IN: show avatar + name + Dashboard button only -->
+          <template v-else>
+            <div class="flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 shadow-sm">
+              <div class="user-avatar">{{ userInitials }}</div>
+              <span class="text-sm font-semibold text-slate-700">{{ userDisplayName }}</span>
+            </div>
+            <RouterLink
+              :to="dashboardRoute"
+              class="rounded-full bg-[var(--app-primary)] px-5 py-2 text-sm font-semibold text-white hover:bg-[var(--app-primary-ink)]"
+            >
+              Dashboard
+            </RouterLink>
+          </template>
+
+>>>>>>> Stashed changes
         </div>
 
         <div v-if="mobileMenuOpen" class="flex flex-col gap-4 rounded-[24px] border border-[var(--app-line)] bg-white/96 p-4 shadow-[0_18px_44px_rgba(17,28,48,0.08)] sm:hidden">
@@ -149,10 +202,9 @@ watch(() => route.fullPath, () => {
 </template>
 
 <style scoped>
-.logo-link {
-  text-decoration: none;
-}
+.logo-link { text-decoration: none; }
 .logo-icon {
+<<<<<<< Updated upstream
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -178,13 +230,32 @@ watch(() => route.fullPath, () => {
 }
 .logo-accent {
   color: var(--app-primary, #1f4db7);
+=======
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 2.25rem; height: 2.25rem; border-radius: 0.625rem;
+  background: var(--app-primary, #1f4db7); color: white; flex-shrink: 0;
+>>>>>>> Stashed changes
 }
+.logo-text { display: flex; flex-direction: column; line-height: 1; }
+.logo-name { font-size: 1.2rem; font-weight: 900; letter-spacing: -0.03em; color: #0f172a; }
+.logo-accent { color: var(--app-primary, #1f4db7); }
 .logo-tagline {
+<<<<<<< Updated upstream
   font-size: 0.63rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #8a94a6;
   margin-top: 0.2rem;
+=======
+  font-size: 0.65rem; font-weight: 500;
+  letter-spacing: 0.08em; color: #94a3b8; margin-top: 0.15rem;
+}
+.user-avatar {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.75rem; height: 1.75rem; border-radius: 9999px;
+  background: var(--app-primary, #1f4db7); color: white;
+  font-size: 0.7rem; font-weight: 700; flex-shrink: 0;
+>>>>>>> Stashed changes
 }
 </style>

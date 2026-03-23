@@ -8,11 +8,31 @@ import {
   insertOrganization,
   selectOrganizations,
   selectOrganizationById,
-  updateOrganizationById
+  updateOrganizationById,
+  updateOrganizationJoinCode,
 } from '../model/organization.model.js';
 import { createUserQuery, fetchUserByEmailQuery, fetchUserByIdQuery } from '../model/user.model.js';
 
 const DEFAULT_ORG_ADMIN_PASSWORD = process.env.ORG_ADMIN_DEFAULT_PASSWORD || 'Admin@123';
+
+// ── Utility: generate a unique join code ──────────────────
+export const generateJoinCode = (organizationName) => {
+  const prefix = String(organizationName || 'ORG')
+    .toUpperCase()
+    .replace(/[^A-Z]/g, '')
+    .slice(0, 3)
+    .padEnd(3, 'X');
+  const year = new Date().getFullYear();
+  const random = Math.random().toString(36).toUpperCase().slice(2, 7);
+  return `${prefix}-${year}-${random}`;
+};
+
+// ── Utility: join code expiry (90 days from now) ──────────
+export const getJoinCodeExpiry = () => {
+  const expiry = new Date();
+  expiry.setDate(expiry.getDate() + 90);
+  return expiry.toISOString();
+};
 
 const getQuery = (sql, params = []) =>
   new Promise((resolve, reject) => {
@@ -103,6 +123,77 @@ export const CreateOrganizationTable = () => {
       console.error('Error creating organization table:', err.message);
     } else {
       console.log('Organization table created or already exists');
+      // Run migration after table is confirmed to exist
+      MigrateOrganizationTable();
+    }
+  });
+};
+
+// ── Migration: safely add join_code columns and backfill ──
+export const MigrateOrganizationTable = () => {
+  complaintDB.all('PRAGMA table_info(organization)', [], (err, columns) => {
+    if (err) {
+      console.error('Error inspecting organization table:', err.message);
+      return;
+    }
+
+    const existing = new Set((columns || []).map((col) => col.name));
+
+    const addJoinCodeExpiry = () => {
+      if (!existing.has('join_code_expires_at')) {
+        complaintDB.run('ALTER TABLE organization ADD COLUMN join_code_expires_at DATETIME', (alterErr) => {
+          if (alterErr) console.error('Error adding join_code_expires_at:', alterErr.message);
+          else console.log('organization.join_code_expires_at column added');
+          backfillJoinCodes();
+        });
+      } else {
+        backfillJoinCodes();
+      }
+    };
+
+    const backfillJoinCodes = () => {
+      complaintDB.all(
+        'SELECT organization_id, name FROM organization WHERE join_code IS NULL',
+        [],
+        (fetchErr, orgs) => {
+          if (fetchErr) {
+            console.error('Error fetching orgs for join code backfill:', fetchErr.message);
+            return;
+          }
+          if (!orgs || orgs.length === 0) {
+            console.log('Organization migration complete. No backfill needed.');
+            return;
+          }
+          let completed = 0;
+          for (const org of orgs) {
+            const code = generateJoinCode(org.name);
+            const expiry = getJoinCodeExpiry();
+            complaintDB.run(
+              'UPDATE organization SET join_code = ?, join_code_expires_at = ? WHERE organization_id = ?',
+              [code, expiry, org.organization_id],
+              (updateErr) => {
+                if (updateErr) {
+                  console.error(`Failed to backfill join code for org ${org.organization_id}:`, updateErr.message);
+                }
+                completed++;
+                if (completed === orgs.length) {
+                  console.log(`Organization migration complete. ${completed} org(s) backfilled with join codes.`);
+                }
+              }
+            );
+          }
+        }
+      );
+    };
+
+    if (!existing.has('join_code')) {
+      complaintDB.run('ALTER TABLE organization ADD COLUMN join_code TEXT', (alterErr) => {
+        if (alterErr) console.error('Error adding join_code:', alterErr.message);
+        else console.log('organization.join_code column added');
+        addJoinCodeExpiry();
+      });
+    } else {
+      addJoinCodeExpiry();
     }
   });
 };
@@ -168,9 +259,13 @@ export const createOrganization = (req, res) => {
     return sendError(res, 400, 'admin_email is required to create an organization admin account');
   }
 
+  // Generate join code for the new organization
+  const joinCode = generateJoinCode(name);
+  const joinCodeExpiry = getJoinCodeExpiry();
+
   complaintDB.run(
     insertOrganization,
-    [name, organization_type, email, phone, address, logo, status],
+    [name, organization_type, email, phone, address, logo, status, joinCode, joinCodeExpiry],
     function onCreate(err) {
       if (err) {
         if (isUniqueConstraintError(err)) {
@@ -207,12 +302,12 @@ export const createOrganization = (req, res) => {
             organization: row,
             organization_admin: adminRow
               ? {
-                  id: adminRow.id,
-                  full_name: adminRow.full_name,
-                  email: adminRow.email,
-                  role: adminRow.role,
-                  must_change_password: adminRow.must_change_password
-                }
+                id: adminRow.id,
+                full_name: adminRow.full_name,
+                email: adminRow.email,
+                role: adminRow.role,
+                must_change_password: adminRow.must_change_password
+              }
               : null,
             default_password_note: 'Organization admin must change default password on first login'
           });
@@ -250,12 +345,16 @@ export const createOrganizationAdmin = (req, res) => {
           }
           return sendError(res, 500, 'Failed to create organization admin', createErr.message);
         }
+
+        if (!adminRow) {
+          return sendError(res, 500, 'Organization admin created but could not be loaded');
+        }
+
         return sendSuccess(res, 201, 'Organization admin created successfully', {
           id: adminRow.id,
           full_name: adminRow.full_name,
           email: adminRow.email,
           role: adminRow.role,
-          organization_id: adminRow.organization_id,
           must_change_password: adminRow.must_change_password
         });
       });
@@ -263,74 +362,16 @@ export const createOrganizationAdmin = (req, res) => {
   });
 };
 
-export const getAllOrganizations = (req, res) => {
-  if (req.user?.role === 'super_admin') {
-    complaintDB.all(selectOrganizations, [], (err, rows) => {
-      if (err) {
-        return sendError(res, 500, 'Failed to fetch organizations', err.message);
-      }
-
-      const tasks = rows.map(
-        (row) =>
-          new Promise((resolve) => {
-            getOrgAdminByOrganizationId(row.organization_id, (_adminErr, adminRow) => {
-              resolve({
-                ...row,
-                organization_admin: adminRow
-                  ? {
-                      id: adminRow.id,
-                      full_name: adminRow.full_name,
-                      email: adminRow.email,
-                      status: adminRow.status
-                    }
-                  : null
-              });
-            });
-          })
-      );
-
-      Promise.all(tasks)
-        .then((payload) => sendSuccess(res, 200, 'Organizations retrieved successfully', payload))
-        .catch((promiseErr) => sendError(res, 500, 'Failed to fetch organization admins', promiseErr.message));
-    });
-    return;
+export const getAllOrganizations = async (req, res) => {
+  if (req.user?.role !== 'super_admin') {
+    return sendError(res, 403, 'Only super_admin can view all organizations');
   }
 
-  complaintDB.get(fetchUserByIdQuery, [req.user.id], (userErr, userRow) => {
-    if (userErr) {
-      return sendError(res, 500, 'Failed to fetch user organization', userErr.message);
+  complaintDB.all(selectOrganizations, [], (err, rows) => {
+    if (err) {
+      return sendError(res, 500, 'Failed to fetch organizations', err.message);
     }
-    if (!userRow?.organization_id) {
-      return sendSuccess(res, 200, 'Organizations retrieved successfully', []);
-    }
-
-    complaintDB.get(selectOrganizationById, [userRow.organization_id], (orgErr, row) => {
-      if (orgErr) {
-        return sendError(res, 500, 'Failed to fetch organizations', orgErr.message);
-      }
-      if (!row) {
-        return sendSuccess(res, 200, 'Organizations retrieved successfully', []);
-      }
-
-      getOrgAdminByOrganizationId(userRow.organization_id, (adminErr, adminRow) => {
-        if (adminErr) {
-          return sendError(res, 500, 'Failed to fetch organization admin', adminErr.message);
-        }
-        return sendSuccess(res, 200, 'Organizations retrieved successfully', [
-          {
-            ...row,
-            organization_admin: adminRow
-              ? {
-                  id: adminRow.id,
-                  full_name: adminRow.full_name,
-                  email: adminRow.email,
-                  status: adminRow.status
-                }
-              : null
-          }
-        ]);
-      });
-    });
+    return sendSuccess(res, 200, 'Organizations retrieved successfully', rows);
   });
 };
 
@@ -348,44 +389,10 @@ export const getOrganizationById = (req, res) => {
         if (adminErr) {
           return sendError(res, 500, 'Failed to fetch organization admin', adminErr.message);
         }
-        Promise.all([
-          getQuery('SELECT COUNT(*) AS users_count FROM users WHERE organization_id = ?', [req.params.id]),
-          getQuery('SELECT COUNT(*) AS departments_count FROM department WHERE organization_id = ?', [req.params.id]),
-          getQuery(
-            `
-            SELECT
-              COUNT(*) AS total_complaints,
-              SUM(CASE WHEN status = 'submitted' THEN 1 ELSE 0 END) AS submitted_complaints,
-              SUM(CASE WHEN status = 'in_review' THEN 1 ELSE 0 END) AS in_review_complaints,
-              SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) AS resolved_complaints,
-              SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END) AS closed_complaints
-            FROM complaint
-            WHERE organization_id = ?
-            `,
-            [req.params.id]
-          )
-        ])
-          .then(([usersCountRow, departmentsCountRow, complaintSummaryRow]) =>
-            sendSuccess(res, 200, 'Organization retrieved successfully', {
-              ...row,
-              users_count: Number(usersCountRow?.users_count || 0),
-              departments_count: Number(departmentsCountRow?.departments_count || 0),
-              total_complaints: Number(complaintSummaryRow?.total_complaints || 0),
-              submitted_complaints: Number(complaintSummaryRow?.submitted_complaints || 0),
-              in_review_complaints: Number(complaintSummaryRow?.in_review_complaints || 0),
-              resolved_complaints: Number(complaintSummaryRow?.resolved_complaints || 0),
-              closed_complaints: Number(complaintSummaryRow?.closed_complaints || 0),
-              organization_admin: adminRow
-                ? {
-                    id: adminRow.id,
-                    full_name: adminRow.full_name,
-                    email: adminRow.email,
-                    status: adminRow.status
-                  }
-                : null
-            })
-          )
-          .catch((summaryErr) => sendError(res, 500, 'Failed to fetch organization summary', summaryErr.message));
+        return sendSuccess(res, 200, 'Organization retrieved successfully', {
+          ...row,
+          organization_admin: adminRow || null
+        });
       });
     });
   });
@@ -393,61 +400,59 @@ export const getOrganizationById = (req, res) => {
 
 export const getGlobalOrganizationStats = async (req, res) => {
   if (req.user?.role !== 'super_admin') {
-    return sendError(res, 403, 'Only super_admin can access platform aggregate statistics');
+    return sendError(res, 403, 'Only super_admin can access platform statistics');
   }
 
   try {
-    const [organizationStats, complaintStats, escalationStats, feedbackStats, recentOrganizations, complaintsByOrganization, complaintMonthlyRows, assessmentMonthlyRows] = await Promise.all([
+    const [
+      organizationStats,
+      complaintStats,
+      escalationStats,
+      feedbackStats,
+      recentOrganizations,
+      complaintsByOrganization,
+      complaintMonthlyRows,
+      assessmentMonthlyRows
+    ] = await Promise.all([
       getQuery(
-        `
-        SELECT
+        `SELECT
           COUNT(*) AS total_organizations,
           SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) AS active_organizations,
           SUM(CASE WHEN status != 'active' THEN 1 ELSE 0 END) AS suspended_organizations
-        FROM organization
-        `
+        FROM organization`
       ),
       getQuery(
-        `
-        SELECT
+        `SELECT
           COUNT(*) AS total_complaints,
           SUM(CASE WHEN status = 'submitted' THEN 1 ELSE 0 END) AS submitted_complaints,
           SUM(CASE WHEN status = 'in_review' THEN 1 ELSE 0 END) AS in_review_complaints,
           SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) AS resolved_complaints,
           SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END) AS closed_complaints,
           SUM(CASE WHEN is_anonymous = 1 AND organization_id IS NULL THEN 1 ELSE 0 END) AS unassigned_anonymous_complaints
-        FROM complaint
-        `
+        FROM complaint`
       ),
       getQuery(
-        `
-        SELECT
+        `SELECT
           SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending_count,
           SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) AS in_progress_count,
           SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) AS resolved_count,
           SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) AS rejected_count
-        FROM escalations
-        `
+        FROM escalations`
       ),
       allQuery(
-        `
-        SELECT rating, COUNT(*) AS count
+        `SELECT rating, COUNT(*) AS count
         FROM feedback
         GROUP BY rating
-        ORDER BY rating ASC
-        `
+        ORDER BY rating ASC`
       ),
       allQuery(
-        `
-        SELECT organization_id, name, status, created_at, updated_at
+        `SELECT organization_id, name, status, created_at, updated_at
         FROM organization
         ORDER BY updated_at DESC, organization_id DESC
-        LIMIT 8
-        `
+        LIMIT 8`
       ),
       allQuery(
-        `
-        SELECT
+        `SELECT
           o.organization_id,
           o.name,
           COUNT(c.id) AS complaints_count
@@ -455,31 +460,26 @@ export const getGlobalOrganizationStats = async (req, res) => {
         LEFT JOIN complaint c ON c.organization_id = o.organization_id
         GROUP BY o.organization_id, o.name
         ORDER BY complaints_count DESC, o.name ASC
-        LIMIT 8
-        `
+        LIMIT 8`
       ),
       allQuery(
-        `
-        SELECT
+        `SELECT
           strftime('%Y-%m', created_at) AS month_key,
           COUNT(*) AS count
         FROM complaint
         WHERE created_at >= date('now', 'start of month', '-11 months')
         GROUP BY strftime('%Y-%m', created_at)
-        ORDER BY month_key ASC
-        `
+        ORDER BY month_key ASC`
       ),
       allQuery(
-        `
-        SELECT
+        `SELECT
           strftime('%Y-%m', COALESCE(updated_at, created_at)) AS month_key,
           COUNT(*) AS count
         FROM accessments
         WHERE status = 'completed'
           AND COALESCE(updated_at, created_at) >= date('now', 'start of month', '-11 months')
         GROUP BY strftime('%Y-%m', COALESCE(updated_at, created_at))
-        ORDER BY month_key ASC
-        `
+        ORDER BY month_key ASC`
       )
     ]);
 
@@ -512,9 +512,7 @@ export const getGlobalOrganizationStats = async (req, res) => {
       inReviewComplaints: Number(complaintStats?.in_review_complaints || 0),
       resolvedComplaints: Number(complaintStats?.resolved_complaints || 0),
       closedComplaints: Number(complaintStats?.closed_complaints || 0),
-      unassignedAnonymousComplaints: Number(
-        complaintStats?.unassigned_anonymous_complaints || 0
-      ),
+      unassignedAnonymousComplaints: Number(complaintStats?.unassigned_anonymous_complaints || 0),
       escalationStatusCounts: {
         pending: Number(escalationStats?.pending_count || 0),
         in_progress: Number(escalationStats?.in_progress_count || 0),
@@ -640,12 +638,10 @@ export const deleteOrganization = (req, res) => {
 
 export const getPublicOrganizationOptions = (req, res) => {
   complaintDB.all(
-    `
-    SELECT organization_id, name, organization_type
+    `SELECT organization_id, name, organization_type
     FROM organization
     WHERE status = 'active'
-    ORDER BY name ASC
-    `,
+    ORDER BY name ASC`,
     [],
     (err, rows) => {
       if (err) {

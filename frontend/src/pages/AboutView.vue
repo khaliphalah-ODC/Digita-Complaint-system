@@ -74,8 +74,8 @@ import AppFooter from '../components/AppFooter.vue';
           </div>
 
           <!-- Visual block -->
-        <div class="relative">
-            <div class="mission-visual-card">
+      <div class="relative">
+           <!-- <div class="mission-visual-card">
               <div class="mv-inner">
                 <div class="mv-icon-row">
                   <div class="mv-icon bg-orange-100 text-orange-500">
@@ -111,16 +111,16 @@ import AppFooter from '../components/AppFooter.vue';
                     <div class="tl-dot bg-emerald-500"></div>
                     <div class="tl-bar bg-emerald-100"></div>
                     <span class="text-xs font-semibold text-emerald-700">✓ Resolved</span>
-                  </div>
-                </div>
+                  </div> 
+                </div> 
               </div>
             </div>
             <!-- Floating accent -->
-            <div class="floating-badge">
+            <!--<div class="floating-badge">
               <span class="text-2xl font-black text-emerald-600">98%</span>
               <span class="text-xs text-slate-400 font-medium">satisfaction</span>
-            </div>
-          </div>
+            </div> -->
+          </div>-->
         </div>
       </div>
     </section>
@@ -158,29 +158,29 @@ import AppFooter from '../components/AppFooter.vue';
             <p class="mt-2 text-sm leading-6 text-slate-500">Anonymous submission is a first-class feature. Your identity is never required when you need to speak up safely.</p>
           </div>
 
-          <div class="value-card group">
+         <!-- <div class="value-card group">
             <div class="value-icon bg-emerald-100 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white">
               <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             </div>
             <h3 class="mt-5 text-lg font-bold text-[#0f2444]">Speed</h3>
             <p class="mt-2 text-sm leading-6 text-slate-500">Direct routing means complaints reach the right desk immediately — not after bouncing through three departments.</p>
-          </div>
+          </div>-->
 
-          <div class="value-card group">
+          <!--<div class="value-card group">
             <div class="value-icon bg-amber-100 text-amber-600 group-hover:bg-amber-500 group-hover:text-white">
               <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
             </div>
             <h3 class="mt-5 text-lg font-bold text-[#0f2444]">Inclusivity</h3>
             <p class="mt-2 text-sm leading-6 text-slate-500">Designed for citizens, students, and customers across all backgrounds. Clear language, simple forms, no barriers.</p>
-          </div>
+          </div>-->
 
-          <div class="value-card group">
+         <!-- <div class="value-card group">
             <div class="value-icon bg-rose-100 text-rose-500 group-hover:bg-rose-500 group-hover:text-white">
               <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
             </div>
             <h3 class="mt-5 text-lg font-bold text-[#0f2444]">Dignity</h3>
             <p class="mt-2 text-sm leading-6 text-slate-500">Every user deserves to be heard respectfully. The interface and process are designed to reduce stress, not add to it.</p>
-          </div>
+          </div>-->
         </div>
       </div>
     </section>
@@ -413,7 +413,7 @@ import AppFooter from '../components/AppFooter.vue';
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1rem 1.25rem;
+  padding: 2rem 30.25rem;
   border-radius: 1.25rem;
   background: white;
   box-shadow: 0 12px 40px rgba(15,36,68,0.15);
@@ -466,8 +466,8 @@ import AppFooter from '../components/AppFooter.vue';
 }
 .team-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(15,36,68,0.11); }
 .team-avatar-img {
-  width: 13rem;
-  height: 13rem;
+  width: 9rem;
+  height: 9rem;
   border-radius: 9999px;
   object-fit: cover;
   object-position: center top;

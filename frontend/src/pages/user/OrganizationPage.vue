@@ -59,8 +59,13 @@ onMounted(fetchOrganizations);
     <header class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
       <div>
         <p class="app-kicker">Organization Profile</p>
+<<<<<<< Updated upstream:frontend/src/pages/user/OrganizationPage.vue
         <h1 class="mt-2 text-3xl font-semibold text-slate-900">My Organization</h1>
         <p class="text-[0.98rem] text-slate-600">Users can only create and view their own organization profile.</p>
+=======
+        <h1 class="mt-2 text-2xl font-bold text-slate-900">My Organization</h1>
+        <!--<p class="text-sm text-slate-600">Users can only create and view their own organization profile.</p>-->
+>>>>>>> Stashed changes:frontend/src/pages/OrganizationPage.vue
       </div>
       <button :class="refreshButtonClass" @click="fetchOrganizations">
         Refresh

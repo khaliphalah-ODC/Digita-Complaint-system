@@ -755,6 +755,16 @@ export const loginUser = (req, res) => {
         return sendError(res, 401, 'Invalid email or password');
       }
 
+      // Block pending users from logging in
+      if (userRow.status === 'pending') {
+        return sendError(res, 403, 'Your account is pending approval from your organization admin. Please wait for approval before logging in.');
+      }
+
+      // Block inactive users
+      if (userRow.status === 'inactive') {
+        return sendError(res, 403, 'Your account is inactive. Please contact your organization admin.');
+      }
+
       const safeUser = sanitizeUser(userRow);
       let token;
       try {

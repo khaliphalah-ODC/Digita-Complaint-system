@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS users (
   email_verified INTEGER NOT NULL DEFAULT 0 CHECK(email_verified IN (0, 1)),
   email_verified_at DATETIME DEFAULT NULL,
   must_change_password INTEGER NOT NULL DEFAULT 0 CHECK(must_change_password IN (0, 1)),
-  status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'inactive')),
+  status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'inactive', 'pending')),
   role TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('super_admin', 'org_admin', 'user')),
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 export const fetchUsersQuery = `SELECT * FROM users ORDER BY id DESC;`;
 export const fetchUsersByOrganizationQuery = `SELECT * FROM users WHERE organization_id = ? ORDER BY id DESC;`;
-export const fetchUserByEmailQuery = `SELECT * FROM users WHERE email = ?;`;    
+export const fetchUserByEmailQuery = `SELECT * FROM users WHERE email = ?;`;
 export const createUserQuery = `INSERT INTO users (organization_id, department_id, full_name, email, password, must_change_password, status, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?);`;
 export const fetchUserByIdQuery = `SELECT * FROM users WHERE id = ?;`;
 export const updateUserQuery = `
@@ -89,6 +89,7 @@ SET
   must_change_password = 0,
   updated_at = CURRENT_TIMESTAMP
 WHERE id = ?;
+<<<<<<< Updated upstream
 `;
 
 export const emailVerificationTokensQuery = `
@@ -135,3 +136,6 @@ SET
   updated_at = CURRENT_TIMESTAMP
 WHERE id = ?;
 `;
+=======
+`;
+>>>>>>> Stashed changes

@@ -8,6 +8,38 @@ import AppFooter from '../components/AppFooter.vue';
   <div class="page-root flex min-h-screen w-screen flex-col">
     <AuthTopNav fixed />
 
+ <!-- Hero Section -->
+    <section class="hero-section relative flex items-center justify-center overflow-hidden pt-20">
+      <!-- Background overlay -->
+      <div class="hero-overlay absolute inset-0 z-10"></div>
+
+      <!-- Decorative architectural line art -->
+      <div class="absolute inset-0 z-0">
+        <svg class="absolute bottom-0 left-0 w-full opacity-10" viewBox="0 0 1440 320" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0,160 L80,160 L80,80 L160,80 L160,160 L240,160 L240,40 L320,40 L320,160 L400,160 L400,100 L480,100 L480,160 L560,160 L560,60 L640,60 L640,160 L720,160 L720,120 L800,120 L800,160 L880,160 L880,50 L960,50 L960,160 L1040,160 L1040,90 L1120,90 L1120,160 L1200,160 L1200,70 L1280,70 L1280,160 L1360,160 L1360,110 L1440,110 L1440,320 L0,320 Z" fill="white"/>
+        </svg>
+      </div>
+
+      <div class="relative z-20 mx-auto max-w-5xl px-6 py-20 text-center sm:py-28 lg:py-36">
+        <h1 class="hero-title text-5xl font-black leading-[0.95] tracking-tight text-white sm:text-6xl lg:text-8xl">
+          Submit Your
+          <span class="block text-[#f97316]">Complaints.</span>
+        </h1>
+
+        <p class="mx-auto mt-6 max-w-2xl text-base leading-7 text-blue-100/80 sm:text-lg">
+           A digital civic platform that allows citizens, students, and customers to report issues directly — and track every step of their resolution in real time.
+        </p>
+      </div>
+
+      <!-- Wave divider -->
+      <!--<div class="absolute bottom-0 left-0 right-0 z-20">
+        <svg viewBox="0 0 1440 80" preserveAspectRatio="none" class="w-full" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0,40 C360,80 1080,0 1440,40 L1440,80 L0,80 Z" fill="#f5f7fa"/>
+        </svg>
+      </div>-->
+    </section>
+
+
     <!-- ─── PAGE HEADER ───────────────────────────────────────── -->
     <div class="page-header pt-28 pb-12 px-6 sm:px-10 lg:px-16 bg-white border-b border-slate-100">
       <div class="mx-auto max-w-6xl">
@@ -110,6 +142,22 @@ import AppFooter from '../components/AppFooter.vue';
 
 <style scoped>
 .page-root { font-family: 'Times New Roman', Times, serif; }
+
+/* ── Hero ──────────────────────────────────── */
+.hero-section {
+  min-height: 500px;
+    background-image: url('https://images.unsplash.com/photo-1573497620053-ea5300f94f21?w=1600&q=80');
+  background-size: cover;
+  background-position: center top;
+}
+.hero-overlay {
+  background: linear-gradient(135deg, rgba(10,28,64,0.88) 0%, rgba(15,52,100,0.82) 50%, rgba(30,60,110,0.75) 100%);
+}
+.hero-title {
+  font-family: 'Georgia', 'Times New Roman';
+  letter-spacing: -0.02em;
+}
+
 
 /* ── Page header ───────────────────────────── */
 .section-kicker {

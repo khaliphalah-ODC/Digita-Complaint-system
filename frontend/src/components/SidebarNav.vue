@@ -108,6 +108,7 @@ const userLinks = computed(() => {
           <p class="mt-1 text-sm text-[var(--app-nav-text-muted)]">{{ workspaceLabel }}</p>
         </div>
 
+<<<<<<< Updated upstream
         <nav class="mt-6 space-y-1.5 pb-6">
           <RouterLink
             v-for="link in superAdminLinks"
@@ -281,5 +282,99 @@ const userLinks = computed(() => {
         </button>
       </template>
     </template>
+=======
+    <nav :class="props.mobile ? 'mt-6 space-y-1.5 pb-6' : 'mt-10 space-y-2'">
+      <RouterLink :to="dashboardRoute" :class="navLinkClass(dashboardRoute)" @click="handleNavigate">
+        <font-awesome-icon :icon="['fas', 'gauge-high']" />
+        <span>Dashboard</span>
+      </RouterLink>
+      <RouterLink v-if="isSuperAdmin" to="/admin/organizations" :class="navLinkClass('/admin/organizations')" @click="handleNavigate">
+        <font-awesome-icon :icon="['fas', 'building']" />
+        <span>Organizations</span>
+      </RouterLink>
+      <RouterLink v-if="isSuperAdmin" to="/admin/triage" :class="navLinkClass('/admin/triage')" @click="handleNavigate">
+        <font-awesome-icon :icon="['fas', 'file-lines']" />
+        <span>Triage Queue</span>
+      </RouterLink>
+      <RouterLink v-if="isSuperAdmin" to="/admin/reports" :class="navLinkClass('/admin/reports')" @click="handleNavigate">
+        <font-awesome-icon :icon="['fas', 'chart-line']" />
+        <span>Analytics</span>
+      </RouterLink>
+      <RouterLink v-if="isSuperAdmin" to="/admin/audit-logs" :class="navLinkClass('/admin/audit-logs')" @click="handleNavigate">
+        <font-awesome-icon :icon="['fas', 'clipboard-list']" />
+        <span>Audit Logs</span>
+      </RouterLink>
+      <RouterLink v-if="isSuperAdmin" to="/admin/settings" :class="navLinkClass('/admin/settings')" @click="handleNavigate">
+        <font-awesome-icon :icon="['fas', 'gear']" />
+        <span>Settings</span>
+      </RouterLink>
+      <RouterLink v-if="isOrgAdmin" to="/org-admin/complaints" :class="navLinkClass('/org-admin/complaints')" @click="handleNavigate">
+        <font-awesome-icon :icon="['fas', 'file-lines']" />
+        <span>Complaints</span>
+      </RouterLink>
+      <RouterLink v-if="isOrgAdmin" to="/org-admin/users" :class="navLinkClass('/org-admin/users')" @click="handleNavigate">
+        <font-awesome-icon :icon="['fas', 'users']" />
+        <span>Create New User</span>
+      </RouterLink>
+      <RouterLink v-if="isOrgAdmin" to="/org-admin/departments" :class="navLinkClass('/org-admin/departments')" @click="handleNavigate">
+        <font-awesome-icon :icon="['fas', 'sitemap']" />
+        <span>Departments</span>
+      </RouterLink>
+      <RouterLink v-if="isOrgAdmin" to="/org-admin/accessments" :class="navLinkClass('/org-admin/accessments')" @click="handleNavigate">
+        <font-awesome-icon :icon="['fas', 'clipboard-list']" />
+        <span>Accessment</span>
+      </RouterLink>
+      <RouterLink v-if="isOrgAdmin" to="/org-admin/escalations" :class="navLinkClass('/org-admin/escalations')" @click="handleNavigate">
+        <font-awesome-icon :icon="['fas', 'triangle-exclamation']" />
+        <span>Escalations</span>
+      </RouterLink>
+      <RouterLink v-if="isOrgAdmin" to="/org-admin/analytics" :class="navLinkClass('/org-admin/analytics')" @click="handleNavigate">
+        <font-awesome-icon :icon="['fas', 'chart-line']" />
+        <span>Analytics</span>
+      </RouterLink>
+      <RouterLink v-if="isOrgAdmin" to="/org-admin/notifications" :class="navLinkClass('/org-admin/notifications')" @click="handleNavigate">
+        <font-awesome-icon :icon="['fas', 'bell']" />
+        <span>Notifications</span>
+      </RouterLink>
+      <RouterLink v-if="isOrgAdmin" to="/org-admin/status-logs" :class="navLinkClass('/org-admin/status-logs')" @click="handleNavigate">
+        <font-awesome-icon :icon="['fas', 'chart-line']" />
+        <span>Status Logs</span>
+      </RouterLink>
+      <RouterLink v-if="isOrgAdmin" to="/organizations" :class="navLinkClass('/organizations')" @click="handleNavigate">
+        <font-awesome-icon :icon="['fas', 'building']" />
+        <span>Organization</span>
+      </RouterLink>
+      <RouterLink v-if="!isSuperAdmin && !isOrgAdmin" to="/submit-complaint" :class="navLinkClass('/submit-complaint')" @click="handleNavigate">
+        <font-awesome-icon :icon="['fas', 'file-lines']" />
+        <span>Submit Complaint</span>
+      </RouterLink>
+      <RouterLink v-if="!isSuperAdmin && !isOrgAdmin" to="/track-complaint" :class="navLinkClass('/track-complaint')" @click="handleNavigate">
+        <font-awesome-icon :icon="['fas', 'chart-line']" />
+        <span>Track Complaint</span>
+      </RouterLink>
+      <RouterLink v-if="isOrganizationMemberUser" to="/organizations" :class="navLinkClass('/organizations')" @click="handleNavigate">
+        <font-awesome-icon :icon="['fas', 'building']" />
+        <span>My Organization</span>
+      </RouterLink>
+      <RouterLink v-if="!isSuperAdmin && !isOrgAdmin" to="/feedback" :class="navLinkClass('/feedback')" @click="handleNavigate">
+        <font-awesome-icon :icon="['fas', 'comments']" />
+        <span>Feedback</span>
+      </RouterLink>
+    </nav>
+
+   <!-- <button
+      :class="isDarkShell
+        ? 'mt-auto flex items-center gap-3 rounded-none border border-white/10 bg-white/6 px-4 py-3 text-left text-sm text-white/90 hover:bg-white/10'
+        : isOrgAdminShell
+          ? 'mt-auto flex items-center gap-3 rounded-none org-admin-logout-btn'
+      : isUserShell
+        ? 'mt-auto flex items-center gap-3 rounded-none border border-[#c8d9f7] bg-white/88 px-4 py-3 text-left text-sm text-[var(--app-primary-ink)] hover:bg-[#eaf2ff] hover:text-[var(--app-primary)]'
+        : 'mt-auto flex items-center gap-3 rounded-none border border-slate-300/90 bg-white px-4 py-3 text-left text-sm text-slate-700 hover:bg-[var(--app-primary-mist)] hover:text-[var(--app-primary-ink)]'"
+      @click="handleLogout"
+    >
+      <font-awesome-icon :icon="['fas', 'right-from-bracket']" />
+      <span>Logout</span>
+    </button>-->
+>>>>>>> Stashed changes
   </aside>
 </template>

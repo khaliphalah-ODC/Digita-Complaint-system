@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import api, { extractApiError, unwrapResponse } from '../services/api';
+import { useRouter } from 'vue-router';
 
 const API_ROOT = import.meta.env.VITE_API_BASE_URL || '/api';
 const USERS_API_BASE = import.meta.env.VITE_API_URL || '/users';
@@ -233,6 +234,21 @@ export const useSessionStore = defineStore('session', () => {
     }
   };
 
+  //Older version of logout button logic
+  // const logout = async () => {
+  //   if (!token.value) return;
+
+  //   try {
+  //     await api.post(`${USERS_API_BASE}/logout`);
+  //   } finally {
+  //     token.value = '';
+  //     currentUser.value = null;
+  //     currentOrganizationName.value = '';
+  //     localStorage.removeItem('token');
+  //   }
+  // };
+
+
   const logout = async () => {
     if (!token.value) return;
 
@@ -244,8 +260,10 @@ export const useSessionStore = defineStore('session', () => {
       currentOrganizationName.value = '';
       pendingVerificationEmail.value = '';
       localStorage.removeItem('token');
+      window.location.href = '/';
     }
   };
+
 
   const changePassword = async (payload) => {
     errorMessage.value = '';

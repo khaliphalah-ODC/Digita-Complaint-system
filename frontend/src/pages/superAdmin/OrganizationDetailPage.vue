@@ -183,6 +183,7 @@ onMounted(load);
             </article>
           </section>
 
+<<<<<<< Updated upstream
           <section class="app-section-card">
             <h3 class="text-lg font-semibold text-slate-900">Administrator assignment</h3>
             <p class="mt-1 text-sm text-slate-600">Current organization-admin coverage for this directory record.</p>
@@ -204,5 +205,37 @@ onMounted(load);
         </template>
       </div>
     </div>
+=======
+        <article class="app-dark-panel rounded-[28px] p-5 text-white">
+          <h3 class="text-lg font-bold text-white">Admin Assignment</h3>
+          <div class="mt-3 grid grid-cols-1 gap-3 text-sm text-white/74">
+            <p><span class="font-semibold text-white/92">Organization Admin:</span> {{ organization.organization_admin?.full_name || 'Not assigned' }}</p>
+            <p><span class="font-semibold text-white/92">Admin Email:</span> {{ organization.organization_admin?.email || 'N/A' }}</p>
+            <p><span class="font-semibold text-white/92">Admin Status:</span> {{ organization.organization_admin?.status || 'N/A' }}</p>
+            <p><span class="font-semibold text-white/92">Created:</span> {{ organization.created_at || 'N/A' }}</p>
+          </div>
+        </article>
+
+<!-- ADD THIS NEW CARD BELOW — spans full width -->
+        <article class="app-dark-panel rounded-[28px] p-5 text-white md:col-span-2">
+          <h3 class="text-lg font-bold text-white">Organization Join Code</h3>
+          <p class="mt-1 text-sm text-white/60">
+            Share this code with members so they can register under this organization at the Sign Up page.
+          </p>
+          <div class="mt-4 flex flex-wrap items-center gap-4">
+            <div class="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/8 px-5 py-3">
+              <span class="font-mono text-xl font-black tracking-widest text-white">
+                {{ organization.join_code || 'No code generated yet' }}
+              </span>
+            </div>
+            <p v-if="organization.join_code_expires_at" class="text-xs text-white/50">
+              Expires {{ new Date(organization.join_code_expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) }}
+            </p>
+          </div>
+        </article>
+
+      </section>
+    </template>
+>>>>>>> Stashed changes
   </section>
 </template>

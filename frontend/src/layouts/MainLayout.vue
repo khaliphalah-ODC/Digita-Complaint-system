@@ -45,6 +45,16 @@ const contentClass = computed(() => (
 
 const mobileNavOpen = ref(false);
 
+<<<<<<< Updated upstream
+=======
+const showLogoutConfirm = ref(false);
+
+const confirmLogout = () => {
+  showLogoutConfirm.value = false;
+  session.logout();
+};
+
+>>>>>>> Stashed changes
 const profileAvatar = computed(() => {
   return (
     session.currentUser?.avatar_url ||
@@ -196,8 +206,13 @@ onMounted(session.fetchCurrentUser);
                 </div>
 
                 <button
+<<<<<<< Updated upstream
                   class="inline-flex min-h-[40px] items-center rounded-[var(--app-radius-md)] border border-[var(--app-nav-border)] bg-[var(--app-nav-surface-strong)] px-3 py-2 text-xs font-semibold text-[var(--app-nav-text)] hover:bg-[var(--app-nav-hover)]"
                   @click="session.logout"
+=======
+                  :class="isSuperAdmin ? 'rounded-none border border-white/10 bg-white/6 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10' : isStandardUserShell ? 'rounded-none border border-[#c8d9f7] bg-white/90 px-3 py-2 text-xs font-semibold text-[var(--app-primary-ink)] hover:bg-[#eef4ff]' : 'rounded-none border border-slate-300/80 bg-white/90 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50'"
+                  @click="showLogoutConfirm = true"
+>>>>>>> Stashed changes
                 >
                   Logout
                 </button>
@@ -224,9 +239,45 @@ onMounted(session.fetchCurrentUser);
         <section :class="contentClass">
           <RouterView />
         </section>
+<<<<<<< Updated upstream
 
         <AppFooter />
+=======
+       <!-- <AppFooter />-->
+>>>>>>> Stashed changes
       </main>
     </div>
+
+    <!-- Logout Confirmation Modal -->
+<div v-if="showLogoutConfirm" class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+  <div class="mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-[0_24px_60px_rgba(0,0,0,0.2)]">
+    <div class="flex items-center gap-3">
+      <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-red-50">
+        <svg class="h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </svg>
+      </div>
+      <div>
+        <h3 class="text-base font-bold text-slate-900">Confirm Logout</h3>
+        <p class="mt-0.5 text-sm text-slate-500">Are you sure you want to log out?</p>
+      </div>
+    </div>
+
+    <div class="mt-6 flex gap-3">
+      <button
+        class="flex-1 rounded-full border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-green-500"
+        @click="showLogoutConfirm = false"
+      >
+        Cancel
+      </button>
+      <button
+        class="flex-1 rounded-full bg-blue-600 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(239,68,68,0.35)] transition hover:bg-red-600"
+        @click="confirmLogout"
+      >
+        Yes, Logout
+      </button>
+    </div>
+  </div>
+</div>
   </div>
 </template>

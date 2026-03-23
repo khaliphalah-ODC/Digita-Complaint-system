@@ -144,8 +144,9 @@ export const createComplaint = (req, res) => {
       department_id === null || department_id === undefined || department_id === ''
         ? null
         : Number(department_id);
-    const finalUserId = isAnonymousComplaint ? null : req.user?.id || null;
-    const finalOrganizationId = resolvedOrganizationId;
+    // AFTER
+    const finalUserId = req.user?.id || null;
+    const finalOrganizationId = resolvedOrganizationId || req.user?.organization_id || null;
     const finalAnonymousLabel = isAnonymousComplaint ? anonymous_label || 'Anonymous Reporter' : null;
     const trackingCode = generateTrackingCode();
 
@@ -309,29 +310,29 @@ export const assignComplaintOrganization = (req, res) => {
         return sendError(res, 400, 'Selected organization is not active');
       }
 
-          complaintDB.run(assignComplaintOrganizationById, [organizationId, req.params.id], function onAssign(updateErr) {
-            if (updateErr) {
-              return sendError(res, 500, 'Failed to assign complaint organization', updateErr.message);
-            }
+      complaintDB.run(assignComplaintOrganizationById, [organizationId, req.params.id], function onAssign(updateErr) {
+        if (updateErr) {
+          return sendError(res, 500, 'Failed to assign complaint organization', updateErr.message);
+        }
 
-            complaintDB.get(selectComplaintById, [req.params.id], (getErr, row) => {
-              if (getErr) {
-                return sendError(res, 500, 'Complaint assigned but failed to reload complaint', getErr.message);
-              }
-              const auditMeta = buildAuditMetadata(req);
-              auditMeta.complaint_id = row.id;
-              auditMeta.assigned_to = organizationId;
-              void logAuditEntry(req, {
-                action: 'assign_complaint_organization',
-                targetTable: 'complaint',
-                targetId: row.id,
-                metadata: auditMeta
-              }).catch((_) => {
-                console.error('Failed to record audit log for complaint assignment');
-              });
-              return sendSuccess(res, 200, 'Complaint assigned to organization successfully', row);
-            });
+        complaintDB.get(selectComplaintById, [req.params.id], (getErr, row) => {
+          if (getErr) {
+            return sendError(res, 500, 'Complaint assigned but failed to reload complaint', getErr.message);
+          }
+          const auditMeta = buildAuditMetadata(req);
+          auditMeta.complaint_id = row.id;
+          auditMeta.assigned_to = organizationId;
+          void logAuditEntry(req, {
+            action: 'assign_complaint_organization',
+            targetTable: 'complaint',
+            targetId: row.id,
+            metadata: auditMeta
+          }).catch((_) => {
+            console.error('Failed to record audit log for complaint assignment');
           });
+          return sendSuccess(res, 200, 'Complaint assigned to organization successfully', row);
+        });
+      });
     });
   });
 };
