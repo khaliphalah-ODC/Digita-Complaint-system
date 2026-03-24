@@ -35,30 +35,60 @@ export const CreateNotificationsTable = () => {
               });
             });
           }
-          await new Promise((resolve, reject) => {
-            complaintDB.run(
-              `
-              UPDATE notifications
-              SET organization_id = COALESCE(
-                (
-                  SELECT c.organization_id
-                  FROM complaint c
-                  WHERE c.id = notifications.complaint_id
-                ),
-                (
-                  SELECT u.organization_id
-                  FROM users u
-                  WHERE u.id = notifications.user_id
-                )
+
+          const tableExists = (tableName) =>
+            new Promise((resolve, reject) => {
+              complaintDB.get(
+                `SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?`,
+                [tableName],
+                (tableErr, row) => {
+                  if (tableErr) return reject(tableErr);
+                  return resolve(Boolean(row));
+                }
+              );
+            });
+
+          const [hasComplaintTable, hasUsersTable] = await Promise.all([
+            tableExists('complaint'),
+            tableExists('users')
+          ]);
+
+          const organizationSources = [];
+          if (hasComplaintTable) {
+            organizationSources.push(`
+              (
+                SELECT c.organization_id
+                FROM complaint c
+                WHERE c.id = notifications.complaint_id
               )
-              WHERE organization_id IS NULL
-              `,
-              (updateErr) => {
-                if (updateErr) return reject(updateErr);
-                return resolve();
-              }
-            );
-          });
+            `);
+          }
+          if (hasUsersTable) {
+            organizationSources.push(`
+              (
+                SELECT u.organization_id
+                FROM users u
+                WHERE u.id = notifications.user_id
+              )
+            `);
+          }
+
+          if (organizationSources.length > 0) {
+            await new Promise((resolve, reject) => {
+              complaintDB.run(
+                `
+                UPDATE notifications
+                SET organization_id = COALESCE(${organizationSources.join(',')})
+                WHERE organization_id IS NULL
+                `,
+                (updateErr) => {
+                  if (updateErr) return reject(updateErr);
+                  return resolve();
+                }
+              );
+            });
+          }
+
           await new Promise((resolve, reject) => {
             complaintDB.run('CREATE INDEX IF NOT EXISTS idx_notifications_organization_id ON notifications(organization_id)', (indexErr) => {
               if (indexErr) return reject(indexErr);
