@@ -45,6 +45,7 @@ import { CreateNotificationsTable } from './src/controllers/notification.control
 import { CreateComplaintMessagesTable } from './src/controllers/complaintMessage.controller.js';
 import { CreateTestimonialsTable } from './src/controllers/testimonial.controller.js';
 import { CreatePlatformSettingsTable } from './src/controllers/platformSettings.controller.js';
+import { seedSuperAdmin } from './src/utils/seed/superAdmin.seed.js';
 
 //app
 const app = express();
@@ -129,6 +130,10 @@ export const initializeDatabase = () => {
 };
 
 initializeDatabase();
+
+seedSuperAdmin().catch((error) => {
+  console.error('Failed to seed super admin during startup:', error.message);
+});
 
 export const startServer = (port = process.env.PORT || 5000) => {
   if (activeServer?.listening) {

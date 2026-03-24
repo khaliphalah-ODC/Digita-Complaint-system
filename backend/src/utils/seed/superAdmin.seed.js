@@ -128,11 +128,9 @@ const ensureUsersSchema = async () => {
   }
 };
 
-const seedSuperAdmin = async () => {
+export const seedSuperAdmin = async () => {
   if (!SUPER_ADMIN_EMAIL || !SUPER_ADMIN_PASSWORD) {
-    throw new Error(
-      'SUPER_ADMIN_EMAIL and SUPER_ADMIN_PASSWORD are required in backend/.env for seed:super-admin'
-    );
+    return false;
   }
 
   await ensureUsersSchema();
@@ -176,13 +174,7 @@ const seedSuperAdmin = async () => {
     [SUPER_ADMIN_ORGANIZATION_ID, SUPER_ADMIN_FULL_NAME, SUPER_ADMIN_EMAIL.trim().toLowerCase(), hashedPassword]
   );
   console.log(`Super admin created: ${SUPER_ADMIN_EMAIL}`);
+  return true;
 };
 
-seedSuperAdmin()
-  .catch((error) => {
-    console.error('Failed to seed super admin:', error.message);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await closeDb();
-  });
+export const closeSeedDb = closeDb;
