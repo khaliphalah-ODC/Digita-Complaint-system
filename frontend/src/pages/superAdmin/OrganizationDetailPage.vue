@@ -10,6 +10,12 @@ const router = useRouter();
 const loading = ref(false);
 const error = ref('');
 const organization = ref(null);
+const joinCode = ref(null);
+const joinCodeLoading = ref(false);
+const joinCodeError = ref('');
+const joinCodeCopying = ref(false);
+const joinLinkCopying = ref(false);
+const joinCodeDownloading = ref(false);
 
 const ensureSuccess = (payload, fallbackMessage) => {
   if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
@@ -59,6 +65,87 @@ const exportSnapshotPdf = () => {
   popup.document.close();
 };
 
+const fetchJoinCode = async (organizationId) => {
+  if (!organizationId) return;
+  joinCodeLoading.value = true;
+  joinCodeError.value = '';
+  try {
+    const response = await api.get(`/organization/${organizationId}/join-code`);
+    joinCode.value = ensureSuccess(unwrapResponse(response), 'Failed to fetch join code');
+  } catch (requestError) {
+    joinCodeError.value = extractApiError(requestError, 'Failed to fetch join code');
+  } finally {
+    joinCodeLoading.value = false;
+  }
+};
+
+const regenerateJoinCode = async () => {
+  if (!organization.value?.organization_id) return;
+  joinCodeLoading.value = true;
+  joinCodeError.value = '';
+  try {
+    const response = await api.post(`/organization/${organization.value.organization_id}/join-code/regenerate`);
+    const payload = ensureSuccess(unwrapResponse(response), 'Failed to regenerate join code');
+    joinCode.value = payload?.join_code || null;
+  } catch (requestError) {
+    joinCodeError.value = extractApiError(requestError, 'Failed to regenerate join code');
+  } finally {
+    joinCodeLoading.value = false;
+  }
+};
+
+const copyJoinCode = async () => {
+  if (!joinCode.value?.join_code) return;
+  joinCodeCopying.value = true;
+  joinCodeError.value = '';
+  try {
+    await navigator.clipboard.writeText(joinCode.value.join_code);
+  } catch (requestError) {
+    joinCodeError.value = extractApiError(requestError, 'Failed to copy join code');
+  } finally {
+    joinCodeCopying.value = false;
+  }
+};
+
+const copyJoinLink = async () => {
+  if (!joinCode.value?.join_url) return;
+  joinLinkCopying.value = true;
+  joinCodeError.value = '';
+  try {
+    await navigator.clipboard.writeText(joinCode.value.join_url);
+  } catch (requestError) {
+    joinCodeError.value = extractApiError(requestError, 'Failed to copy join link');
+  } finally {
+    joinLinkCopying.value = false;
+  }
+};
+
+const downloadJoinQr = async () => {
+  if (!joinCode.value?.join_qr_url) return;
+  joinCodeDownloading.value = true;
+  joinCodeError.value = '';
+  try {
+    const response = await fetch(joinCode.value.join_qr_url);
+    if (!response.ok) {
+      throw new Error(`QR download failed with status ${response.status}`);
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const orgName = String(organization.value?.name || 'organization').trim().replace(/\s+/g, '-');
+    link.href = url;
+    link.download = `${orgName}-join-qr.png`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  } catch (requestError) {
+    joinCodeError.value = extractApiError(requestError, 'Failed to download QR code');
+  } finally {
+    joinCodeDownloading.value = false;
+  }
+};
+
 const load = async () => {
   loading.value = true;
   error.value = '';
@@ -66,6 +153,7 @@ const load = async () => {
     const orgId = route.params.id;
     const orgRes = await api.get(`/organization/${orgId}`);
     organization.value = ensureSuccess(unwrapResponse(orgRes), 'Failed to fetch organization');
+    await fetchJoinCode(orgId);
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to load organization detail');
   } finally {
@@ -198,6 +286,60 @@ onMounted(load);
               <article class="rounded-xl border border-slate-200 p-4">
                 <p class="text-sm font-medium text-slate-500">Admin status</p>
                 <p class="mt-2 text-sm font-semibold text-slate-900">{{ organization.organization_admin?.status || 'N/A' }}</p>
+              </article>
+            </div>
+          </section>
+
+          <section class="app-section-card">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 class="text-lg font-semibold text-slate-900">Invite Access</h3>
+                <p class="mt-1 text-sm text-slate-600">Review or regenerate the organization join code and QR for org-admin invitations.</p>
+              </div>
+              <button class="app-btn-secondary" :disabled="joinCodeLoading" @click="regenerateJoinCode">
+                {{ joinCodeLoading ? 'Refreshing...' : 'Regenerate Code' }}
+              </button>
+            </div>
+
+            <p v-if="joinCodeError" class="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {{ joinCodeError }}
+            </p>
+
+            <div class="mt-4 grid gap-6 xl:grid-cols-[1.1fr,0.9fr]">
+              <article class="rounded-xl border border-slate-200 p-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Join Code</p>
+                <p class="mt-2 text-2xl font-semibold text-slate-900">
+                  {{ joinCodeLoading ? 'Loading...' : (joinCode?.join_code || 'Not available') }}
+                </p>
+                <p class="mt-2 break-all text-sm text-slate-600">
+                  {{ joinCode?.join_url || 'Join link will appear here once the code is ready.' }}
+                </p>
+                <div class="mt-4 flex flex-wrap gap-2">
+                  <button class="app-btn-secondary" :disabled="!joinCode?.join_code || joinCodeCopying" @click="copyJoinCode">
+                    {{ joinCodeCopying ? 'Copying...' : 'Copy Code' }}
+                  </button>
+                  <button class="app-btn-secondary" :disabled="!joinCode?.join_url || joinLinkCopying" @click="copyJoinLink">
+                    {{ joinLinkCopying ? 'Copying...' : 'Copy Link' }}
+                  </button>
+                </div>
+              </article>
+
+              <article class="rounded-xl border border-slate-200 p-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">QR Code</p>
+                <div class="mt-3 flex flex-col items-start gap-3">
+                  <img
+                    v-if="joinCode?.join_qr_url"
+                    :src="joinCode.join_qr_url"
+                    alt="Organization join QR"
+                    class="h-40 w-40 rounded-xl border border-slate-200 bg-white p-3"
+                  >
+                  <p v-else class="text-sm text-slate-600">
+                    QR code will appear once the join code is generated.
+                  </p>
+                  <button class="app-btn-secondary" :disabled="!joinCode?.join_qr_url || joinCodeDownloading" @click="downloadJoinQr">
+                    {{ joinCodeDownloading ? 'Downloading...' : 'Download QR' }}
+                  </button>
+                </div>
               </article>
             </div>
           </section>
