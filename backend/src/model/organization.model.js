@@ -8,12 +8,26 @@ export const Organization = `CREATE TABLE IF NOT EXISTS organization (
     address TEXT NOT NULL,
     logo TEXT,
     status TEXT DEFAULT 'active' CHECK(status IN ('active', 'inactive')),
+    join_code TEXT UNIQUE,
+    self_signup_enabled INTEGER NOT NULL DEFAULT 1 CHECK(self_signup_enabled IN (0, 1)),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    
 )`;
 
-export const insertOrganization = `INSERT INTO organization (name, organization_type, email, phone, address, logo, status) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+export const insertOrganization = `
+INSERT INTO organization (
+  name,
+  organization_type,
+  email,
+  phone,
+  address,
+  logo,
+  status,
+  join_code,
+  self_signup_enabled
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+`;
+
 export const selectOrganizations = `
 SELECT
   o.*,
@@ -36,7 +50,56 @@ WHERE o.organization_id = ?
 GROUP BY o.organization_id
 `;
 
+export const selectOrganizationByJoinCode = `
+SELECT *
+FROM organization
+WHERE join_code = ? AND status = 'active'
+LIMIT 1
+`;
+
+export const selectAnyOrganizationByJoinCode = `
+SELECT *
+FROM organization
+WHERE join_code = ?
+LIMIT 1
+`;
+
 export const deleteOrganizationById = `DELETE FROM organization WHERE organization_id= ?`;
 
-export const updateOrganizationById = `UPDATE organization SET name = ?, organization_type = ?, email = ?, phone = ?, address = ?, logo = ?, status = ? WHERE organization_id = ?`;
+export const updateOrganizationById = `
+UPDATE organization
+SET
+  name = ?,
+  organization_type = ?,
+  email = ?,
+  phone = ?,
+  address = ?,
+  logo = ?,
+  status = ?,
+  updated_at = CURRENT_TIMESTAMP
+WHERE organization_id = ?
+`;
 
+export const updateOrganizationJoinCodeById = `
+UPDATE organization
+SET
+  join_code = ?,
+  updated_at = CURRENT_TIMESTAMP
+WHERE organization_id = ?
+`;
+
+export const updateOrganizationStatusById = `
+UPDATE organization
+SET
+  status = ?,
+  updated_at = CURRENT_TIMESTAMP
+WHERE organization_id = ?
+`;
+
+export const updateOrganizationSelfSignupById = `
+UPDATE organization
+SET
+  self_signup_enabled = ?,
+  updated_at = CURRENT_TIMESTAMP
+WHERE organization_id = ?
+`;

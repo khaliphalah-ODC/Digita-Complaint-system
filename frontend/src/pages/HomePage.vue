@@ -1,99 +1,371 @@
 <script setup>
-import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
-import { useSessionStore } from '../stores/session';
-import Footer from '@/components/footer.vue';
+import { Swiper, SwiperSlide } from 'swiper/vue';
+import { Autoplay, EffectFade, Pagination } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/effect-fade';
+import 'swiper/css/pagination';
+import AuthTopNav from '../components/AuthTopNav.vue';
+import AppFooter from '../components/AppFooter.vue';
+import TestimonialsSection from '../components/TestimonialsSection.vue';
+import heroImage1 from '../asset/heroImage/image1.avif';
+import heroImage2 from '../asset/heroImage/image2.jpg';
+import heroImage3 from '../asset/heroImage/image3.jpeg';
+import heroImage4 from '../asset/heroImage/image4.jpeg';
+import heroImage5 from '../asset/heroImage/image5.jpeg';
 
-const session = useSessionStore();
-const isLoggedIn = computed(() => session.isLoggedIn);
-const dashboardRoute = computed(() => (session.currentUser?.role === 'admin' ? '/admin/dashboard' : '/team-dashboard'));
+
+const heroModules = [Autoplay, EffectFade, Pagination];
+const heroSlides = [heroImage1, heroImage2, heroImage3, heroImage4, heroImage5];
+const benefitCards = [
+  {
+    title: 'Track progress clearly',
+    description: 'Follow status updates, timelines, and responses without confusion.',
+    icon: ['fas', 'chart-line'],
+  },
+  {
+    title: 'Stay protected',
+    description: 'Choose anonymous options when needed and report with more confidence.',
+    icon: ['fas', 'user-shield'],
+  },
+];
 </script>
 
 <template>
-  <div class="min-h-screen w-screen bg-white">
-    <div class="min-h-screen w-full px-4 py-3 md:px-8">
-      <header class="border-b border-slate-200 pb-3">
-        <nav class="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p class="text-2xl font-black text-slate-900">Complaint<span class="text-orange-500 text-x12 text-bold">MS</span> </p>
-            <p class="text-[clamp(10px,2vw,14px)] font-medium text-slate-500 whitespace-nowrap">Voice Your Concerns</p>          
-          </div>
+  <div class="flex min-h-screen w-screen flex-col font-sans">
+    <AuthTopNav fixed />
 
-          <ul class="flex flex-wrap items-center gap-5 text-sm font-semibold text-slate-700">
-            <div id="top"><li><RouterLink to="/" class="border-b-2 border-slate-900 pb-1">Home</RouterLink></li></div>
-            <li><RouterLink to="/signin" class="hover:text-slate-900">Submit Complaint</RouterLink></li>
-            <li><RouterLink to="/signin" class="hover:text-slate-900">My Complaints</RouterLink></li>
-            <li><RouterLink to="/organizations" class="hover:text-slate-900">Organizations</RouterLink></li>
-          </ul>
+    <section class="hero-section relative flex items-center justify-center overflow-hidden pt-20">
+      <Swiper
+        class="hero-swiper absolute inset-0 z-0"
+        :modules="heroModules"
+        :slides-per-view="1"
+        :loop="true"
+        effect="fade"
+        :speed="600"
+        :autoplay="{ delay: 4500, disableOnInteraction: false }"
+        :pagination="{ clickable: true }"
+      >
+        <SwiperSlide
+          v-for="(slide, index) in heroSlides"
+          :key="index"
+          class="hero-slide"
+        >
+          <img
+            :src="slide"
+            alt=""
+            class="hero-image-layer"
+          />
+        </SwiperSlide>
+      </Swiper>
 
-          <div class="flex items-center gap-3">
-            <RouterLink
-              to="/signin"
-              class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100"
-            >
-              Login
-            </RouterLink>
-            <RouterLink
-              to="/signup"
-              class="rounded-xl bg-orange-400 px-5 py-2 text-sm font-semibold text-white hover:bg-orange-600"
-            >
-              Sign Up
-            </RouterLink>
-            <RouterLink
-              v-if="isLoggedIn"
-              :to="dashboardRoute"
-              class="rounded-xl border border-orange-400 px-5 py-2 text-sm font-semibold text-orange-600 hover:bg-orange-100"
-            >
-              Dashboard
-            </RouterLink>
-          </div>
-        </nav>
-      </header>
+      <div class="hero-overlay absolute inset-0 z-10"></div>
+      <div class="hero-glow hero-glow-left absolute inset-y-0 left-0 z-10 w-[48%]"></div>
+      <div class="hero-glow hero-glow-center absolute inset-x-0 top-[12%] z-10 mx-auto h-72 w-72"></div>
 
-      <section class="mx-auto max-w-5xl py-14 text-center md:py-20">
-        <div class="mb-8">
-          <h1 class="text-5xl font-black leading-tight text-slate-900 md:text-7xl">
-            Voice Your Concerns
+      <div class="hero-content-shell app-shell-gutter absolute inset-0 z-20 flex items-center justify-center pt-16">
+        <div class="hero-content-group flex w-full max-w-3xl flex-col items-center justify-center text-center">
+          <p class="hero-kicker">Trusted complaint tracking</p>
+          <h1 class="hero-title text-5xl font-black leading-[0.95] tracking-tight text-white sm:text-6xl lg:text-8xl">
+            Track Your
+            <span class="block text-[#f97316]">Complaints.</span>
           </h1>
-          <p class="mt-4 text-xl text-slate-600 md:text-lg">
-            For institutions that value integrity - with ability to give feedback anonymously.
+
+          <p class="hero-subtitle mx-auto mt-7 max-w-2xl text-base leading-7 text-blue-100/80 sm:text-lg">
+            Follow updates, timelines, and responses in one clear place without losing visibility.
+          </p>
+
+          <div class="hero-actions mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <RouterLink to="/track-complaint" class="hero-btn hero-btn-secondary">
+              Track a Complaint
+            </RouterLink>
+          </div>
+
+          <div class="hero-trust mt-9 flex flex-wrap items-center justify-center gap-4 text-sm text-blue-100/80">
+            <span class="hero-trust-pill">Status tracking</span>
+            <span class="hero-trust-pill">Resolution timeline</span>
+            <span class="hero-trust-pill">Response visibility</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="benefits-section app-shell-gutter py-16 lg:py-20">
+      <div class="app-container">
+        <div class="mx-auto max-w-3xl text-center">
+          <p class="section-kicker">How It Works</p>
+          <h2 class="section-title">A clearer way to follow up on issues</h2>
+          <p class="section-intro">
+            The platform is designed to make complaint tracking easier to understand and easier to trust.
           </p>
         </div>
 
-        <div class="mt-9 flex flex-wrap items-center justify-center gap-5">
-          <RouterLink to="/signin" class="rounded-xl bg-orange-400 px-9 py-3 text-2xl font-semibold text-white hover:bg-orange-500 md:text-lg">
-            Submit Now
-          </RouterLink>
-          <RouterLink to="/signup" class="rounded-xl px-6 py-3 text-2xl font-semibold text-orange-700 hover:bg-orange-100 md:text-lg">
-            See How It Works
-            <!-- this route should be able to take the user to a page that explains how the system works, maybe with a video or a step by step guide... i'm not sure, but it should be a button that'll redirect to signup... -->
-          </RouterLink>
+        <div class="mt-10 grid gap-6 md:grid-cols-2">
+          <article
+            v-for="card in benefitCards"
+            :key="card.title"
+            class="benefit-card"
+          >
+            <div class="benefit-icon">
+              <font-awesome-icon :icon="card.icon" />
+            </div>
+            <h3 class="benefit-title">{{ card.title }}</h3>
+            <p class="benefit-description">{{ card.description }}</p>
+          </article>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section id="features" class="grid grid-cols-1 gap-4 pb-8 md:grid-cols-3">
-        <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p class="mb-3 text-4xl">🧾</p>
-          <h2 class="text-4xl font-bold text-slate-900 md:text-3xl">Easy Form</h2>
-          <p class="mt-2 text-lg text-slate-600 md:text-base">Simple complaint submission for organizations.</p>
-        </article>
-        <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p class="mb-3 text-4xl">📊</p>
-          <h2 class="text-4xl font-bold text-slate-900 md:text-3xl">Live Tracking</h2>
-          <p class="mt-2 text-lg text-slate-600 md:text-base">Track complaint progress from start to finish.</p>
-        </article>
-        <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p class="mb-3 text-4xl">🔒</p>
-          <h2 class="text-4xl font-bold text-slate-900 md:text-3xl">Secure & Anonymous</h2>
-          <p class="mt-2 text-lg text-slate-600 md:text-base">Submit safely with optional <span class="font-bold text-orange-600">anonymity</span>.</p>
-        </article>
-      </section>
-    </div>
+    <TestimonialsSection />
 
-  <div class="flex flex-col min-h-screen">
-    <div class="flex-1">
-    </div>
-    <Footer />
-  </div>
+    <AppFooter />
   </div>
 </template>
+
+<style scoped>
+.hero-section {
+  height: 82vh;
+  min-height: 560px;
+  max-height: 700px;
+  background: #0f2444;
+}
+
+.hero-content-shell {
+  min-height: 100%;
+}
+
+.hero-swiper,
+.hero-slide {
+  width: 100%;
+  height: 100%;
+}
+
+:deep(.hero-swiper .swiper-wrapper) {
+  height: 100%;
+}
+
+.hero-slide {
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-image-layer {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  display: block;
+  transform: scale(1.01);
+  filter: brightness(0.94) saturate(0.95);
+  animation: heroZoom 14s ease-in-out infinite;
+}
+
+.hero-overlay {
+  background:
+    linear-gradient(135deg, rgba(9, 26, 61, 0.54) 0%, rgba(17, 47, 94, 0.4) 42%, rgba(28, 63, 115, 0.28) 100%),
+    linear-gradient(180deg, rgba(8, 23, 53, 0.12) 0%, rgba(8, 23, 53, 0.2) 100%);
+  pointer-events: none;
+}
+
+.hero-glow {
+  pointer-events: none;
+  filter: blur(32px);
+}
+
+.hero-glow-left {
+  background:
+    radial-gradient(circle at 30% 42%, rgba(255, 255, 255, 0.08) 0%, rgba(107, 167, 255, 0.05) 24%, rgba(13, 35, 70, 0) 68%);
+}
+
+.hero-glow-center {
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 42%, rgba(255, 255, 255, 0) 72%);
+}
+
+.hero-kicker {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(244, 248, 255, 0.82);
+  text-shadow: 0 10px 28px rgba(8, 23, 53, 0.24);
+}
+
+.hero-title {
+  font-family: 'Times New Roman', Times, serif;
+  letter-spacing: -0.02em;
+  color: rgba(250, 252, 255, 0.98);
+  text-shadow: 0 16px 42px rgba(7, 18, 45, 0.28);
+}
+
+.hero-subtitle {
+  text-wrap: balance;
+  color: rgba(240, 245, 252, 0.88);
+  max-width: 38rem;
+}
+
+.hero-btn {
+  display: inline-flex;
+  min-height: 50px;
+  min-width: 198px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding: 0 1.3rem;
+  font-size: 0.97rem;
+  font-weight: 700;
+  transition: transform 0.22s ease, background-color 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.hero-btn:hover {
+  transform: translateY(-2px);
+}
+
+.hero-btn-primary {
+  background: #f97316;
+  color: #fff;
+  box-shadow: 0 14px 32px rgba(249, 115, 22, 0.24);
+}
+
+.hero-btn-primary:hover {
+  background: #ea580c;
+  box-shadow: 0 18px 36px rgba(249, 115, 22, 0.26);
+}
+
+.hero-btn-secondary {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  backdrop-filter: blur(10px);
+}
+
+.hero-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 14px 28px rgba(7, 18, 45, 0.16);
+}
+
+.hero-trust-pill {
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(232, 239, 251, 0.74);
+  padding: 0.45rem 0.85rem;
+  backdrop-filter: blur(10px);
+}
+
+:deep(.hero-swiper .swiper-pagination) {
+  bottom: 1.75rem;
+}
+
+:deep(.hero-swiper .swiper-pagination-bullet) {
+  width: 0.58rem;
+  height: 0.58rem;
+  background: rgba(255, 255, 255, 0.35);
+  opacity: 1;
+}
+
+:deep(.hero-swiper .swiper-pagination-bullet-active) {
+  background: #f97316;
+}
+
+@keyframes heroZoom {
+  0% {
+    transform: scale(1.01);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1.01);
+  }
+}
+
+.benefits-section {
+  background: #f6f4ef;
+}
+
+.section-kicker {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: 'Times New Roman', Times, serif;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #f97316;
+}
+
+.section-title {
+  margin-top: 0.5rem;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 900;
+  color: #0f2444;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+.section-intro {
+  margin-top: 1rem;
+  color: #5f6f86;
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.benefit-card {
+  border: 1px solid rgba(15, 36, 68, 0.08);
+  border-radius: 1.1rem;
+  background: #fff;
+  padding: 1.75rem;
+  box-shadow: 0 8px 28px rgba(15, 36, 68, 0.05);
+}
+
+.benefit-icon {
+  display: inline-flex;
+  height: 3rem;
+  width: 3rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.9rem;
+  background: rgba(15, 36, 68, 0.08);
+  color: #0f2444;
+  font-size: 1rem;
+}
+
+.benefit-title {
+  margin-top: 1.1rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f2444;
+}
+
+.benefit-description {
+  margin-top: 0.65rem;
+  color: #5f6f86;
+  line-height: 1.7;
+  font-size: 0.97rem;
+}
+
+@media (max-width: 768px) {
+  .hero-section {
+    height: 80vh;
+    min-height: 540px;
+    max-height: 640px;
+  }
+
+  .hero-content-shell {
+    min-height: 100%;
+  }
+
+  .hero-btn {
+    width: 100%;
+  }
+
+  .hero-trust {
+    gap: 0.55rem;
+  }
+
+  .hero-glow-left {
+    width: 70%;
+  }
+}
+</style>

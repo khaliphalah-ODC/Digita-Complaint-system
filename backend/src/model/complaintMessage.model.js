@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS complaint_messages (
   sender_role TEXT NOT NULL CHECK(sender_role IN ('admin', 'user')),
   message TEXT NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (complaint_id) REFERENCES complaint(id) ON DELETE CASCADE,
   FOREIGN KEY (sender_user_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -38,3 +39,15 @@ LEFT JOIN users u ON u.id = cm.sender_user_id
 WHERE cm.id = ?;
 `;
 
+export const updateComplaintMessageByIdQuery = `
+UPDATE complaint_messages
+SET
+  message = ?,
+  updated_at = CURRENT_TIMESTAMP
+WHERE id = ? AND complaint_id = ? AND sender_user_id = ?;
+`;
+
+export const deleteComplaintMessageByIdQuery = `
+DELETE FROM complaint_messages
+WHERE id = ? AND complaint_id = ? AND sender_user_id = ?;
+`;

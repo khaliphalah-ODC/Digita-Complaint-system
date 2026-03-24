@@ -6,7 +6,9 @@ import { fileURLToPath } from 'node:url';
 const sql3 = sqlite3.verbose();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const dbPath = path.resolve(__dirname, '../../complaints.db');
+const dbPath = process.env.COMPLAINT_DB_PATH
+  ? path.resolve(process.env.COMPLAINT_DB_PATH)
+  : path.resolve(__dirname, '../../complaints.db');
 
 const complaintDB = new sql3.Database(dbPath, sql3.OPEN_READWRITE | sql3.OPEN_CREATE, (err) => {
   if (err) {

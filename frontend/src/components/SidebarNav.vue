@@ -1,40 +1,309 @@
 <script setup>
 import { computed } from 'vue';
+import { storeToRefs } from 'pinia';
+import { useRoute } from 'vue-router';
 import { useSessionStore } from '../stores/session';
+import { useNotificationStore } from '../stores/notifications.js';
+
+const props = defineProps({
+  mobile: {
+    type: Boolean,
+    default: false
+  }
+});
+
+const emit = defineEmits(['logout', 'navigate']);
 
 const session = useSessionStore();
-const isAdmin = computed(() => session.currentUser?.role === 'admin');
-const dashboardRoute = computed(() => (isAdmin.value ? '/admin/dashboard' : '/team-dashboard'));
+const notificationStore = useNotificationStore();
+const route = useRoute();
+const { unreadCount } = storeToRefs(notificationStore);
+
+const isSuperAdmin = computed(() => session.currentUser?.role === 'super_admin');
+const isOrgAdmin = computed(() => session.currentUser?.role === 'org_admin');
+const isOrganizationMemberUser = computed(
+  () => session.currentUser?.role === 'user' && Boolean(session.currentUser?.organization_id)
+);
+
+const dashboardRoute = computed(() => {
+  if (isSuperAdmin.value) return '/admin/dashboard';
+  if (isOrgAdmin.value) return '/org-admin/dashboard';
+  return '/user/dashboard';
+});
+
+const workspaceLabel = computed(() => {
+  if (isSuperAdmin.value) return 'Super Admin';
+  if (isOrgAdmin.value) return 'Organization Admin';
+  if (isOrganizationMemberUser.value) return 'Organization User';
+  return 'Public User';
+});
+
+const asideClass = computed(() => {
+  if (props.mobile) {
+    return 'app-nav-sidebar flex h-full w-full flex-col overflow-y-auto rounded-none p-4 text-[var(--app-text-color)] sm:p-5';
+  }
+  return 'app-nav-sidebar hidden h-screen w-[5.5rem] shrink-0 flex-col px-3 py-4 text-[var(--app-text-color)] lg:fixed lg:left-0 lg:top-0 lg:z-30 lg:flex';
+});
+
+const navLinkClass = (target) => {
+  const isActive = route.path === target || route.fullPath === target;
+  if (props.mobile) {
+    return isActive
+      ? 'app-nav-link app-nav-link-active flex min-h-[46px] w-full items-center gap-3 px-4 py-3 text-left'
+      : 'app-nav-link flex min-h-[46px] w-full items-center gap-3 px-4 py-3 text-left';
+  }
+
+  return isActive
+    ? 'app-nav-link app-nav-link-active flex h-11 w-full items-center justify-center'
+    : 'app-nav-link flex h-11 w-full items-center justify-center';
+};
+
+const handleNavigate = () => emit('navigate');
+const handleLogout = () => emit('logout');
+const notificationCountForLink = (link) => (
+  link.to === '/notifications' && !isSuperAdmin.value && !isOrgAdmin.value ? unreadCount.value : 0
+);
+
+const superAdminLinks = [
+  { to: '/admin/dashboard', label: 'Dashboard', icon: ['fas', 'gauge-high'] },
+  { to: '/admin/organizations', label: 'Organizations', icon: ['fas', 'building'] },
+  { to: '/admin/triage', label: 'Triage Queue', icon: ['fas', 'clipboard-list'] },
+  { to: '/admin/testimonials', label: 'Testimonials', icon: ['fas', 'file-circle-check'] },
+  { to: '/admin/reports', label: 'Analytics', icon: ['fas', 'chart-line'] },
+  { to: '/admin/audit-logs', label: 'Audit Logs', icon: ['fas', 'circle-info'] },
+  { to: '/admin/settings', label: 'Settings', icon: ['fas', 'gear'] }
+];
+
+const orgAdminLinks = [
+  { to: '/org-admin/dashboard', label: 'Dashboard', icon: ['fas', 'gauge-high'] },
+  { to: '/org-admin/complaints', label: 'Complaints', icon: ['fas', 'file-lines'] },
+  { to: '/org-admin/users', label: 'Users', icon: ['fas', 'users'] },
+  { to: '/org-admin/departments', label: 'Departments', icon: ['fas', 'sitemap'] },
+  { to: '/org-admin/assessments', label: 'Assessments', icon: ['fas', 'clipboard-list'] },
+  { to: '/org-admin/escalations', label: 'Escalations', icon: ['fas', 'triangle-exclamation'] },
+  { to: '/org-admin/analytics', label: 'Analytics', icon: ['fas', 'chart-line'] },
+  { to: '/org-admin/notifications', label: 'Notifications', icon: ['fas', 'bell'] },
+  { to: '/org-admin/status-logs', label: 'Activity Logs', icon: ['fas', 'circle-info'] },
+  { to: '/organizations', label: 'Organization', icon: ['fas', 'building'] }
+];
+
+const userLinks = computed(() => {
+  const links = [
+    { to: '/user/dashboard', label: 'Dashboard', icon: ['fas', 'gauge-high'] },
+    { to: '/submit-complaint', label: 'Submit Complaint', icon: ['fas', 'file-lines'] },
+    { to: '/track-complaint', label: 'Track Complaint', icon: ['fas', 'eye'] },
+    { to: '/notifications', label: 'Notifications', icon: ['fas', 'bell'] },
+    { to: '/feedback', label: 'Feedback', icon: ['fas', 'comments'] },
+    { to: '/testimonial', label: 'Testimonials', icon: ['fas', 'file-circle-check'] }
+  ];
+
+  if (isOrganizationMemberUser.value) {
+    links.splice(3, 0, { to: '/organizations', label: 'My Organization', icon: ['fas', 'building'] });
+  }
+
+  return links;
+});
 </script>
 
 <template>
-  <aside class="hidden w-64 flex-col bg-gradient-to-b from-[#243a62] to-[#1b2b49] p-6 text-white md:flex">
-    <div>
-      <p class="text-2xl font-black tracking-tight">Complaint Management System</p>
-      <p class="text-sm text-white/70">{{ isAdmin ? 'Platform Admin' : 'Team Workspace' }}</p>
-    </div>
+  <aside :class="asideClass">
+    <!-- SUPER ADMIN -->
+    <template v-if="isSuperAdmin">
+      <template v-if="mobile">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--app-primary)]">Civic Console</p>
+          <p class="mt-2 text-[1.8rem] font-black tracking-tight text-[var(--app-title-color)]">Complaint MS</p>
+          <p class="mt-1 text-sm text-[var(--app-nav-text-muted)]">{{ workspaceLabel }}</p>
+        </div>
 
-    <nav class="mt-10 space-y-2">
-      <RouterLink :to="dashboardRoute" class="block w-full rounded-xl px-4 py-2 text-left text-sm text-white/80 hover:bg-white/10">Dashboard</RouterLink>
-      <RouterLink v-if="isAdmin" to="/admin/users" class="block w-full rounded-xl px-4 py-2 text-left text-sm text-white/80 hover:bg-white/10">User Management</RouterLink>
-      <RouterLink v-if="isAdmin" to="/admin/organizations" class="block w-full rounded-xl px-4 py-2 text-left text-sm text-white/80 hover:bg-white/10">Organization</RouterLink>
-      <RouterLink v-if="isAdmin" to="/admin/complaints" class="block w-full rounded-xl px-4 py-2 text-left text-sm text-white/80 hover:bg-white/10">Complaint</RouterLink>
-      <RouterLink v-if="isAdmin" to="/admin/departments" class="block w-full rounded-xl px-4 py-2 text-left text-sm text-white/80 hover:bg-white/10">Department</RouterLink>
-      <RouterLink v-if="isAdmin" to="/admin/accessments" class="block w-full rounded-xl px-4 py-2 text-left text-sm text-white/80 hover:bg-white/10">Accessment</RouterLink>
-      <RouterLink v-if="isAdmin" to="/admin/escalations" class="block w-full rounded-xl px-4 py-2 text-left text-sm text-white/80 hover:bg-white/10">Escalation</RouterLink>
-      <RouterLink v-if="isAdmin" to="/feedback" class="block w-full rounded-xl px-4 py-2 text-left text-sm text-white/80 hover:bg-white/10">Feedback</RouterLink>
-      <RouterLink v-if="isAdmin" to="/admin/notifications" class="block w-full rounded-xl px-4 py-2 text-left text-sm text-white/80 hover:bg-white/10">Notification</RouterLink>
-      <RouterLink v-if="isAdmin" to="/admin/audit-logs" class="block w-full rounded-xl px-4 py-2 text-left text-sm text-white/80 hover:bg-white/10">Status Logs</RouterLink>
-      <RouterLink v-if="isAdmin" to="/admin/reports" class="block w-full rounded-xl px-4 py-2 text-left text-sm text-white/80 hover:bg-white/10">Reports</RouterLink>
-      <RouterLink v-if="isAdmin" to="/admin/settings" class="block w-full rounded-xl px-4 py-2 text-left text-sm text-white/80 hover:bg-white/10">Settings</RouterLink>
-      <RouterLink v-if="!isAdmin" to="/submit-complaint" class="block w-full rounded-xl px-4 py-2 text-left text-sm text-white/80 hover:bg-white/10">Submit Complaint</RouterLink>
-      <RouterLink v-if="!isAdmin" to="/track-complaint" class="block w-full rounded-xl px-4 py-2 text-left text-sm text-white/80 hover:bg-white/10">Track Complaint</RouterLink>
-      <RouterLink v-if="!isAdmin" to="/organizations" class="block w-full rounded-xl px-4 py-2 text-left text-sm text-white/80 hover:bg-white/10">Organization</RouterLink>
-      <RouterLink v-if="!isAdmin" to="/feedback" class="block w-full rounded-xl px-4 py-2 text-left text-sm text-white/80 hover:bg-white/10">Feedback</RouterLink>
-    </nav>
+        <nav class="mt-6 space-y-1.5 pb-6">
+          <RouterLink
+            v-for="link in superAdminLinks"
+            :key="link.to"
+            :to="link.to"
+            :class="navLinkClass(link.to)"
+            @click="handleNavigate"
+          >
+            <font-awesome-icon :icon="link.icon" />
+            <span>{{ link.label }}</span>
+          </RouterLink>
+        </nav>
 
-    <button class="mt-auto rounded-xl px-4 py-2 text-left text-sm text-white/80 hover:bg-white/10" @click="$emit('logout')">
-      Logout
-    </button>
+        <button
+          class="app-nav-link mt-auto flex min-h-[46px] w-full items-center gap-3 border border-[var(--app-nav-border)] bg-[var(--app-nav-surface-strong)] px-4 py-3 text-left hover:bg-[var(--app-nav-hover)]"
+          @click="handleLogout"
+        >
+          <font-awesome-icon :icon="['fas', 'right-from-bracket']" />
+          <span>Logout</span>
+        </button>
+      </template>
+
+      <template v-else>
+        <div class="flex items-center justify-center pb-4">
+          <div class="app-nav-sidebar-logo flex h-[3.15rem] w-[3.15rem] items-center justify-center text-center text-sm font-bold leading-tight">
+            MS
+          </div>
+        </div>
+
+        <nav class="mt-4 flex flex-1 flex-col items-center gap-2.5">
+          <RouterLink
+            v-for="link in superAdminLinks"
+            :key="link.to"
+            :to="link.to"
+            :class="navLinkClass(link.to)"
+            :title="link.label"
+            @click="handleNavigate"
+          >
+            <font-awesome-icon :icon="link.icon" class="text-base" />
+          </RouterLink>
+        </nav>
+
+        <button
+          class="app-nav-link mt-auto flex h-11 w-full items-center justify-center border border-[var(--app-nav-border)] bg-[var(--app-nav-surface-strong)] hover:bg-[var(--app-nav-hover)]"
+          title="Logout"
+          @click="handleLogout"
+        >
+          <font-awesome-icon :icon="['fas', 'right-from-bracket']" class="text-base" />
+        </button>
+      </template>
+    </template>
+
+    <!-- ORG ADMIN -->
+    <template v-else-if="isOrgAdmin">
+      <template v-if="mobile">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--app-primary)]">Civic Console</p>
+          <p class="mt-2 text-[1.8rem] font-black tracking-tight text-[var(--app-title-color)]">Complaint MS</p>
+          <p class="mt-1 text-sm text-[var(--app-nav-text-muted)]">{{ workspaceLabel }}</p>
+        </div>
+
+        <nav class="mt-6 space-y-1.5 pb-6">
+          <RouterLink
+            v-for="link in orgAdminLinks"
+            :key="link.to"
+            :to="link.to"
+            :class="navLinkClass(link.to)"
+            @click="handleNavigate"
+          >
+            <font-awesome-icon :icon="link.icon" />
+            <span>{{ link.label }}</span>
+          </RouterLink>
+        </nav>
+
+        <button
+          class="app-nav-link mt-auto flex min-h-[46px] w-full items-center gap-3 border border-[var(--app-nav-border)] bg-[var(--app-nav-surface-strong)] px-4 py-3 text-left hover:bg-[var(--app-nav-hover)]"
+          @click="handleLogout"
+        >
+          <font-awesome-icon :icon="['fas', 'right-from-bracket']" />
+          <span>Logout</span>
+        </button>
+      </template>
+
+      <template v-else>
+        <div class="flex items-center justify-center pb-4">
+          <div class="app-nav-sidebar-logo flex h-[3.15rem] w-[3.15rem] items-center justify-center text-center text-sm font-bold leading-tight">
+            OG
+          </div>
+        </div>
+
+        <nav class="mt-4 flex flex-1 flex-col items-center gap-2.5 overflow-y-auto">
+          <RouterLink
+            v-for="link in orgAdminLinks"
+            :key="link.to"
+            :to="link.to"
+            :class="navLinkClass(link.to)"
+            :title="link.label"
+            @click="handleNavigate"
+          >
+            <font-awesome-icon :icon="link.icon" class="text-base" />
+          </RouterLink>
+        </nav>
+
+        <button
+          class="app-nav-link mt-auto flex h-11 w-full items-center justify-center border border-[var(--app-nav-border)] bg-[var(--app-nav-surface-strong)] hover:bg-[var(--app-nav-hover)]"
+          title="Logout"
+          @click="handleLogout"
+        >
+          <font-awesome-icon :icon="['fas', 'right-from-bracket']" class="text-base" />
+        </button>
+      </template>
+    </template>
+
+    <!-- USER -->
+    <template v-else>
+      <template v-if="mobile">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--app-primary)]">Civic Console</p>
+          <p class="mt-2 text-[1.8rem] font-black tracking-tight text-slate-900">Complaint MS</p>
+          <p class="mt-1 text-sm text-slate-600">{{ workspaceLabel }}</p>
+        </div>
+
+        <nav class="mt-6 space-y-1.5 pb-6">
+          <RouterLink
+            v-for="link in userLinks"
+            :key="link.to"
+            :to="link.to"
+            :class="navLinkClass(link.to)"
+            @click="handleNavigate"
+          >
+            <span class="relative inline-flex">
+              <font-awesome-icon :icon="link.icon" />
+              <span
+                v-if="notificationCountForLink(link) > 0"
+                class="ml-2 inline-flex min-w-[1.55rem] items-center justify-center rounded-full bg-[var(--app-primary)] px-1.5 py-0.5 text-[0.68rem] font-bold leading-none text-white shadow-[0_8px_18px_rgba(24,58,99,0.32)]"
+              >
+                {{ notificationCountForLink(link) > 99 ? '99+' : notificationCountForLink(link) }}
+              </span>
+            </span>
+            <span>{{ link.label }}</span>
+          </RouterLink>
+        </nav>
+
+        <button
+          class="app-nav-link mt-auto flex min-h-[46px] w-full items-center gap-3 border border-[var(--app-nav-border)] bg-[var(--app-nav-surface-strong)] px-4 py-3 text-left hover:bg-[var(--app-nav-hover)]"
+          @click="handleLogout"
+        >
+          <font-awesome-icon :icon="['fas', 'right-from-bracket']" />
+          <span>Logout</span>
+        </button>
+      </template>
+
+      <template v-else>
+        <div class="flex items-center justify-center pb-4">
+          <div class="app-nav-sidebar-logo flex h-[3.15rem] w-[3.15rem] items-center justify-center text-center text-sm font-bold leading-tight">
+            US
+          </div>
+        </div>
+
+        <nav class="mt-4 flex flex-1 flex-col items-center gap-2.5">
+          <RouterLink
+            v-for="link in userLinks"
+            :key="link.to"
+            :to="link.to"
+            :class="navLinkClass(link.to)"
+            :title="link.label"
+            @click="handleNavigate"
+          >
+            <span class="relative inline-flex">
+              <font-awesome-icon :icon="link.icon" class="text-base" />
+              <span
+                v-if="notificationCountForLink(link) > 0"
+                class="absolute -right-2 -top-2 inline-flex min-w-[1.2rem] items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--app-primary),var(--app-accent))] px-1 text-[0.62rem] font-bold leading-5 text-white shadow-[0_10px_20px_rgba(24,58,99,0.3)] ring-2 ring-white"
+              >
+                {{ notificationCountForLink(link) > 9 ? '9+' : notificationCountForLink(link) }}
+              </span>
+            </span>
+          </RouterLink>
+        </nav>
+
+        <button
+          class="app-nav-link mt-auto flex h-11 w-full items-center justify-center border border-[var(--app-nav-border)] bg-[var(--app-nav-surface-strong)] hover:bg-[var(--app-nav-hover)]"
+          title="Logout"
+          @click="handleLogout"
+        >
+          <font-awesome-icon :icon="['fas', 'right-from-bracket']" class="text-base" />
+        </button>
+      </template>
+    </template>
   </aside>
 </template>

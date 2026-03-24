@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
+    "test": "node --test",
+    "seed:super-admin": "node src/utils/seed/superAdmin.seed.js",
+    "migrate:tenant": "node src/utils/seed/tenantIsolation.migration.js",
     "smoke": "bash scripts/smoke-test.sh",
     "release:check": "bash scripts/release-check.sh"
   },
@@ -20,6 +23,7 @@
     "express": "^5.2.1",
     "joi": "^18.0.2",
     "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^8.0.3",
     "nodemon": "^3.1.11",
     "sqlite3": "^5.1.7"
   }

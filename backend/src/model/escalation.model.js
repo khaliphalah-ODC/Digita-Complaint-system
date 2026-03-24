@@ -6,6 +6,7 @@ export const escalationsQuery = `
 CREATE TABLE IF NOT EXISTS escalations (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   accessment_id INTEGER NOT NULL,
+  organization_id INTEGER,
   escalated_by INTEGER NOT NULL,
   assigned_to INTEGER,
   escalation_level TEXT NOT NULL DEFAULT 'level_1' CHECK(escalation_level IN ('level_1', 'level_2', 'level_3')),
@@ -15,6 +16,7 @@ CREATE TABLE IF NOT EXISTS escalations (
   resolved_at DATETIME,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (organization_id) REFERENCES organization(organization_id),
   FOREIGN KEY (accessment_id) REFERENCES accessments(id),
   FOREIGN KEY (escalated_by) REFERENCES users(id),
   FOREIGN KEY (assigned_to) REFERENCES users(id)
@@ -24,6 +26,7 @@ CREATE TABLE IF NOT EXISTS escalations (
 export const createEscalationQuery = `
 INSERT INTO escalations (
   accessment_id,
+  organization_id,
   escalated_by,
   assigned_to,
   escalation_level,
@@ -31,16 +34,22 @@ INSERT INTO escalations (
   notes,
   status
 )
-VALUES (?, ?, ?, ?, ?, ?, ?);
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 `;
 
 export const fetchEscalationsQuery = `SELECT * FROM escalations ORDER BY id DESC;`;
 export const fetchEscalationByIdQuery = `SELECT * FROM escalations WHERE id = ?;`;
+export const fetchEscalationsByOrganizationIdQuery = `
+SELECT * FROM escalations WHERE organization_id = ? ORDER BY id DESC;
+`;
 export const fetchEscalationsByAccessmentIdQuery = `
 SELECT * FROM escalations WHERE accessment_id = ? ORDER BY id DESC;
 `;
 export const fetchEscalationsByStatusQuery = `
 SELECT * FROM escalations WHERE status = ? ORDER BY id DESC;
+`;
+export const fetchEscalationsByOrganizationAndStatusQuery = `
+SELECT * FROM escalations WHERE organization_id = ? AND status = ? ORDER BY id DESC;
 `;
 
 export const updateEscalationQuery = `

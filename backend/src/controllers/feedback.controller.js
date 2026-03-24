@@ -4,14 +4,13 @@ import { sendSuccess, sendError } from '../utils/response.js';
 import {
   Feedback,
   createFeedbackQuery,
-  fetchAllFeedbackQuery,
   fetchFeedbackByIdQuery,
-  fetchFeedbackByComplaintIdQuery,
   fetchFeedbackByUserIdQuery,
   updateFeedbackQuery,
-  deleteFeedbackByComplaintIdQuery,
   deleteFeedbackByIdQuery
 } from '../model/feedback.model.js';
+import { selectComplaintById } from '../model/complaint.model.js';
+import { denySuperAdminInternalAccess } from '../utils/tenantScope.js';
 
 const runQuery = (sql, params = []) =>
   new Promise((resolve, reject) => {
@@ -68,6 +67,13 @@ export const CreateFeedbackTable = () => {
 };
 
 export const createFeedback = (req, res) => {
+  if (denySuperAdminInternalAccess(req, res, 'Super admin cannot access feedback records directly')) {
+    return;
+  }
+  if (req.user?.role !== 'user') {
+    return sendError(res, 403, 'Only users can access feedback records');
+  }
+
   const complaintId = Number(req.body?.complaint_id);
   const rating = Number(req.body?.rating);
   const comment = req.body?.comment ?? null;
@@ -79,7 +85,7 @@ export const createFeedback = (req, res) => {
     return sendError(res, 400, 'rating must be between 1 and 5');
   }
 
-  complaintDB.get('SELECT id, user_id FROM complaint WHERE id = ?', [complaintId], (complaintErr, complaintRow) => {
+  complaintDB.get(selectComplaintById, [complaintId], (complaintErr, complaintRow) => {
     if (complaintErr) {
       return sendError(res, 500, 'Failed to validate complaint', complaintErr.message);
     }
@@ -95,7 +101,7 @@ export const createFeedback = (req, res) => {
         return sendError(res, 401, 'Authenticated user does not exist');
       }
 
-      if (req.user.role !== 'admin' && complaintRow.user_id !== req.user.id) {
+      if (complaintRow.user_id !== req.user.id) {
         return sendError(res, 403, 'You can only submit feedback for your own complaint');
       }
 
@@ -126,10 +132,15 @@ export const createFeedback = (req, res) => {
   });
 };
 
-export const getAllFeedback = (_req, res) => {
-  const query = _req.user?.role === 'admin' ? fetchAllFeedbackQuery : fetchFeedbackByUserIdQuery;
-  const params = _req.user?.role === 'admin' ? [] : [_req.user.id];
-  complaintDB.all(query, params, (err, rows) => {
+export const getAllFeedback = (req, res) => {
+  if (denySuperAdminInternalAccess(req, res, 'Super admin cannot access feedback records directly')) {
+    return;
+  }
+  if (req.user?.role !== 'user') {
+    return sendError(res, 403, 'Only users can access feedback records');
+  }
+
+  complaintDB.all(fetchFeedbackByUserIdQuery, [req.user.id], (err, rows) => {
     if (err) {
       return sendError(res, 500, 'Failed to fetch feedback', err.message);
     }
@@ -138,6 +149,13 @@ export const getAllFeedback = (_req, res) => {
 };
 
 export const getFeedbackById = (req, res) => {
+  if (denySuperAdminInternalAccess(req, res, 'Super admin cannot access feedback records directly')) {
+    return;
+  }
+  if (req.user?.role !== 'user') {
+    return sendError(res, 403, 'Only users can access feedback records');
+  }
+
   complaintDB.get(fetchFeedbackByIdQuery, [req.params.id], (err, row) => {
     if (err) {
       return sendError(res, 500, 'Failed to fetch feedback', err.message);
@@ -145,16 +163,10 @@ export const getFeedbackById = (req, res) => {
     if (!row) {
       return sendError(res, 404, 'Feedback not found');
     }
-    return sendSuccess(res, 200, 'Feedback retrieved successfully', row);
-  });
-};
-
-export const getFeedbackByComplaintId = (req, res) => {
-  complaintDB.all(fetchFeedbackByComplaintIdQuery, [req.params.complaintId], (err, rows) => {
-    if (err) {
-      return sendError(res, 500, 'Failed to fetch feedback by complaint', err.message);
+    if (Number(row.user_id) !== Number(req.user.id)) {
+      return sendError(res, 403, 'Access denied');
     }
-    return sendSuccess(res, 200, 'Feedback retrieved successfully', rows);
+    return sendSuccess(res, 200, 'Feedback retrieved successfully', row);
   });
 };
 
@@ -175,7 +187,10 @@ export const updateFeedback = (req, res) => {
     if (!existing) {
       return sendError(res, 404, 'Feedback not found');
     }
-    if (req.user.role !== 'admin' && existing.user_id !== req.user.id) {
+    if (req.user.role !== 'user') {
+      return sendError(res, 403, 'Only users can update feedback records');
+    }
+    if (existing.user_id !== req.user.id) {
       return sendError(res, 403, 'Access denied');
     }
 
@@ -202,7 +217,10 @@ export const deleteFeedback = (req, res) => {
     if (!existing) {
       return sendError(res, 404, 'Feedback not found');
     }
-    if (req.user.role !== 'admin' && existing.user_id !== req.user.id) {
+    if (req.user.role !== 'user') {
+      return sendError(res, 403, 'Only users can delete feedback records');
+    }
+    if (existing.user_id !== req.user.id) {
       return sendError(res, 403, 'Access denied');
     }
 
@@ -211,18 +229,6 @@ export const deleteFeedback = (req, res) => {
         return sendError(res, 500, 'Failed to delete feedback', err.message);
       }
       return sendSuccess(res, 200, 'Feedback deleted successfully', { id: req.params.id });
-    });
-  });
-};
-
-export const deleteFeedbackByComplaintId = (req, res) => {
-  complaintDB.run(deleteFeedbackByComplaintIdQuery, [req.params.complaintId], function onDelete(err) {
-    if (err) {
-      return sendError(res, 500, 'Failed to delete feedback', err.message);
-    }
-    return sendSuccess(res, 200, 'Feedback deleted successfully', {
-      complaint_id: req.params.complaintId,
-      deleted_count: this.changes
     });
   });
 };
