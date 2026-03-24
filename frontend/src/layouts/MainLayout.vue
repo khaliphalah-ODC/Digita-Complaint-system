@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { RouterLink, RouterView } from 'vue-router';
 import SidebarNav from '../components/SidebarNav.vue';
 import AppToast from '../components/AppToast.vue';
@@ -12,6 +12,7 @@ import { useNotificationStore } from '../stores/notifications.js';
 const session = useSessionStore();
 const notificationStore = useNotificationStore();
 const route = useRoute();
+const router = useRouter();
 const { unreadCount } = storeToRefs(notificationStore);
 
 const isLoggedIn = computed(() => session.isLoggedIn);
@@ -51,6 +52,13 @@ const contentClass = computed(() => (
 ));
 
 const mobileNavOpen = ref(false);
+const showLogoutConfirm = ref(false);
+
+const confirmLogout = () => {
+  showLogoutConfirm.value = false;
+  session.logout();
+  router.push('/');
+};
 
 const profileAvatar = computed(() => {
   return (
@@ -154,7 +162,7 @@ onMounted(() => {
     <AppToast />
 
     <div class="relative flex min-h-screen w-full">
-      <SidebarNav v-if="isLoggedIn" @logout="session.logout" />
+      <SidebarNav v-if="isLoggedIn" @logout="showLogoutConfirm = true" />
 
       <div
         v-if="isLoggedIn && mobileNavOpen"
@@ -180,7 +188,7 @@ onMounted(() => {
             </button>
           </div>
 
-          <SidebarNav mobile @logout="session.logout" @navigate="closeMobileNav" />
+          <SidebarNav mobile @logout="showLogoutConfirm = true" @navigate="closeMobileNav" />
         </div>
       </div>
 
@@ -253,7 +261,7 @@ onMounted(() => {
 
                 <button
                   class="inline-flex min-h-[40px] items-center rounded-[var(--app-radius-md)] border border-[var(--app-nav-border)] bg-[var(--app-nav-surface-strong)] px-3 py-2 text-xs font-semibold text-[var(--app-nav-text)] hover:bg-[var(--app-nav-hover)]"
-                  @click="session.logout"
+                  @click="showLogoutConfirm = true"
                 >
                   Logout
                 </button>
@@ -282,6 +290,35 @@ onMounted(() => {
         </section>
         <AppFooter />
       </main>
+    </div>
+
+    <div v-if="showLogoutConfirm" class="fixed inset-0 z-[999] flex items-center justify-center bg-black/40 px-4">
+      <div class="w-full max-w-sm rounded-2xl border border-[var(--app-line)] bg-white p-6 shadow-[0_24px_60px_rgba(0,0,0,0.2)]">
+        <div class="flex items-center gap-3">
+          <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
+            <font-awesome-icon :icon="['fas', 'triangle-exclamation']" />
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Confirm Logout</h3>
+            <p class="mt-0.5 text-sm text-slate-500">Are you sure you want to log out?</p>
+          </div>
+        </div>
+
+        <div class="mt-6 flex gap-3">
+          <button
+            class="flex-1 rounded-full border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+            @click="showLogoutConfirm = false"
+          >
+            Cancel
+          </button>
+          <button
+            class="flex-1 rounded-full bg-[var(--app-primary)] py-2.5 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(24,58,99,0.28)] transition hover:bg-[var(--app-primary-ink)]"
+            @click="confirmLogout"
+          >
+            Yes, Logout
+          </button>
+        </div>
+      </div>
     </div>
 
   </div>

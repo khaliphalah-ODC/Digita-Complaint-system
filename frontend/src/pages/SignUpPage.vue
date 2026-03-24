@@ -152,9 +152,9 @@ onMounted(() => {
     <div class="flex flex-1 flex-col px-0 py-0">
       <AuthTopNav fixed />
       <div class="flex flex-1 items-center justify-center px-4 pb-6 pt-24 sm:px-6 sm:pb-10 sm:pt-28 lg:px-10 lg:pt-32">
-        <div class="w-full max-w-5xl">
-          <section class="app-auth-shell flex w-full flex-col overflow-hidden rounded-[18px] sm:min-h-[560px] sm:flex-row">
-            <aside class="app-auth-aside relative flex min-h-[360px] flex-col justify-between px-8 py-8 text-white sm:min-h-[560px] sm:w-[44%] sm:px-10 sm:py-10">
+        <div class="w-full max-w-4xl">
+          <section class="app-auth-shell flex w-full flex-col overflow-hidden rounded-[18px] sm:min-h-[520px] sm:flex-row">
+            <aside class="app-auth-aside relative flex min-h-[320px] flex-col justify-between px-7 py-7 text-white sm:min-h-[520px] sm:w-[44%] sm:px-9 sm:py-9">
               <div class="absolute left-1/2 top-1/4 h-20 w-20 -translate-x-1/2 rounded-full bg-white/8 blur-lg"></div>
               <div>
                 <p class="text-base font-semibold text-white/72">Complaint MS</p>
@@ -180,8 +180,8 @@ onMounted(() => {
               </div>
             </aside>
 
-            <form class="app-auth-form px-7 py-8 sm:w-[56%] sm:px-10 sm:py-10 lg:px-12 lg:py-12" @submit.prevent="submit">
-              <div class="mx-auto max-w-[360px]">
+            <form class="app-auth-form px-6 py-7 sm:w-[56%] sm:px-9 sm:py-9 lg:px-10 lg:py-10" @submit.prevent="submit">
+              <div class="mx-auto max-w-[320px]">
                 <div class="mb-6 flex rounded-full border border-[var(--app-line)] bg-white/90 p-1 text-sm font-semibold text-slate-600 shadow-sm sm:hidden">
                   <RouterLink
                     to="/signin"
@@ -197,7 +197,7 @@ onMounted(() => {
                     Sign Up
                   </RouterLink>
                 </div>
-                <p class="app-auth-title text-[28px] font-black uppercase tracking-[0.04em]">Sign Up</p>
+                <p class="app-auth-title text-[24px] font-black uppercase tracking-[0.04em]">Sign Up</p>
 
                 <div class="mt-10 space-y-5">
                   <label class="block">

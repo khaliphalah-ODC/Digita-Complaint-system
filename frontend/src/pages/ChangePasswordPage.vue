@@ -62,72 +62,74 @@ const submit = async () => {
 </script>
 
 <template>
-  <section class="mx-auto flex min-h-full max-w-3xl items-center justify-center">
-    <div class="w-full rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-      <p class="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">Password Reset Required</p>
-      <h1 class="mt-2 text-3xl font-black text-slate-900">Change your temporary password</h1>
-      <p class="mt-3 max-w-2xl text-sm text-slate-600">
-        Your account for {{ currentUserLabel }} is signed in with a default password. You need to set a new password before the dashboard and other protected pages will open.
-      </p>
-
-      <form class="mt-6 space-y-4" @submit.prevent="submit">
-        <div>
-          <label class="mb-1 block text-sm font-semibold text-slate-700">Current Password</label>
-          <input
-            v-model="form.current_password"
-            type="password"
-            required
-            autocomplete="current-password"
-            class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-blue-500"
-          >
-        </div>
-
-        <div>
-          <label class="mb-1 block text-sm font-semibold text-slate-700">New Password</label>
-          <input
-            v-model="form.new_password"
-            type="password"
-            required
-            minlength="8"
-            autocomplete="new-password"
-            class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-blue-500"
-          >
-        </div>
-
-        <div>
-          <label class="mb-1 block text-sm font-semibold text-slate-700">Confirm New Password</label>
-          <input
-            v-model="form.confirm_password"
-            type="password"
-            required
-            minlength="8"
-            autocomplete="new-password"
-            class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-blue-500"
-          >
-        </div>
-
-        <p v-if="session.errorMessage" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {{ session.errorMessage }}
+  <section class="app-shell-gutter flex min-h-[70vh] items-center justify-center py-8">
+    <div class="app-page-shell w-full max-w-3xl p-4 sm:p-6">
+      <div class="app-section-card">
+        <p class="app-kicker">Password Reset Required</p>
+        <h1 class="mt-2 text-3xl font-black text-[var(--app-title-color)]">Change your temporary password</h1>
+        <p class="mt-3 max-w-2xl text-sm text-[var(--app-muted-color)]">
+          Your account for {{ currentUserLabel }} is signed in with a default password. You need to set a new password before the dashboard and other protected pages will open.
         </p>
 
-        <div class="flex flex-col gap-3 sm:flex-row">
-          <button
-            type="submit"
-            :disabled="session.loadingPasswordChange"
-            class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-70"
-          >
-            {{ session.loadingPasswordChange ? 'Updating Password...' : 'Change Password' }}
-          </button>
+        <form class="mt-6 space-y-4" @submit.prevent="submit">
+          <div>
+            <label class="mb-1 block text-sm font-semibold text-slate-700">Current Password</label>
+            <input
+              v-model="form.current_password"
+              type="password"
+              required
+              autocomplete="current-password"
+              class="app-input"
+            >
+          </div>
 
-          <button
-            type="button"
-            class="rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-            @click="session.logout"
-          >
-            Logout
-          </button>
-        </div>
-      </form>
+          <div>
+            <label class="mb-1 block text-sm font-semibold text-slate-700">New Password</label>
+            <input
+              v-model="form.new_password"
+              type="password"
+              required
+              minlength="8"
+              autocomplete="new-password"
+              class="app-input"
+            >
+          </div>
+
+          <div>
+            <label class="mb-1 block text-sm font-semibold text-slate-700">Confirm New Password</label>
+            <input
+              v-model="form.confirm_password"
+              type="password"
+              required
+              minlength="8"
+              autocomplete="new-password"
+              class="app-input"
+            >
+          </div>
+
+          <p v-if="session.errorMessage" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {{ session.errorMessage }}
+          </p>
+
+          <div class="app-action-row flex flex-wrap gap-2">
+            <button
+              type="submit"
+              :disabled="session.loadingPasswordChange"
+              class="app-btn-primary"
+            >
+              {{ session.loadingPasswordChange ? 'Updating Password...' : 'Change Password' }}
+            </button>
+
+            <button
+              type="button"
+              class="app-btn-secondary"
+              @click="session.logout"
+            >
+              Logout
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </section>
 </template>

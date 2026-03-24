@@ -14,6 +14,7 @@ export const useSessionStore = defineStore('session', () => {
   const loadingLogin = ref(false);
   const loadingRegister = ref(false);
   const loadingPasswordChange = ref(false);
+  const loadingEmailChange = ref(false);
   const loadingForgotPassword = ref(false);
   const loadingRequestResetCode = ref(false);
   const loadingGoogleLogin = ref(false);
@@ -276,6 +277,26 @@ export const useSessionStore = defineStore('session', () => {
     }
   };
 
+  const changeEmail = async (payload) => {
+    errorMessage.value = '';
+    loadingEmailChange.value = true;
+
+    try {
+      const response = await api.post(`${USERS_API_BASE}/change-email`, payload);
+      const data = ensureSuccess(unwrapResponse(response), 'Email change failed');
+      currentUser.value = data?.user || currentUser.value;
+      if (payload?.new_email) {
+        pendingVerificationEmail.value = String(payload.new_email || '').trim().toLowerCase();
+      }
+      return data;
+    } catch (error) {
+      errorMessage.value = getReadableError(error, 'Email change failed');
+      throw error;
+    } finally {
+      loadingEmailChange.value = false;
+    }
+  };
+
   const requestPasswordResetCode = async (payload) => {
     errorMessage.value = '';
     loadingRequestResetCode.value = true;
@@ -427,6 +448,7 @@ export const useSessionStore = defineStore('session', () => {
     loadingLogin,
     loadingRegister,
     loadingPasswordChange,
+    loadingEmailChange,
     loadingForgotPassword,
     loadingRequestResetCode,
     loadingGoogleLogin,
@@ -452,6 +474,7 @@ export const useSessionStore = defineStore('session', () => {
     requestPasswordResetCode,
     requestPasswordResetToken,
     changePassword,
+    changeEmail,
     logout
   };
 });

@@ -3,15 +3,19 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import PageHeader from '../../components/superAdmin/PageHeader.vue';
 import api, { extractApiError, unwrapResponse } from '../../services/api.js';
+import { useSessionStore } from '../../stores/session.js';
 
 const loading = ref(false);
 const saving = ref(false);
 const error = ref('');
 const success = ref('');
+const accountError = ref('');
+const accountSuccess = ref('');
 const orgLoading = ref(false);
 const orgError = ref('');
 const organizations = ref([]);
 const orgActionId = ref(null);
+const session = useSessionStore();
 
 const form = reactive({
   system_name: '',
@@ -32,6 +36,13 @@ const form = reactive({
   notify_on_escalation: true,
   notify_on_chat_message: true,
   notify_on_assignment: true
+});
+
+const accountForm = reactive({
+  email: '',
+  current_password: '',
+  new_password: '',
+  confirm_password: ''
 });
 
 const auditLoading = ref(false);
@@ -195,6 +206,60 @@ const toggleOrganizationStatus = async (org) => {
 
 onMounted(fetchOrganizations);
 
+const syncAccountEmail = () => {
+  accountForm.email = String(session.currentUser?.email || '').trim();
+};
+
+const saveAccountEmail = async () => {
+  accountError.value = '';
+  accountSuccess.value = '';
+  if (!accountForm.email.trim()) {
+    accountError.value = 'Email is required.';
+    return;
+  }
+  if (!accountForm.current_password.trim()) {
+    accountError.value = 'Current password is required to change email.';
+    return;
+  }
+
+  try {
+    await session.changeEmail({
+      new_email: accountForm.email.trim(),
+      current_password: accountForm.current_password
+    });
+    accountForm.current_password = '';
+    accountSuccess.value = 'Email updated. Please verify if required.';
+  } catch (requestError) {
+    accountError.value = extractApiError(requestError, 'Failed to update email');
+  }
+};
+
+const saveAccountPassword = async () => {
+  accountError.value = '';
+  accountSuccess.value = '';
+  if (!accountForm.current_password.trim() || !accountForm.new_password.trim()) {
+    accountError.value = 'Current and new password are required.';
+    return;
+  }
+  if (accountForm.new_password !== accountForm.confirm_password) {
+    accountError.value = 'New passwords do not match.';
+    return;
+  }
+
+  try {
+    await session.changePassword({
+      current_password: accountForm.current_password,
+      new_password: accountForm.new_password
+    });
+    accountForm.current_password = '';
+    accountForm.new_password = '';
+    accountForm.confirm_password = '';
+    accountSuccess.value = 'Password updated successfully.';
+  } catch (requestError) {
+    accountError.value = extractApiError(requestError, 'Failed to update password');
+  }
+};
+
 const fetchAuditLogs = async () => {
   auditLoading.value = true;
   auditError.value = '';
@@ -243,6 +308,7 @@ const clearAuditFilters = () => {
 };
 
 onMounted(fetchAuditLogs);
+onMounted(syncAccountEmail);
 </script>
 
 <template>
@@ -326,6 +392,55 @@ onMounted(fetchAuditLogs);
                   Refresh
                 </button>
               </div>
+            </div>
+          </article>
+        </section>
+
+        <section class="grid grid-cols-1 gap-5 xl:grid-cols-2">
+          <article class="app-section-card">
+            <h2 class="text-lg font-semibold text-slate-900">Super Admin Email</h2>
+            <p class="mt-1 text-sm text-slate-600">Update your login email address.</p>
+
+            <div class="mt-4 grid grid-cols-1 gap-3">
+              <label class="text-sm font-semibold text-slate-700">Email</label>
+              <input v-model="accountForm.email" type="email" class="app-input" placeholder="you@example.com">
+
+              <label class="text-sm font-semibold text-slate-700">Current Password</label>
+              <input v-model="accountForm.current_password" type="password" class="app-input" placeholder="Current password">
+
+              <div class="app-action-row flex flex-wrap gap-2 pt-2">
+                <button class="app-btn-primary" @click="saveAccountEmail">
+                  Update Email
+                </button>
+              </div>
+
+              <p v-if="accountError" class="text-sm text-red-600">{{ accountError }}</p>
+              <p v-if="accountSuccess" class="text-sm text-emerald-700">{{ accountSuccess }}</p>
+            </div>
+          </article>
+
+          <article class="app-section-card">
+            <h2 class="text-lg font-semibold text-slate-900">Super Admin Password</h2>
+            <p class="mt-1 text-sm text-slate-600">Change your password securely.</p>
+
+            <div class="mt-4 grid grid-cols-1 gap-3">
+              <label class="text-sm font-semibold text-slate-700">Current Password</label>
+              <input v-model="accountForm.current_password" type="password" class="app-input" placeholder="Current password">
+
+              <label class="text-sm font-semibold text-slate-700">New Password</label>
+              <input v-model="accountForm.new_password" type="password" class="app-input" placeholder="New password">
+
+              <label class="text-sm font-semibold text-slate-700">Confirm New Password</label>
+              <input v-model="accountForm.confirm_password" type="password" class="app-input" placeholder="Confirm new password">
+
+              <div class="app-action-row flex flex-wrap gap-2 pt-2">
+                <button class="app-btn-primary" @click="saveAccountPassword">
+                  Update Password
+                </button>
+              </div>
+
+              <p v-if="accountError" class="text-sm text-red-600">{{ accountError }}</p>
+              <p v-if="accountSuccess" class="text-sm text-emerald-700">{{ accountSuccess }}</p>
             </div>
           </article>
         </section>
