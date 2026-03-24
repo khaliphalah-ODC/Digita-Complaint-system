@@ -78,13 +78,13 @@ const orgAdminLinks = [
   { to: '/org-admin/dashboard', label: 'Dashboard', icon: ['fas', 'gauge-high'] },
   { to: '/org-admin/complaints', label: 'Complaints', icon: ['fas', 'file-lines'] },
   { to: '/org-admin/users', label: 'Users', icon: ['fas', 'users'] },
+  { to: '/org-admin/organization', label: 'Organization', icon: ['fas', 'building'] },
   { to: '/org-admin/departments', label: 'Departments', icon: ['fas', 'sitemap'] },
   { to: '/org-admin/assessments', label: 'Assessments', icon: ['fas', 'clipboard-list'] },
   { to: '/org-admin/escalations', label: 'Escalations', icon: ['fas', 'triangle-exclamation'] },
   { to: '/org-admin/analytics', label: 'Analytics', icon: ['fas', 'chart-line'] },
   { to: '/org-admin/notifications', label: 'Notifications', icon: ['fas', 'bell'] },
-  { to: '/org-admin/status-logs', label: 'Activity Logs', icon: ['fas', 'circle-info'] },
-  { to: '/organizations', label: 'Organization', icon: ['fas', 'building'] }
+  { to: '/org-admin/status-logs', label: 'Activity Logs', icon: ['fas', 'circle-info'] }
 ];
 
 const userLinks = computed(() => {
