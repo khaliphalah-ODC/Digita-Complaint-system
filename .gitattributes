@@ -1,3 +1,4 @@
 frontend/src/asset/heroImage/*.jpg filter=lfs diff=lfs merge=lfs -text
 frontend/src/asset/heroImage/*.png filter=lfs diff=lfs merge=lfs -text
 frontend/src/asset/heroImage/*.avif filter=lfs diff=lfs merge=lfs -text
+frontend/src/asset/heroImage/image1.avif filter=lfs diff=lfs merge=lfs -text
