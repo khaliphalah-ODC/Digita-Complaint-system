@@ -145,6 +145,8 @@ export const seedSuperAdmin = async () => {
         organization_id = ?,
         full_name = ?,
         password = ?,
+        email_verified = 1,
+        email_verified_at = CURRENT_TIMESTAMP,
         must_change_password = 0,
         role = 'super_admin',
         status = 'active',
@@ -165,11 +167,13 @@ export const seedSuperAdmin = async () => {
         full_name,
         email,
         password,
+        email_verified,
+        email_verified_at,
         must_change_password,
         status,
         role
       )
-      VALUES (?, NULL, ?, ?, ?, 0, 'active', 'super_admin')
+      VALUES (?, NULL, ?, ?, ?, 1, CURRENT_TIMESTAMP, 0, 'active', 'super_admin')
     `,
     [SUPER_ADMIN_ORGANIZATION_ID, SUPER_ADMIN_FULL_NAME, SUPER_ADMIN_EMAIL.trim().toLowerCase(), hashedPassword]
   );
