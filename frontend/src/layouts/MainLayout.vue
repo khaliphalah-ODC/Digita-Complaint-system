@@ -1,14 +1,18 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
+import { storeToRefs } from 'pinia';
 import { useRoute } from 'vue-router';
 import { RouterLink, RouterView } from 'vue-router';
 import SidebarNav from '../components/SidebarNav.vue';
 import AppToast from '../components/AppToast.vue';
 import AppFooter from '../components/AppFooter.vue';
 import { useSessionStore } from '../stores/session';
+import { useNotificationStore } from '../stores/notifications.js';
 
 const session = useSessionStore();
+const notificationStore = useNotificationStore();
 const route = useRoute();
+const { unreadCount } = storeToRefs(notificationStore);
 
 const isLoggedIn = computed(() => session.isLoggedIn);
 const isSuperAdmin = computed(() => session.currentUser?.role === 'super_admin');
@@ -17,6 +21,9 @@ const isAdminWorkspace = computed(() => isSuperAdmin.value || isOrgAdmin.value);
 const isStandardUserShell = computed(() => isLoggedIn.value && !isSuperAdmin.value && !isOrgAdmin.value);
 const isOrganizationLinkedUser = computed(
   () => session.currentUser?.role === 'user' && Boolean(session.currentUser?.organization_id)
+);
+const shouldShowUserNotificationBell = computed(
+  () => isLoggedIn.value && !isSuperAdmin.value && !isOrgAdmin.value
 );
 
 const workspaceLabel = computed(() => {
@@ -45,16 +52,6 @@ const contentClass = computed(() => (
 
 const mobileNavOpen = ref(false);
 
-<<<<<<< Updated upstream
-=======
-const showLogoutConfirm = ref(false);
-
-const confirmLogout = () => {
-  showLogoutConfirm.value = false;
-  session.logout();
-};
-
->>>>>>> Stashed changes
 const profileAvatar = computed(() => {
   return (
     session.currentUser?.avatar_url ||
@@ -117,9 +114,39 @@ const closeMobileNav = () => {
   mobileNavOpen.value = false;
 };
 
-watch(() => route.fullPath, closeMobileNav);
+const syncNotifications = (force = false) => {
+  if (!shouldShowUserNotificationBell.value) {
+    notificationStore.reset();
+    return;
+  }
 
-onMounted(session.fetchCurrentUser);
+  void notificationStore.fetchNotifications({
+    force,
+    silent: !force
+  });
+};
+
+watch(() => route.fullPath, closeMobileNav);
+watch(
+  () => [session.isLoggedIn, session.currentUser?.role],
+  () => {
+    syncNotifications(false);
+  },
+  { immediate: true }
+);
+watch(
+  () => route.fullPath,
+  () => {
+    if (shouldShowUserNotificationBell.value) {
+      syncNotifications(route.path === '/notifications');
+    }
+  }
+);
+
+onMounted(() => {
+  session.fetchCurrentUser();
+  syncNotifications(false);
+});
 </script>
 
 <template>
@@ -182,6 +209,25 @@ onMounted(session.fetchCurrentUser);
               </div>
 
               <div v-if="isLoggedIn" class="flex min-w-0 items-center gap-2 sm:gap-3">
+                <RouterLink
+                  v-if="shouldShowUserNotificationBell"
+                  to="/notifications"
+                  class="group relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--app-nav-border)] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.98),rgba(239,244,249,0.92))] text-[var(--app-primary)] shadow-[0_12px_28px_rgba(17,28,48,0.08)] hover:-translate-y-0.5 hover:border-[var(--app-primary)]/20 hover:text-[var(--app-primary-ink)]"
+                  title="Notifications"
+                >
+                  <font-awesome-icon :icon="['fas', 'bell']" class="text-sm" />
+                  <span
+                    v-if="unreadCount > 0"
+                    class="absolute -right-1.5 -top-1.5 inline-flex min-w-[1.4rem] items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--app-primary),var(--app-accent))] px-1.5 py-0.5 text-[0.64rem] font-bold leading-none text-white shadow-[0_10px_20px_rgba(24,58,99,0.28)] ring-2 ring-white"
+                  >
+                    {{ unreadCount > 99 ? '99+' : unreadCount }}
+                  </span>
+                  <span
+                    v-if="unreadCount > 0"
+                    class="absolute inset-0 rounded-full border border-[var(--app-primary)]/10 opacity-0 transition group-hover:opacity-100"
+                  ></span>
+                </RouterLink>
+
                 <div class="hidden min-w-0 text-right sm:block">
                   <p class="truncate text-sm font-semibold text-[var(--app-title-color)]">
                     {{ session.currentUser?.full_name || 'User' }}
@@ -206,13 +252,8 @@ onMounted(session.fetchCurrentUser);
                 </div>
 
                 <button
-<<<<<<< Updated upstream
                   class="inline-flex min-h-[40px] items-center rounded-[var(--app-radius-md)] border border-[var(--app-nav-border)] bg-[var(--app-nav-surface-strong)] px-3 py-2 text-xs font-semibold text-[var(--app-nav-text)] hover:bg-[var(--app-nav-hover)]"
                   @click="session.logout"
-=======
-                  :class="isSuperAdmin ? 'rounded-none border border-white/10 bg-white/6 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10' : isStandardUserShell ? 'rounded-none border border-[#c8d9f7] bg-white/90 px-3 py-2 text-xs font-semibold text-[var(--app-primary-ink)] hover:bg-[#eef4ff]' : 'rounded-none border border-slate-300/80 bg-white/90 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50'"
-                  @click="showLogoutConfirm = true"
->>>>>>> Stashed changes
                 >
                   Logout
                 </button>
@@ -239,45 +280,9 @@ onMounted(session.fetchCurrentUser);
         <section :class="contentClass">
           <RouterView />
         </section>
-<<<<<<< Updated upstream
-
         <AppFooter />
-=======
-       <!-- <AppFooter />-->
->>>>>>> Stashed changes
       </main>
     </div>
 
-    <!-- Logout Confirmation Modal -->
-<div v-if="showLogoutConfirm" class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-  <div class="mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-[0_24px_60px_rgba(0,0,0,0.2)]">
-    <div class="flex items-center gap-3">
-      <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-red-50">
-        <svg class="h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-        </svg>
-      </div>
-      <div>
-        <h3 class="text-base font-bold text-slate-900">Confirm Logout</h3>
-        <p class="mt-0.5 text-sm text-slate-500">Are you sure you want to log out?</p>
-      </div>
-    </div>
-
-    <div class="mt-6 flex gap-3">
-      <button
-        class="flex-1 rounded-full border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-green-500"
-        @click="showLogoutConfirm = false"
-      >
-        Cancel
-      </button>
-      <button
-        class="flex-1 rounded-full bg-blue-600 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(239,68,68,0.35)] transition hover:bg-red-600"
-        @click="confirmLogout"
-      >
-        Yes, Logout
-      </button>
-    </div>
-  </div>
-</div>
   </div>
 </template>

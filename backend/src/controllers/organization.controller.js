@@ -1,38 +1,26 @@
 // organization.controller controller: handles HTTP request/response flow for this module.
 import bcrypt from 'bcrypt';
+import { randomBytes } from 'node:crypto';
 import complaintDB from '../model/connect.js';
 import { sendSuccess, sendError } from '../utils/response.js';
+import { logAuditEntry, buildAuditMetadata } from '../utils/audit.js';
 import {
   Organization,
   deleteOrganizationById,
   insertOrganization,
+  selectAnyOrganizationByJoinCode,
+  selectOrganizationByJoinCode,
   selectOrganizations,
   selectOrganizationById,
-  updateOrganizationById,
-  updateOrganizationJoinCode,
+  updateOrganizationJoinCodeById,
+  updateOrganizationStatusById,
+  updateOrganizationSelfSignupById,
+  updateOrganizationById
 } from '../model/organization.model.js';
 import { createUserQuery, fetchUserByEmailQuery, fetchUserByIdQuery } from '../model/user.model.js';
+import { selectPublicDepartmentsByOrganizationId } from '../model/department.model.js';
 
 const DEFAULT_ORG_ADMIN_PASSWORD = process.env.ORG_ADMIN_DEFAULT_PASSWORD || 'Admin@123';
-
-// ── Utility: generate a unique join code ──────────────────
-export const generateJoinCode = (organizationName) => {
-  const prefix = String(organizationName || 'ORG')
-    .toUpperCase()
-    .replace(/[^A-Z]/g, '')
-    .slice(0, 3)
-    .padEnd(3, 'X');
-  const year = new Date().getFullYear();
-  const random = Math.random().toString(36).toUpperCase().slice(2, 7);
-  return `${prefix}-${year}-${random}`;
-};
-
-// ── Utility: join code expiry (90 days from now) ──────────
-export const getJoinCodeExpiry = () => {
-  const expiry = new Date();
-  expiry.setDate(expiry.getDate() + 90);
-  return expiry.toISOString();
-};
 
 const getQuery = (sql, params = []) =>
   new Promise((resolve, reject) => {
@@ -49,6 +37,36 @@ const allQuery = (sql, params = []) =>
       return resolve(rows || []);
     });
   });
+
+const generateJoinCode = () => randomBytes(4).toString('hex').toUpperCase();
+
+const generateUniqueJoinCode = async () => {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const candidate = generateJoinCode();
+    const existing = await getQuery(selectAnyOrganizationByJoinCode, [candidate]);
+    if (!existing) {
+      return candidate;
+    }
+  }
+
+  throw new Error('Failed to generate a unique join code');
+};
+
+const buildJoinCodePayload = (organizationRow) => {
+  const joinCode = String(organizationRow?.join_code || '').trim();
+  const joinBase = process.env.JOIN_CODE_URL_BASE || 'http://localhost:5173/signup?joinCode=';
+  const joinUrl = joinCode ? `${joinBase}${encodeURIComponent(joinCode)}` : '';
+  const qrUrl = joinUrl
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(joinUrl)}`
+    : '';
+
+  return {
+    organization_id: organizationRow?.organization_id,
+    join_code: joinCode,
+    join_url: joinUrl,
+    join_qr_url: qrUrl
+  };
+};
 
 const buildLastTwelveMonths = () => {
   const months = [];
@@ -121,80 +139,78 @@ export const CreateOrganizationTable = () => {
   complaintDB.run(Organization, (err) => {
     if (err) {
       console.error('Error creating organization table:', err.message);
-    } else {
-      console.log('Organization table created or already exists');
-      // Run migration after table is confirmed to exist
-      MigrateOrganizationTable();
-    }
-  });
-};
-
-// ── Migration: safely add join_code columns and backfill ──
-export const MigrateOrganizationTable = () => {
-  complaintDB.all('PRAGMA table_info(organization)', [], (err, columns) => {
-    if (err) {
-      console.error('Error inspecting organization table:', err.message);
       return;
     }
 
-    const existing = new Set((columns || []).map((col) => col.name));
-
-    const addJoinCodeExpiry = () => {
-      if (!existing.has('join_code_expires_at')) {
-        complaintDB.run('ALTER TABLE organization ADD COLUMN join_code_expires_at DATETIME', (alterErr) => {
-          if (alterErr) console.error('Error adding join_code_expires_at:', alterErr.message);
-          else console.log('organization.join_code_expires_at column added');
-          backfillJoinCodes();
-        });
-      } else {
-        backfillJoinCodes();
+    complaintDB.all('PRAGMA table_info(organization)', [], async (schemaErr, columns) => {
+      if (schemaErr) {
+        console.error('Error inspecting organization table:', schemaErr.message);
+        return;
       }
-    };
 
-    const backfillJoinCodes = () => {
-      complaintDB.all(
-        'SELECT organization_id, name FROM organization WHERE join_code IS NULL',
-        [],
-        (fetchErr, orgs) => {
-          if (fetchErr) {
-            console.error('Error fetching orgs for join code backfill:', fetchErr.message);
-            return;
-          }
-          if (!orgs || orgs.length === 0) {
-            console.log('Organization migration complete. No backfill needed.');
-            return;
-          }
-          let completed = 0;
-          for (const org of orgs) {
-            const code = generateJoinCode(org.name);
-            const expiry = getJoinCodeExpiry();
+      const existing = new Set((columns || []).map((column) => column.name));
+
+      try {
+        if (!existing.has('join_code')) {
+          await new Promise((resolve, reject) => {
+            complaintDB.run('ALTER TABLE organization ADD COLUMN join_code TEXT', (alterErr) => {
+              if (alterErr) return reject(alterErr);
+              return resolve();
+            });
+          });
+        }
+
+        await new Promise((resolve, reject) => {
+          complaintDB.run(
+            'CREATE UNIQUE INDEX IF NOT EXISTS idx_organization_join_code ON organization(join_code)',
+            (indexErr) => {
+              if (indexErr) return reject(indexErr);
+              return resolve();
+            }
+          );
+        });
+
+        if (!existing.has('self_signup_enabled')) {
+          await new Promise((resolve, reject) => {
             complaintDB.run(
-              'UPDATE organization SET join_code = ?, join_code_expires_at = ? WHERE organization_id = ?',
-              [code, expiry, org.organization_id],
-              (updateErr) => {
-                if (updateErr) {
-                  console.error(`Failed to backfill join code for org ${org.organization_id}:`, updateErr.message);
-                }
-                completed++;
-                if (completed === orgs.length) {
-                  console.log(`Organization migration complete. ${completed} org(s) backfilled with join codes.`);
-                }
+              'ALTER TABLE organization ADD COLUMN self_signup_enabled INTEGER NOT NULL DEFAULT 1',
+              (alterErr) => {
+                if (alterErr) return reject(alterErr);
+                return resolve();
               }
             );
-          }
+          });
         }
-      );
-    };
 
-    if (!existing.has('join_code')) {
-      complaintDB.run('ALTER TABLE organization ADD COLUMN join_code TEXT', (alterErr) => {
-        if (alterErr) console.error('Error adding join_code:', alterErr.message);
-        else console.log('organization.join_code column added');
-        addJoinCodeExpiry();
-      });
-    } else {
-      addJoinCodeExpiry();
-    }
+        const rowsMissingJoinCode = await allQuery(
+          'SELECT organization_id FROM organization WHERE join_code IS NULL OR TRIM(join_code) = ""'
+        );
+
+        for (const row of rowsMissingJoinCode) {
+          const joinCode = await generateUniqueJoinCode();
+          await new Promise((resolve, reject) => {
+            complaintDB.run(updateOrganizationJoinCodeById, [joinCode, row.organization_id], (updateErr) => {
+              if (updateErr) return reject(updateErr);
+              return resolve();
+            });
+          });
+        }
+
+        await new Promise((resolve, reject) => {
+          complaintDB.run(
+            'UPDATE organization SET self_signup_enabled = COALESCE(self_signup_enabled, 1)',
+            (updateErr) => {
+              if (updateErr) return reject(updateErr);
+              return resolve();
+            }
+          );
+        });
+
+        console.log('Organization table created or already exists');
+      } catch (migrationErr) {
+        console.error('Error migrating organization table:', migrationErr.message);
+      }
+    });
   });
 };
 
@@ -259,13 +275,10 @@ export const createOrganization = (req, res) => {
     return sendError(res, 400, 'admin_email is required to create an organization admin account');
   }
 
-  // Generate join code for the new organization
-  const joinCode = generateJoinCode(name);
-  const joinCodeExpiry = getJoinCodeExpiry();
-
-  complaintDB.run(
-    insertOrganization,
-    [name, organization_type, email, phone, address, logo, status, joinCode, joinCodeExpiry],
+  generateUniqueJoinCode().then((joinCode) => {
+    complaintDB.run(
+      insertOrganization,
+      [name, organization_type, email, phone, address, logo, status, joinCode, 1],
     function onCreate(err) {
       if (err) {
         if (isUniqueConstraintError(err)) {
@@ -302,19 +315,20 @@ export const createOrganization = (req, res) => {
             organization: row,
             organization_admin: adminRow
               ? {
-                id: adminRow.id,
-                full_name: adminRow.full_name,
-                email: adminRow.email,
-                role: adminRow.role,
-                must_change_password: adminRow.must_change_password
-              }
+                  id: adminRow.id,
+                  full_name: adminRow.full_name,
+                  email: adminRow.email,
+                  role: adminRow.role,
+                  must_change_password: adminRow.must_change_password
+                }
               : null,
             default_password_note: 'Organization admin must change default password on first login'
           });
         });
       });
     }
-  );
+    );
+  }).catch((joinCodeErr) => sendError(res, 500, 'Failed to generate organization join code', joinCodeErr.message));
 };
 
 export const createOrganizationAdmin = (req, res) => {
@@ -345,16 +359,12 @@ export const createOrganizationAdmin = (req, res) => {
           }
           return sendError(res, 500, 'Failed to create organization admin', createErr.message);
         }
-
-        if (!adminRow) {
-          return sendError(res, 500, 'Organization admin created but could not be loaded');
-        }
-
         return sendSuccess(res, 201, 'Organization admin created successfully', {
           id: adminRow.id,
           full_name: adminRow.full_name,
           email: adminRow.email,
           role: adminRow.role,
+          organization_id: adminRow.organization_id,
           must_change_password: adminRow.must_change_password
         });
       });
@@ -362,16 +372,74 @@ export const createOrganizationAdmin = (req, res) => {
   });
 };
 
-export const getAllOrganizations = async (req, res) => {
-  if (req.user?.role !== 'super_admin') {
-    return sendError(res, 403, 'Only super_admin can view all organizations');
+export const getAllOrganizations = (req, res) => {
+  if (req.user?.role === 'super_admin') {
+    complaintDB.all(selectOrganizations, [], (err, rows) => {
+      if (err) {
+        return sendError(res, 500, 'Failed to fetch organizations', err.message);
+      }
+
+      const tasks = rows.map(
+        (row) =>
+          new Promise((resolve) => {
+            getOrgAdminByOrganizationId(row.organization_id, (_adminErr, adminRow) => {
+              resolve({
+                ...row,
+                organization_admin: adminRow
+                  ? {
+                      id: adminRow.id,
+                      full_name: adminRow.full_name,
+                      email: adminRow.email,
+                      status: adminRow.status
+                    }
+                  : null
+              });
+            });
+          })
+      );
+
+      Promise.all(tasks)
+        .then((payload) => sendSuccess(res, 200, 'Organizations retrieved successfully', payload))
+        .catch((promiseErr) => sendError(res, 500, 'Failed to fetch organization admins', promiseErr.message));
+    });
+    return;
   }
 
-  complaintDB.all(selectOrganizations, [], (err, rows) => {
-    if (err) {
-      return sendError(res, 500, 'Failed to fetch organizations', err.message);
+  complaintDB.get(fetchUserByIdQuery, [req.user.id], (userErr, userRow) => {
+    if (userErr) {
+      return sendError(res, 500, 'Failed to fetch user organization', userErr.message);
     }
-    return sendSuccess(res, 200, 'Organizations retrieved successfully', rows);
+    if (!userRow?.organization_id) {
+      return sendSuccess(res, 200, 'Organizations retrieved successfully', []);
+    }
+
+    complaintDB.get(selectOrganizationById, [userRow.organization_id], (orgErr, row) => {
+      if (orgErr) {
+        return sendError(res, 500, 'Failed to fetch organizations', orgErr.message);
+      }
+      if (!row) {
+        return sendSuccess(res, 200, 'Organizations retrieved successfully', []);
+      }
+
+      getOrgAdminByOrganizationId(userRow.organization_id, (adminErr, adminRow) => {
+        if (adminErr) {
+          return sendError(res, 500, 'Failed to fetch organization admin', adminErr.message);
+        }
+        return sendSuccess(res, 200, 'Organizations retrieved successfully', [
+          {
+            ...row,
+            organization_admin: adminRow
+              ? {
+                  id: adminRow.id,
+                  full_name: adminRow.full_name,
+                  email: adminRow.email,
+                  status: adminRow.status
+                }
+              : null
+          }
+        ]);
+      });
+    });
   });
 };
 
@@ -389,10 +457,44 @@ export const getOrganizationById = (req, res) => {
         if (adminErr) {
           return sendError(res, 500, 'Failed to fetch organization admin', adminErr.message);
         }
-        return sendSuccess(res, 200, 'Organization retrieved successfully', {
-          ...row,
-          organization_admin: adminRow || null
-        });
+        Promise.all([
+          getQuery('SELECT COUNT(*) AS users_count FROM users WHERE organization_id = ?', [req.params.id]),
+          getQuery('SELECT COUNT(*) AS departments_count FROM department WHERE organization_id = ?', [req.params.id]),
+          getQuery(
+            `
+            SELECT
+              COUNT(*) AS total_complaints,
+              SUM(CASE WHEN status = 'submitted' THEN 1 ELSE 0 END) AS submitted_complaints,
+              SUM(CASE WHEN status = 'in_review' THEN 1 ELSE 0 END) AS in_review_complaints,
+              SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) AS resolved_complaints,
+              SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END) AS closed_complaints
+            FROM complaint
+            WHERE organization_id = ?
+            `,
+            [req.params.id]
+          )
+        ])
+          .then(([usersCountRow, departmentsCountRow, complaintSummaryRow]) =>
+            sendSuccess(res, 200, 'Organization retrieved successfully', {
+              ...row,
+              users_count: Number(usersCountRow?.users_count || 0),
+              departments_count: Number(departmentsCountRow?.departments_count || 0),
+              total_complaints: Number(complaintSummaryRow?.total_complaints || 0),
+              submitted_complaints: Number(complaintSummaryRow?.submitted_complaints || 0),
+              in_review_complaints: Number(complaintSummaryRow?.in_review_complaints || 0),
+              resolved_complaints: Number(complaintSummaryRow?.resolved_complaints || 0),
+              closed_complaints: Number(complaintSummaryRow?.closed_complaints || 0),
+              organization_admin: adminRow
+                ? {
+                    id: adminRow.id,
+                    full_name: adminRow.full_name,
+                    email: adminRow.email,
+                    status: adminRow.status
+                  }
+                : null
+            })
+          )
+          .catch((summaryErr) => sendError(res, 500, 'Failed to fetch organization summary', summaryErr.message));
       });
     });
   });
@@ -400,59 +502,53 @@ export const getOrganizationById = (req, res) => {
 
 export const getGlobalOrganizationStats = async (req, res) => {
   if (req.user?.role !== 'super_admin') {
-    return sendError(res, 403, 'Only super_admin can access platform statistics');
+    return sendError(res, 403, 'Only super_admin can access platform aggregate statistics');
   }
 
   try {
-    const [
-      organizationStats,
-      complaintStats,
-      escalationStats,
-      feedbackStats,
-      recentOrganizations,
-      complaintsByOrganization,
-      complaintMonthlyRows,
-      assessmentMonthlyRows
-    ] = await Promise.all([
+    const [organizationStats, complaintStats, escalationStats, feedbackStats, complaintsByOrganization, complaintMonthlyRows, assessmentMonthlyRows] = await Promise.all([
       getQuery(
-        `SELECT
+        `
+        SELECT
           COUNT(*) AS total_organizations,
           SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) AS active_organizations,
           SUM(CASE WHEN status != 'active' THEN 1 ELSE 0 END) AS suspended_organizations
-        FROM organization`
+        FROM organization
+        `
       ),
       getQuery(
-        `SELECT
+        `
+        SELECT
           COUNT(*) AS total_complaints,
           SUM(CASE WHEN status = 'submitted' THEN 1 ELSE 0 END) AS submitted_complaints,
           SUM(CASE WHEN status = 'in_review' THEN 1 ELSE 0 END) AS in_review_complaints,
           SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) AS resolved_complaints,
           SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END) AS closed_complaints,
           SUM(CASE WHEN is_anonymous = 1 AND organization_id IS NULL THEN 1 ELSE 0 END) AS unassigned_anonymous_complaints
-        FROM complaint`
+        FROM complaint
+        `
       ),
       getQuery(
-        `SELECT
+        `
+        SELECT
           SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending_count,
           SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) AS in_progress_count,
           SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) AS resolved_count,
           SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) AS rejected_count
-        FROM escalations`
+        FROM escalations
+        `
       ),
       allQuery(
-        `SELECT rating, COUNT(*) AS count
+        `
+        SELECT rating, COUNT(*) AS count
         FROM feedback
         GROUP BY rating
-        ORDER BY rating ASC`
+        ORDER BY rating ASC
+        `
       ),
       allQuery(
-        `SELECT organization_id, name, status, created_at, updated_at
-        FROM organization
-        ORDER BY updated_at DESC, organization_id DESC
-        LIMIT 8`
-      ),
-      allQuery(
-        `SELECT
+        `
+        SELECT
           o.organization_id,
           o.name,
           COUNT(c.id) AS complaints_count
@@ -460,26 +556,31 @@ export const getGlobalOrganizationStats = async (req, res) => {
         LEFT JOIN complaint c ON c.organization_id = o.organization_id
         GROUP BY o.organization_id, o.name
         ORDER BY complaints_count DESC, o.name ASC
-        LIMIT 8`
+        LIMIT 8
+        `
       ),
       allQuery(
-        `SELECT
+        `
+        SELECT
           strftime('%Y-%m', created_at) AS month_key,
           COUNT(*) AS count
         FROM complaint
         WHERE created_at >= date('now', 'start of month', '-11 months')
         GROUP BY strftime('%Y-%m', created_at)
-        ORDER BY month_key ASC`
+        ORDER BY month_key ASC
+        `
       ),
       allQuery(
-        `SELECT
+        `
+        SELECT
           strftime('%Y-%m', COALESCE(updated_at, created_at)) AS month_key,
           COUNT(*) AS count
         FROM accessments
         WHERE status = 'completed'
           AND COALESCE(updated_at, created_at) >= date('now', 'start of month', '-11 months')
         GROUP BY strftime('%Y-%m', COALESCE(updated_at, created_at))
-        ORDER BY month_key ASC`
+        ORDER BY month_key ASC
+        `
       )
     ]);
 
@@ -512,7 +613,9 @@ export const getGlobalOrganizationStats = async (req, res) => {
       inReviewComplaints: Number(complaintStats?.in_review_complaints || 0),
       resolvedComplaints: Number(complaintStats?.resolved_complaints || 0),
       closedComplaints: Number(complaintStats?.closed_complaints || 0),
-      unassignedAnonymousComplaints: Number(complaintStats?.unassigned_anonymous_complaints || 0),
+      unassignedAnonymousComplaints: Number(
+        complaintStats?.unassigned_anonymous_complaints || 0
+      ),
       escalationStatusCounts: {
         pending: Number(escalationStats?.pending_count || 0),
         in_progress: Number(escalationStats?.in_progress_count || 0),
@@ -536,10 +639,6 @@ export const getGlobalOrganizationStats = async (req, res) => {
       assessmentMonthlyTrend: lastTwelveMonths.map((month) => ({
         month: month.label,
         value: assessmentMonthlyMap.get(month.key) || 0
-      })),
-      activityFeed: recentOrganizations.map((row) => ({
-        text: `Organization ${row.name} is ${row.status}`,
-        date: row.updated_at || row.created_at || null
       }))
     });
   } catch (error) {
@@ -586,6 +685,124 @@ export const updateOrganization = (req, res) => {
         });
       }
     );
+  });
+};
+
+export const regenerateOrganizationJoinCode = (req, res) => {
+  authorizeOrganizationOwnership(req, res, req.params.id, async () => {
+    try {
+      const organizationRow = await getQuery(selectOrganizationById, [req.params.id]);
+      if (!organizationRow) {
+        return sendError(res, 404, 'Organization not found');
+      }
+
+      const joinCode = await generateUniqueJoinCode();
+      complaintDB.run(updateOrganizationJoinCodeById, [joinCode, req.params.id], function onUpdate(err) {
+        if (err) {
+          return sendError(res, 500, 'Failed to regenerate join code', err.message);
+        }
+
+        complaintDB.get(selectOrganizationById, [req.params.id], (getErr, row) => {
+          if (getErr) {
+            return sendError(res, 500, 'Failed to fetch organization', getErr.message);
+          }
+          return sendSuccess(res, 200, 'Join code regenerated successfully', {
+            organization: row,
+            join_code: buildJoinCodePayload(row)
+          });
+        });
+      });
+    } catch (error) {
+      return sendError(res, 500, 'Failed to regenerate join code', error.message);
+    }
+  });
+};
+
+export const getOrganizationJoinCode = (req, res) => {
+  authorizeOrganizationOwnership(req, res, req.params.id, async () => {
+    try {
+      const organizationRow = await getQuery(selectOrganizationById, [req.params.id]);
+      if (!organizationRow) {
+        return sendError(res, 404, 'Organization not found');
+      }
+
+      if (!organizationRow.join_code || String(organizationRow.join_code).trim() === '') {
+        const joinCode = await generateUniqueJoinCode();
+        await new Promise((resolve, reject) => {
+          complaintDB.run(updateOrganizationJoinCodeById, [joinCode, req.params.id], (err) => {
+            if (err) return reject(err);
+            return resolve();
+          });
+        });
+        const refreshed = await getQuery(selectOrganizationById, [req.params.id]);
+        return sendSuccess(res, 200, 'Join code generated successfully', buildJoinCodePayload(refreshed));
+      }
+
+      return sendSuccess(res, 200, 'Join code retrieved successfully', buildJoinCodePayload(organizationRow));
+    } catch (error) {
+      return sendError(res, 500, 'Failed to fetch organization join code', error.message);
+    }
+  });
+};
+
+export const updateOrganizationSelfSignup = (req, res) => {
+  const selfSignupEnabled = req.body?.self_signup_enabled;
+  if (![0, 1, true, false, '0', '1', 'true', 'false'].includes(selfSignupEnabled)) {
+    return sendError(res, 400, 'self_signup_enabled must be a boolean value');
+  }
+
+  const normalized = selfSignupEnabled === true || selfSignupEnabled === 1 || selfSignupEnabled === '1' || selfSignupEnabled === 'true' ? 1 : 0;
+
+  authorizeOrganizationOwnership(req, res, req.params.id, () => {
+    complaintDB.run(updateOrganizationSelfSignupById, [normalized, req.params.id], function onUpdate(err) {
+      if (err) {
+        return sendError(res, 500, 'Failed to update self-signup setting', err.message);
+      }
+      complaintDB.get(selectOrganizationById, [req.params.id], (getErr, row) => {
+        if (getErr) {
+          return sendError(res, 500, 'Failed to fetch organization', getErr.message);
+        }
+        return sendSuccess(res, 200, 'Self-signup setting updated successfully', row);
+      });
+    });
+  });
+};
+
+export const updateOrganizationStatus = (req, res) => {
+  if (req.user?.role !== 'super_admin') {
+    return sendError(res, 403, 'Only super_admin can update organization status');
+  }
+
+  const status = String(req.body?.status || '').trim().toLowerCase();
+  if (!['active', 'inactive'].includes(status)) {
+    return sendError(res, 400, 'status must be active or inactive');
+  }
+
+  complaintDB.run(updateOrganizationStatusById, [status, req.params.id], function onUpdate(err) {
+    if (err) {
+      return sendError(res, 500, 'Failed to update organization status', err.message);
+    }
+    if (this.changes === 0) {
+      return sendError(res, 404, 'Organization not found');
+    }
+    complaintDB.get(selectOrganizationById, [req.params.id], (getErr, row) => {
+      if (getErr) {
+        return sendError(res, 500, 'Failed to fetch organization', getErr.message);
+      }
+      const auditMeta = buildAuditMetadata(req);
+      auditMeta.organization_id = row?.organization_id;
+      auditMeta.organization_name = row?.name;
+      auditMeta.new_status = row?.status;
+      void logAuditEntry(req, {
+        action: 'update_organization_status',
+        targetTable: 'organization',
+        targetId: row?.organization_id,
+        metadata: auditMeta
+      }).catch(() => {
+        console.error('Failed to record audit log for organization status update');
+      });
+      return sendSuccess(res, 200, 'Organization status updated successfully', row);
+    });
   });
 };
 
@@ -638,10 +855,12 @@ export const deleteOrganization = (req, res) => {
 
 export const getPublicOrganizationOptions = (req, res) => {
   complaintDB.all(
-    `SELECT organization_id, name, organization_type
+    `
+    SELECT organization_id, name, organization_type
     FROM organization
     WHERE status = 'active'
-    ORDER BY name ASC`,
+    ORDER BY name ASC
+    `,
     [],
     (err, rows) => {
       if (err) {
@@ -650,4 +869,36 @@ export const getPublicOrganizationOptions = (req, res) => {
       return sendSuccess(res, 200, 'Public organizations retrieved successfully', rows || []);
     }
   );
+};
+
+export const getPublicOrganizationJoinDetails = async (req, res) => {
+  const joinCode = String(req.params.code || '').trim().toUpperCase();
+
+  if (!joinCode) {
+    return sendError(res, 400, 'join code is required');
+  }
+
+  try {
+    const organizationRow = await getQuery(selectOrganizationByJoinCode, [joinCode]);
+    if (!organizationRow) {
+      return sendError(res, 404, 'Invalid join code');
+    }
+    if (!Number(organizationRow.self_signup_enabled ?? 1)) {
+      return sendError(res, 403, 'Self-signup is disabled for this organization');
+    }
+
+    const departments = await allQuery(selectPublicDepartmentsByOrganizationId, [organizationRow.organization_id]);
+    return sendSuccess(res, 200, 'Organization join details retrieved successfully', {
+      organization: {
+        organization_id: organizationRow.organization_id,
+        name: organizationRow.name,
+        organization_type: organizationRow.organization_type,
+        join_code: organizationRow.join_code,
+        self_signup_enabled: Number(organizationRow.self_signup_enabled ?? 1)
+      },
+      departments
+    });
+  } catch (error) {
+    return sendError(res, 500, 'Failed to fetch organization join details', error.message);
+  }
 };

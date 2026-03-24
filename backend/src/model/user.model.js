@@ -89,7 +89,16 @@ SET
   must_change_password = 0,
   updated_at = CURRENT_TIMESTAMP
 WHERE id = ?;
-<<<<<<< Updated upstream
+`;
+
+export const updateOwnEmailQuery = `
+UPDATE users
+SET
+  email = ?,
+  email_verified = ?,
+  email_verified_at = ?,
+  updated_at = CURRENT_TIMESTAMP
+WHERE id = ?;
 `;
 
 export const emailVerificationTokensQuery = `
@@ -136,6 +145,3 @@ SET
   updated_at = CURRENT_TIMESTAMP
 WHERE id = ?;
 `;
-=======
-`;
->>>>>>> Stashed changes

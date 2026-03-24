@@ -10,6 +10,10 @@ import {
   fetchComplaintMessagesByComplaintIdQuery,
   updateComplaintMessageByIdQuery
 } from '../model/complaintMessage.model.js';
+import {
+  createSystemNotificationSafely,
+  NOTIFICATION_TYPES
+} from '../services/notification.service.js';
 
 export const CreateComplaintMessagesTable = () => {
   complaintDB.run(complaintMessagesQuery, (err) => {
@@ -83,7 +87,7 @@ export const getComplaintMessagesByComplaintId = (req, res) => {
     return sendError(res, 400, 'Invalid complaint id');
   }
 
-  return ensureChatAccess(req, res, complaintId, () => {
+  return ensureChatAccess(req, res, complaintId, (complaintRow) => {
     complaintDB.all(fetchComplaintMessagesByComplaintIdQuery, [complaintId], (err, rows) => {
       if (err) {
         return sendError(res, 500, 'Failed to fetch complaint messages', err.message);
@@ -116,6 +120,32 @@ export const createComplaintMessage = (req, res) => {
           if (getErr) {
             return sendError(res, 500, 'Failed to fetch complaint message', getErr.message);
           }
+
+          if (req.user.role === 'org_admin' && complaintRow.user_id) {
+            void createSystemNotificationSafely(
+              {
+                organizationId: complaintRow.complaint_organization_id || complaintRow.organization_id || null,
+                userId: complaintRow.user_id,
+                complaintId,
+                type: NOTIFICATION_TYPES.CHAT_MESSAGE,
+                message: `You received a new message about complaint "${complaintRow.title || 'Untitled Complaint'}".`
+              },
+              'complaint chat notification'
+            );
+          }
+
+          if (req.user.role === 'user' && (complaintRow.complaint_organization_id || complaintRow.organization_id)) {
+            void createSystemNotificationSafely(
+              {
+                organizationId: complaintRow.complaint_organization_id || complaintRow.organization_id,
+                complaintId,
+                type: NOTIFICATION_TYPES.CHAT_MESSAGE,
+                message: `A user sent a new message about complaint "${complaintRow.title || 'Untitled Complaint'}".`
+              },
+              'complaint chat notification'
+            );
+          }
+
           return sendSuccess(res, 201, 'Complaint message sent successfully', row);
         });
       }

@@ -1,7 +1,9 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import api, { extractApiError, unwrapResponse } from '../../services/api';
+import { useSessionStore } from '../../stores/session.js';
 
+const session = useSessionStore();
 const loading = ref(false);
 const actingId = ref(null);
 const error = ref('');
@@ -75,6 +77,18 @@ const approvedTestimonials = computed(() =>
   testimonials.value.filter((item) => Number(item.is_approved) === 1)
 );
 
+const isSuperAdmin = computed(() => session.currentUser?.role === 'super_admin');
+const pageKicker = computed(() => (isSuperAdmin.value ? 'Platform Testimonials' : 'Testimonials'));
+const pageTitle = computed(() => (isSuperAdmin.value ? 'Manage Testimonials' : 'Testimonials'));
+const pageDescription = computed(() => (
+  isSuperAdmin.value
+    ? 'Review testimonials submitted by users across the platform and decide which ones should appear on the homepage.'
+    : 'Testimonial moderation is handled by the super-admin workspace.'
+));
+const totalCaption = computed(() => (
+  isSuperAdmin.value ? 'Testimonials submitted across the platform.' : 'Testimonials visible in this workspace.'
+));
+
 onMounted(fetchTestimonials);
 </script>
 
@@ -84,32 +98,32 @@ onMounted(fetchTestimonials);
     <div class="org-admin-gradient-panel">
       <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p class="app-kicker text-white/80">Organization Testimonials</p>
-          <h1 class="mt-2 text-3xl font-black text-white sm:text-4xl">Manage Testimonials</h1>
-          <p class="mt-3 max-w-3xl text-sm leading-7 text-white/75">
-            Review testimonials submitted by users in your organization and decide which ones should appear on the homepage.
+          <p class="app-kicker text-[var(--app-primary)]">{{ pageKicker }}</p>
+          <h1 class="mt-2 text-3xl font-black text-[var(--app-title-color)] sm:text-4xl">{{ pageTitle }}</h1>
+          <p class="mt-3 max-w-3xl text-sm leading-7 text-[var(--app-muted-color)]">
+            {{ pageDescription }}
           </p>
         </div>
-        <button class="org-admin-outline-btn" @click="fetchTestimonials">
+        <button class="app-btn-secondary" @click="fetchTestimonials">
           Refresh
         </button>
       </header>
 
       <section class="mt-6 org-admin-stat-row">
-        <article class="org-admin-panel-card org-admin-stat-card">
-          <p class="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-white/70">Total</p>
-          <p class="mt-2 text-3xl font-black text-white">{{ testimonials.length }}</p>
-          <p class="text-xs text-white/60">Testimonials from your organization.</p>
+        <article class="app-section-card org-admin-stat-card">
+          <p class="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-[var(--app-muted-color)]">Total</p>
+          <p class="mt-2 text-3xl font-black text-[var(--app-title-color)]">{{ testimonials.length }}</p>
+          <p class="text-xs text-[var(--app-muted-color)]">{{ totalCaption }}</p>
         </article>
-        <article class="org-admin-panel-card org-admin-stat-card">
-          <p class="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-white/70">Pending Review</p>
-          <p class="mt-2 text-3xl font-black text-white">{{ pendingTestimonials.length }}</p>
-          <p class="text-xs text-white/60">Waiting for approval.</p>
+        <article class="app-section-card org-admin-stat-card">
+          <p class="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-[var(--app-muted-color)]">Pending Review</p>
+          <p class="mt-2 text-3xl font-black text-[var(--app-title-color)]">{{ pendingTestimonials.length }}</p>
+          <p class="text-xs text-[var(--app-muted-color)]">Waiting for approval.</p>
         </article>
-        <article class="org-admin-panel-card org-admin-stat-card">
-          <p class="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-white/70">Approved</p>
-          <p class="mt-2 text-3xl font-black text-white">{{ approvedTestimonials.length }}</p>
-          <p class="text-xs text-white/60">Currently visible on homepage.</p>
+        <article class="app-section-card org-admin-stat-card">
+          <p class="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-[var(--app-muted-color)]">Approved</p>
+          <p class="mt-2 text-3xl font-black text-[var(--app-title-color)]">{{ approvedTestimonials.length }}</p>
+          <p class="text-xs text-[var(--app-muted-color)]">Currently visible on homepage.</p>
         </article>
       </section>
     </div>
@@ -118,13 +132,13 @@ onMounted(fetchTestimonials);
     <p v-else-if="error" class="rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{{ error }}</p>
 
     <section class="grid grid-cols-1 gap-5 xl:grid-cols-2">
-      <section class="org-admin-panel-card">
+      <section class="app-section-card">
         <div class="mb-4">
-          <p class="text-xs uppercase tracking-[0.18em] text-white/60">Pending</p>
-          <h2 class="mt-2 text-2xl font-black text-white">Awaiting Approval</h2>
+          <p class="text-xs uppercase tracking-[0.18em] text-[var(--app-muted-color)]">Pending</p>
+          <h2 class="mt-2 text-2xl font-black text-[var(--app-title-color)]">Awaiting Approval</h2>
         </div>
 
-        <div v-if="!pendingTestimonials.length" class="rounded-[22px] border border-white/10 bg-white/6 p-4 text-sm text-white/70">
+        <div v-if="!pendingTestimonials.length" class="app-empty-state text-sm">
           No pending testimonials.
         </div>
 
@@ -132,26 +146,29 @@ onMounted(fetchTestimonials);
           <article
             v-for="item in pendingTestimonials"
             :key="`pending-${item.id}`"
-            class="rounded-[22px] border border-white/10 bg-white/6 p-4"
+            class="app-card rounded-[22px] p-4"
           >
             <div class="flex items-start justify-between gap-3">
               <div>
-                <p class="text-sm font-semibold text-white">{{ item.display_name || 'Anonymous' }}</p>
-                <p class="text-xs text-white/60">{{ item.role_label || 'System User' }}</p>
+                <p class="text-sm font-semibold text-[var(--app-title-color)]">{{ item.display_name || 'Anonymous' }}</p>
+                <p class="text-xs text-[var(--app-muted-color)]">{{ item.role_label || 'System User' }}</p>
+                <p v-if="item.user_email || item.organization_id" class="mt-1 text-[11px] text-[var(--app-muted-color)]">
+                  {{ item.user_email || 'No email' }}<span v-if="item.organization_id"> | Org #{{ item.organization_id }}</span>
+                </p>
               </div>
-              <span class="rounded-full bg-amber-400/18 px-3 py-1 text-xs font-semibold text-amber-100">
+              <span class="app-badge app-badge-warning">
                 {{ item.rating }}/5
               </span>
             </div>
-            <p class="mt-3 text-sm leading-6 text-white/82">{{ item.message }}</p>
-            <div class="mt-4 flex flex-wrap gap-2">
-              <button class="org-admin-btn text-xs disabled:opacity-60" :disabled="actingId === item.id" @click="approve(item.id)">
+            <p class="mt-3 text-sm leading-6 text-[var(--app-muted-color)]">{{ item.message }}</p>
+            <div class="app-action-row mt-4 flex flex-wrap gap-2">
+              <button class="app-btn-primary text-xs disabled:opacity-60" :disabled="actingId === item.id" @click="approve(item.id)">
                 Approve
               </button>
-              <button class="org-admin-outline-btn text-xs disabled:opacity-60" :disabled="actingId === item.id" @click="reject(item.id)">
+              <button class="app-btn-secondary text-xs disabled:opacity-60" :disabled="actingId === item.id" @click="reject(item.id)">
                 Keep Hidden
               </button>
-              <button class="rounded-full bg-red-500/16 px-4 py-2 text-xs font-semibold text-red-100 disabled:opacity-60" :disabled="actingId === item.id" @click="remove(item.id)">
+              <button class="app-btn-danger rounded-lg px-4 py-2 text-xs disabled:opacity-60" :disabled="actingId === item.id" @click="remove(item.id)">
                 Delete
               </button>
             </div>
@@ -159,13 +176,13 @@ onMounted(fetchTestimonials);
         </div>
       </section>
 
-      <section class="org-admin-panel-card">
+      <section class="app-section-card">
         <div class="mb-4">
-          <p class="text-xs uppercase tracking-[0.18em] text-white/60">Approved</p>
-          <h2 class="mt-2 text-2xl font-black text-white">Homepage Testimonials</h2>
+          <p class="text-xs uppercase tracking-[0.18em] text-[var(--app-muted-color)]">Approved</p>
+          <h2 class="mt-2 text-2xl font-black text-[var(--app-title-color)]">Homepage Testimonials</h2>
         </div>
 
-        <div v-if="!approvedTestimonials.length" class="rounded-[22px] border border-white/10 bg-white/6 p-4 text-sm text-white/70">
+        <div v-if="!approvedTestimonials.length" class="app-empty-state text-sm">
           No approved testimonials yet.
         </div>
 
@@ -173,23 +190,26 @@ onMounted(fetchTestimonials);
           <article
             v-for="item in approvedTestimonials"
             :key="`approved-${item.id}`"
-            class="rounded-[22px] border border-white/10 bg-white/6 p-4"
+            class="app-card rounded-[22px] p-4"
           >
             <div class="flex items-start justify-between gap-3">
               <div>
-                <p class="text-sm font-semibold text-white">{{ item.display_name || 'Anonymous' }}</p>
-                <p class="text-xs text-white/60">{{ item.role_label || 'System User' }}</p>
+                <p class="text-sm font-semibold text-[var(--app-title-color)]">{{ item.display_name || 'Anonymous' }}</p>
+                <p class="text-xs text-[var(--app-muted-color)]">{{ item.role_label || 'System User' }}</p>
+                <p v-if="item.user_email || item.organization_id" class="mt-1 text-[11px] text-[var(--app-muted-color)]">
+                  {{ item.user_email || 'No email' }}<span v-if="item.organization_id"> | Org #{{ item.organization_id }}</span>
+                </p>
               </div>
-              <span class="rounded-full bg-emerald-400/18 px-3 py-1 text-xs font-semibold text-emerald-100">
+              <span class="app-badge app-badge-success">
                 Live on homepage
               </span>
             </div>
-            <p class="mt-3 text-sm leading-6 text-white/82">{{ item.message }}</p>
-            <div class="mt-4 flex flex-wrap gap-2">
-              <button class="org-admin-outline-btn text-xs disabled:opacity-60" :disabled="actingId === item.id" @click="reject(item.id)">
+            <p class="mt-3 text-sm leading-6 text-[var(--app-muted-color)]">{{ item.message }}</p>
+            <div class="app-action-row mt-4 flex flex-wrap gap-2">
+              <button class="app-btn-secondary text-xs disabled:opacity-60" :disabled="actingId === item.id" @click="reject(item.id)">
                 Hide
               </button>
-              <button class="rounded-full bg-red-500/16 px-4 py-2 text-xs font-semibold text-red-100 disabled:opacity-60" :disabled="actingId === item.id" @click="remove(item.id)">
+              <button class="app-btn-danger rounded-lg px-4 py-2 text-xs disabled:opacity-60" :disabled="actingId === item.id" @click="remove(item.id)">
                 Delete
               </button>
             </div>

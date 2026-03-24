@@ -13,7 +13,9 @@ const complaint = ref(null);
 const trackingInput = ref('');
 const showChatModal = ref(false);
 let refreshTimer = null;
-const isUserWorkspace = computed(() => Boolean(localStorage.getItem('token')));
+const isAuthenticated = computed(() => Boolean(localStorage.getItem('token')));
+const isUserWorkspace = computed(() => isAuthenticated.value);
+const canOpenChat = computed(() => isAuthenticated.value && Boolean(complaint.value?.id));
 const shellClass = computed(() => (isUserWorkspace.value ? 'user-shell-panel w-full rounded-[30px] p-4 sm:p-5 md:p-7' : 'app-shell-panel w-full rounded-[30px] p-4 sm:p-5 md:p-7'));
 const cardClass = computed(() => (isUserWorkspace.value ? 'user-shell-card rounded-[24px] px-4 py-3' : 'app-ink-card rounded-[24px] px-4 py-3'));
 
@@ -131,6 +133,11 @@ const downloadReceiptPdf = () => {
   popup.document.close();
 };
 
+const openChat = () => {
+  if (!canOpenChat.value) return;
+  showChatModal.value = true;
+};
+
 onMounted(async () => {
   const code = String(route.query.code || '').trim().toUpperCase();
   trackingInput.value = code;
@@ -239,19 +246,23 @@ onUnmounted(() => {
       </section>
 
       <footer class="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-between">
-        <button class="app-btn-primary" @click="showChatModal = true">
+        <button class="app-btn-primary disabled:cursor-not-allowed disabled:opacity-60" :disabled="!canOpenChat" @click="openChat">
           Message Support
         </button>
         <button class="app-btn-secondary" @click="downloadReceiptPdf">
           Download Receipt (PDF)
         </button>
       </footer>
+      <p v-if="!isAuthenticated" class="text-sm text-slate-500">
+        Sign in to access complaint chat with support.
+      </p>
     </template>
   </section>
 
   <LiveSupportModal
     :visible="showChatModal"
     :complaint-id="complaint?.id || null"
+    :requires-auth="true"
     current-role="user"
     title="Support Chat"
     @close="showChatModal = false"

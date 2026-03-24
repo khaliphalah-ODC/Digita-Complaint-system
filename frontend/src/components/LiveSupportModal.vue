@@ -18,6 +18,10 @@ const props = defineProps({
   currentRole: {
     type: String,
     default: 'user'
+  },
+  requiresAuth: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -35,13 +39,16 @@ const input = ref('');
 const editDraft = ref('');
 const messageViewport = ref(null);
 let refreshTimer = null;
+const authRequiredMessage = 'Sign in is required to access complaint chat.';
 
 const ensureSuccess = (payload, fallbackMessage) => {
   if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
   return payload.data;
 };
 
-const canChat = computed(() => Boolean(props.visible && props.complaintId));
+const isAuthenticated = computed(() => Boolean(localStorage.getItem('token')));
+const requiresSignIn = computed(() => props.requiresAuth && !isAuthenticated.value);
+const canChat = computed(() => Boolean(props.visible && props.complaintId && !requiresSignIn.value));
 const normalizedCurrentRole = computed(() => (
   props.currentRole === 'org_admin' || props.currentRole === 'super_admin' ? 'admin' : 'user'
 ));
@@ -100,8 +107,22 @@ const senderTitle = (message) => {
     : (message?.sender_name || 'Support Team');
 };
 
+const normalizeChatError = (requestError, fallbackMessage) => {
+  const message = extractApiError(requestError, fallbackMessage);
+  if (/Unauthorized|No token provided|sign in required/i.test(message)) {
+    return authRequiredMessage;
+  }
+  if (/Access denied|cannot access complaint chat directly/i.test(message)) {
+    return 'You do not have permission to access this complaint conversation.';
+  }
+  return message;
+};
+
 const loadMessages = async () => {
-  if (!props.complaintId) return;
+  if (!props.complaintId || requiresSignIn.value) {
+    error.value = requiresSignIn.value ? authRequiredMessage : '';
+    return;
+  }
   const firstLoad = messages.value.length === 0;
   loading.value = firstLoad;
   syncing.value = !firstLoad;
@@ -111,7 +132,7 @@ const loadMessages = async () => {
     messages.value = ensureSuccess(unwrapResponse(response), 'Failed to fetch chat messages') || [];
     await scrollToLatest(firstLoad ? 'auto' : 'smooth');
   } catch (requestError) {
-    error.value = extractApiError(requestError, 'Failed to fetch chat messages');
+    error.value = normalizeChatError(requestError, 'Failed to fetch chat messages');
   } finally {
     loading.value = false;
     syncing.value = false;
@@ -120,7 +141,7 @@ const loadMessages = async () => {
 
 const sendMessage = async () => {
   const text = input.value.trim();
-  if (!text || !props.complaintId) return;
+  if (!text || !props.complaintId || requiresSignIn.value) return;
   sending.value = true;
   error.value = '';
   try {
@@ -130,7 +151,7 @@ const sendMessage = async () => {
     input.value = '';
     await scrollToLatest();
   } catch (requestError) {
-    error.value = extractApiError(requestError, 'Failed to send message');
+    error.value = normalizeChatError(requestError, 'Failed to send message');
   } finally {
     sending.value = false;
   }
@@ -154,7 +175,7 @@ const toggleActionMenu = (messageId) => {
 
 const saveEdit = async (message) => {
   const text = editDraft.value.trim();
-  if (!props.complaintId || !message?.id || !text) return;
+  if (!props.complaintId || !message?.id || !text || requiresSignIn.value) return;
   error.value = '';
   try {
     const response = await api.put(`/complaint-messages/${props.complaintId}/${message.id}`, { message: text });
@@ -163,12 +184,12 @@ const saveEdit = async (message) => {
     cancelEdit();
     await scrollToLatest('auto');
   } catch (requestError) {
-    error.value = extractApiError(requestError, 'Failed to update message');
+    error.value = normalizeChatError(requestError, 'Failed to update message');
   }
 };
 
 const deleteMessage = async (message) => {
-  if (!props.complaintId || !message?.id || deletingId.value) return;
+  if (!props.complaintId || !message?.id || deletingId.value || requiresSignIn.value) return;
   const confirmed = window.confirm('Delete this message?');
   if (!confirmed) return;
 
@@ -182,7 +203,7 @@ const deleteMessage = async (message) => {
       cancelEdit();
     }
   } catch (requestError) {
-    error.value = extractApiError(requestError, 'Failed to delete message');
+    error.value = normalizeChatError(requestError, 'Failed to delete message');
   } finally {
     deletingId.value = null;
   }
@@ -213,6 +234,16 @@ watch(
       stopPolling();
       messages.value = [];
       input.value = '';
+      error.value = '';
+      cancelEdit();
+      actionMenuId.value = null;
+      return;
+    }
+    if (requiresSignIn.value) {
+      stopPolling();
+      messages.value = [];
+      input.value = '';
+      error.value = authRequiredMessage;
       cancelEdit();
       actionMenuId.value = null;
       return;
@@ -255,7 +286,15 @@ onUnmounted(stopPolling);
       </header>
 
       <div class="flex min-h-0 flex-1 flex-col bg-[linear-gradient(180deg,var(--app-bg-soft)_0%,var(--app-bg)_100%)] p-3 sm:p-4">
-        <p v-if="loading" class="app-empty-state text-sm">Loading messages...</p>
+        <div v-if="requiresSignIn" class="flex flex-1 items-center justify-center">
+          <div class="max-w-md rounded-2xl border border-[var(--app-line)] bg-white px-5 py-6 text-center shadow-sm">
+            <p class="text-base font-semibold text-slate-900">Sign in required</p>
+            <p class="mt-2 text-sm text-slate-600">
+              Sign in with the complaint owner account to view or send support messages.
+            </p>
+          </div>
+        </div>
+        <p v-else-if="loading" class="app-empty-state text-sm">Loading messages...</p>
         <p v-else-if="error" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{{ error }}</p>
 
         <div
@@ -323,9 +362,9 @@ onUnmounted(stopPolling);
                   <textarea
                     v-model="editDraft"
                     rows="3"
-                    class="app-input min-h-[96px] rounded-[var(--app-radius-lg)] border-white/20 bg-white/12 px-3 py-2 text-sm text-white placeholder:text-white/65"
+                    class="app-input min-h-[96px] rounded-[var(--app-radius-lg)] px-3 py-2 text-sm"
                   />
-                  <div class="mt-3 flex flex-wrap gap-2">
+                  <div class="app-action-row mt-3 flex flex-wrap gap-2">
                     <button
                       class="app-btn-secondary min-h-[34px] px-3 py-1.5 text-xs"
                       @click="saveEdit(msg)"

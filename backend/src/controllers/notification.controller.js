@@ -4,9 +4,7 @@ import { sendSuccess, sendError } from '../utils/response.js';
 import {
   notificationsQuery,
   createNotificationQuery,
-  fetchNotificationsQuery,
   fetchNotificationByIdQuery,
-  fetchNotificationsByComplaintIdQuery,
   fetchNotificationsByOrganizationIdQuery,
   fetchNotificationsByUserIdQuery,
   markNotificationAsReadQuery,
@@ -157,56 +155,6 @@ export const getAllNotifications = (req, res) => {
       return sendError(res, 500, 'Failed to fetch notifications', err.message);
     }
     return sendSuccess(res, 200, 'Notifications retrieved successfully', rows);
-  });
-};
-
-export const getNotificationById = (req, res) => {
-  if (denySuperAdminInternalAccess(req, res, 'Super admin cannot access notifications directly')) {
-    return;
-  }
-
-  complaintDB.get(fetchNotificationByIdQuery, [req.params.id], (err, row) => {
-    if (err) {
-      return sendError(res, 500, 'Failed to fetch notification', err.message);
-    }
-    if (!row) {
-      return sendError(res, 404, 'Notification not found');
-    }
-    if (req.user?.role === 'org_admin' && String(row.organization_id) !== String(req.user.organization_id)) {
-      return sendError(res, 403, 'Access denied');
-    }
-    if (req.user?.role === 'user' && Number(row.user_id) !== Number(req.user.id)) {
-      return sendError(res, 403, 'Access denied');
-    }
-    return sendSuccess(res, 200, 'Notification retrieved successfully', row);
-  });
-};
-
-export const getNotificationsByComplaintId = (req, res) => {
-  if (denySuperAdminInternalAccess(req, res, 'Super admin cannot access notifications directly')) {
-    return;
-  }
-
-  complaintDB.get(selectComplaintById, [req.params.complaintId], (complaintErr, complaintRow) => {
-    if (complaintErr) {
-      return sendError(res, 500, 'Failed to validate complaint', complaintErr.message);
-    }
-    if (!complaintRow) {
-      return sendError(res, 404, 'Complaint not found');
-    }
-    if (req.user?.role === 'org_admin' && String(complaintRow.complaint_organization_id) !== String(req.user.organization_id)) {
-      return sendError(res, 403, 'Access denied');
-    }
-    if (req.user?.role === 'user' && Number(complaintRow.user_id) !== Number(req.user.id)) {
-      return sendError(res, 403, 'Access denied');
-    }
-
-    complaintDB.all(fetchNotificationsByComplaintIdQuery, [req.params.complaintId], (err, rows) => {
-      if (err) {
-        return sendError(res, 500, 'Failed to fetch notifications', err.message);
-      }
-      return sendSuccess(res, 200, 'Notifications retrieved successfully', rows);
-    });
   });
 };
 

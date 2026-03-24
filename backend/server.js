@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import './src/model/connect.js';
 
+
 // Import routes and controllers
 import emailRoutes from './src/routes/email.route.js';
 import userRoutes from './src/routes/user.route.js';
@@ -18,12 +19,13 @@ import notificationRoutes from './src/routes/notification.route.js';
 import complaintRoutes from './src/routes/complaint.route.js';
 import complaintMessageRoutes from './src/routes/complaintMessage.route.js';
 import testimonialRoutes from './src/routes/testimonial.route.js';
-import joinCodeRoutes from './src/routes/joinCode.route.js';
+import platformSettingsRoutes from './src/routes/platformSettings.route.js';
+import auditRoutes from './src/routes/audit.route.js';
 import verifyToken from './src/middleware/verifyToken.js';
-import { getPublicOrganizationOptions } from './src/controllers/organization.controller.js';
+import { getPublicOrganizationJoinDetails, getPublicOrganizationOptions } from './src/controllers/organization.controller.js';
 import { getPublicDepartmentsByOrganization } from './src/controllers/department.controller.js';
 
-// Import table initializers
+//imported table if not exist
 import {
   CreateUsersTable,
   CreateRevokedTokensTable,
@@ -42,34 +44,57 @@ import { CreateFeedbackTable } from './src/controllers/feedback.controller.js';
 import { CreateNotificationsTable } from './src/controllers/notification.controller.js';
 import { CreateComplaintMessagesTable } from './src/controllers/complaintMessage.controller.js';
 import { CreateTestimonialsTable } from './src/controllers/testimonial.controller.js';
+import { CreatePlatformSettingsTable } from './src/controllers/platformSettings.controller.js';
 
-// App
+//app
 const app = express();
-app.use(cors({ origin: 'http://localhost:5173' }));
+const rawCorsOrigins = process.env.CORS_ORIGIN || 'http://localhost:5173';
+const corsOrigins = rawCorsOrigins === '*'
+  ? '*'
+  : rawCorsOrigins.split(',').map((origin) => origin.trim()).filter(Boolean);
+
+app.use(cors({
+  origin(origin, callback) {
+    if (corsOrigins === '*') {
+      return callback(null, true);
+    }
+    if (!origin) {
+      return callback(null, true);
+    }
+    if (corsOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true
+}));
+
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
-<<<<<<< Updated upstream
 app.use('/api/email', emailRoutes);
-=======
-// Routes
->>>>>>> Stashed changes
 app.use('/api/users', userRoutes);
 app.use('/api/assessments', verifyToken, assessmentRoutes);
-app.use('/api/accessments', verifyToken, assessmentRoutes);
 app.use('/api/escalations', verifyToken, escalationRoutes);
 app.use('/api/status-logs', verifyToken, statusLogRoutes);
 app.use('/api/feedback', verifyToken, feedbackRoutes);
 app.use('/api/organization', verifyToken, OrganizationRouter);
-app.use('/api/organizations', verifyToken, OrganizationRouter);
 app.use('/api/department', verifyToken, DepartmentRouter);
 app.use('/api/notification', verifyToken, notificationRoutes);
 app.use('/api/complaint', complaintRoutes);
 app.use('/api/complaint-messages', verifyToken, complaintMessageRoutes);
 app.use('/api/testimonials', testimonialRoutes);
-app.use('/api/join', joinCodeRoutes);
+app.use('/api/platform-settings', verifyToken, platformSettingsRoutes);
+app.use('/api/audit-logs', verifyToken, auditRoutes);
+
+// Compatibility aliases kept during route standardization.
+app.use('/api/accessments', verifyToken, assessmentRoutes);
+app.use('/api/organizations', verifyToken, OrganizationRouter);
+
 app.get('/api/public/organizations', getPublicOrganizationOptions);
+app.get('/api/public/organizations/join/:code', getPublicOrganizationJoinDetails);
 app.get('/api/public/organizations/:organizationId/departments', getPublicDepartmentsByOrganization);
+
 
 app.get('/', (req, res) => {
   res.send('Digital Complaint Management System API');
@@ -93,17 +118,18 @@ export const initializeDatabase = () => {
   CreateStatusLogsTable();
   CreateFeedbackTable();
   CreateNotificationsTable();
-  CreateOrganizationTable(); // migration runs automatically inside this
+  CreateOrganizationTable();
   CreateDepartmentTable();
   CreateComplaintTable();
   CreateComplaintMessagesTable();
-  CreatePasswordResetTokensTable();
   CreateAuditLogsTable();
   CreateTestimonialsTable();
+  CreatePlatformSettingsTable();
   
 };
 
 initializeDatabase();
+
 export const startServer = (port = process.env.PORT || 5000) => {
   if (activeServer?.listening) {
     return activeServer;

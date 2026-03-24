@@ -31,8 +31,16 @@ const tableRowClass = computed(() => (isOrgAdmin.value ? 'border-t border-white/
 const infoTextClass = computed(() => (isOrgAdmin.value ? 'text-sm text-white/70' : 'text-sm text-slate-500'));
 const footerClass = computed(() => (isOrgAdmin.value ? 'mt-3 flex items-center justify-between text-xs text-white/70' : 'mt-3 flex items-center justify-between text-xs text-slate-600'));
 const pagerButtonClass = computed(() => (isOrgAdmin.value ? 'rounded border border-white/20 bg-white/10 px-2 py-1 text-white disabled:opacity-50' : 'rounded border border-slate-300 px-2 py-1 disabled:opacity-50'));
-const successActionClass = computed(() => (isOrgAdmin.value ? 'rounded bg-emerald-500/20 px-2 py-1 text-xs font-semibold text-emerald-100' : 'rounded bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700'));
-const deleteButtonClass = computed(() => (isOrgAdmin.value ? 'rounded bg-red-500/20 px-2 py-1 text-xs font-semibold text-red-100' : 'rounded bg-red-50 px-2 py-1 text-xs font-semibold text-red-700'));
+const successActionClass = computed(() => (
+  isOrgAdmin.value
+    ? 'rounded border border-emerald-700 bg-emerald-600 px-2 py-1 text-xs font-semibold text-white shadow-sm'
+    : 'rounded bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700'
+));
+const deleteButtonClass = computed(() => (
+  isOrgAdmin.value
+    ? 'rounded border border-red-700 bg-red-600 px-2 py-1 text-xs font-semibold text-white shadow-sm'
+    : 'rounded bg-red-50 px-2 py-1 text-xs font-semibold text-red-700'
+));
 
 const form = reactive({
   user_id: '',
@@ -174,13 +182,13 @@ onMounted(fetchNotifications);
     <header class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
       <div>
         <h1 :class="titleClass">Notification Management</h1>
-        <p :class="metaClass">Create and manage platform notifications for users and complaints.</p>
+        <p :class="metaClass">Monitor notifications generated automatically for users and complaints.</p>
       </div>
       <button :class="`${refreshButtonClass} w-full sm:w-auto`" @click="fetchNotifications">
         Refresh
       </button>
     </header>
-    <section :class="panelClass">
+    <section v-if="!isOrgAdmin" :class="panelClass">
       <h2 :class="isOrgAdmin ? 'mb-3 text-lg font-bold text-white' : 'mb-3 text-lg font-bold text-slate-900'">Create Notification</h2>
       <form class="grid grid-cols-1 gap-3 md:grid-cols-2" @submit.prevent="createNotification">
         <select v-model="form.user_id" :class="selectClass">
@@ -211,6 +219,13 @@ onMounted(fetchNotifications);
         </div>
       </form>
       <p v-if="error" class="mt-3 text-sm text-red-600">{{ error }}</p>
+    </section>
+
+    <section v-else :class="panelClass">
+      <h2 :class="isOrgAdmin ? 'mb-3 text-lg font-bold text-white' : 'mb-3 text-lg font-bold text-slate-900'">Automatic Notifications</h2>
+      <p :class="infoTextClass">
+        Notifications are generated automatically from complaint activity. Use the table below to mark items as read or delete them.
+      </p>
     </section>
 
     <section :class="panelClass">
@@ -251,7 +266,7 @@ onMounted(fetchNotifications);
               <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ complaintTitleById.get(Number(row.complaint_id)) || row.complaint_id || 'N/A' }}</td>
               <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ Number(row.is_read) === 1 ? 'read' : 'unread' }}</td>
               <td class="py-2">
-                <div class="flex flex-wrap gap-2">
+                <div class="app-action-row flex flex-wrap gap-2">
                   <button
                     v-if="Number(row.is_read) === 0"
                     :class="successActionClass"

@@ -15,3 +15,23 @@ export const insertAuditLogQuery = `
 INSERT INTO audit_logs (actor_id, actor_role, action, target_table, target_id, metadata)
 VALUES (?, ?, ?, ?, ?, ?);
 `;
+
+export const selectAuditLogsQuery = `
+SELECT
+  id,
+  actor_id,
+  actor_role,
+  action,
+  target_table,
+  target_id,
+  metadata,
+  created_at
+FROM audit_logs
+ORDER BY id DESC
+LIMIT ? OFFSET ?;
+`;
+
+export const countAuditLogsQuery = `
+SELECT COUNT(*) AS count
+FROM audit_logs;
+`;

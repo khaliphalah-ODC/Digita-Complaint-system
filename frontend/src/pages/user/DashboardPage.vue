@@ -79,74 +79,75 @@ onMounted(fetchComplaints);
     </section>
 
     <section class="grid grid-cols-1 gap-5 xl:grid-cols-[0.85fr,1.15fr]">
-      <section class="app-footer-panel rounded-[30px] p-5 text-white">
-        <h2 class="text-lg font-bold text-white">Quick Actions</h2>
+      <section class="user-shell-panel p-5">
+        <h2 class="text-lg font-bold text-slate-900">Quick Actions</h2>
         <div class="mt-4 grid gap-3">
-          <RouterLink to="/submit-complaint" class="rounded-[22px] bg-[var(--app-primary)] px-4 py-3 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(31,77,183,0.2)] hover:-translate-y-0.5 hover:bg-[var(--app-primary-ink)]">
+          <RouterLink
+            to="/submit-complaint"
+            class="w-full rounded-[22px] border border-[var(--app-line)] bg-white px-4 py-3 text-sm font-semibold text-[var(--app-title-color)] hover:border-[var(--app-line-strong)] hover:bg-[var(--app-surface-soft)]"
+          >
             Submit Complaint
           </RouterLink>
-          <RouterLink to="/track-complaint" class="rounded-[22px] border border-white/30 bg-white/20 px-4 py-3 text-sm font-semibold text-white hover:bg-white/30">
+          <RouterLink
+            to="/track-complaint"
+            class="w-full rounded-[22px] border border-[var(--app-line)] bg-white px-4 py-3 text-sm font-semibold text-[var(--app-title-color)] hover:border-[var(--app-line-strong)] hover:bg-[var(--app-surface-soft)]"
+          >
             Track Complaint
           </RouterLink>
-          <RouterLink to="/feedback" class="rounded-[22px] border border-white/30 bg-white/10 px-4 py-3 text-sm font-semibold text-white hover:bg-white/20">
+          <RouterLink
+            to="/feedback"
+            class="w-full rounded-[22px] border border-[var(--app-line)] bg-white px-4 py-3 text-sm font-semibold text-[var(--app-title-color)] hover:border-[var(--app-line-strong)] hover:bg-[var(--app-surface-soft)]"
+          >
             Leave Feedback
           </RouterLink>
-          <RouterLink to="/testimonial" class="rounded-[22px] border border-white/30 bg-white/10 px-4 py-3 text-sm font-semibold text-white hover:bg-white/20">
-         Share Your Experience
-        </RouterLink>
-        </div>
-      </section>
-
-      <section class="app-footer-panel rounded-[30px] p-5 text-white">
-          <RouterLink to="/testimonial" class="user-shell-outline-btn rounded-[22px] px-4 py-3 text-sm">
-            Share Testimonial
+          <RouterLink
+            to="/testimonial"
+            class="w-full rounded-[22px] border border-[var(--app-line)] bg-white px-4 py-3 text-sm font-semibold text-[var(--app-title-color)] hover:border-[var(--app-line-strong)] hover:bg-[var(--app-surface-soft)]"
+          >
+            Share Your Experience
           </RouterLink>
         </div>
       </section>
 
-      <section class="user-shell-accent p-6 text-white">
+      <section class="app-section-card p-6">
         <div class="mb-3 flex items-center justify-between">
           <div>
-            <h2 class="text-xl font-semibold text-white">Recent Complaints</h2>
-            <p class="text-[0.98rem] text-white/80">Only your complaints are listed here.</p>
+            <h2 class="text-xl font-semibold text-[var(--app-title-color)]">Recent Complaints</h2>
+            <p class="text-[0.98rem] text-[var(--app-muted-color)]">Only your complaints are listed here.</p>
           </div>
-          <button class="rounded-full border border-white/25 bg-white/20 px-4 py-2 text-sm font-medium text-white hover:bg-white/30" @click="fetchComplaints">
+          <button class="app-btn-secondary min-h-[36px] px-4 py-2 text-sm" @click="fetchComplaints">
             Refresh
           </button>
         </div>
 
-        <p v-if="loading" class="text-sm text-white/70">Loading complaints...</p>
-        <p v-else-if="error" class="text-sm text-red-300">{{ error }}</p>
-        <p v-else-if="recentComplaints.length === 0" class="text-sm text-white/70">No complaints found yet.</p>
+        <p v-if="loading" class="text-sm text-[var(--app-muted-color)]">Loading complaints...</p>
+        <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
+        <p v-else-if="recentComplaints.length === 0" class="text-sm text-[var(--app-muted-color)]">No complaints found yet.</p>
 
         <div v-else class="space-y-3">
           <article
             v-for="item in recentComplaints"
             :key="item.id"
-            class="app-footer-card rounded-[24px] p-4"
+            class="app-card rounded-[24px] p-4"
           >
             <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
-                <h3 class="text-lg font-semibold text-white">{{ item.title || 'Untitled Complaint' }}</h3>
-                <p class="mt-1 text-[0.98rem] text-white/80">{{ item.complaint }}</p>
-                <p class="mt-2 text-xs text-white/60">Tracking: {{ item.tracking_code || 'N/A' }}</p>
-                <p class="text-xs text-white/60">Organization: {{ item.organization_name || 'Not assigned' }}</p>
-                <p class="text-xs text-white/60">Department: {{ item.department_name || 'Not specified' }}</p>
+                <h3 class="text-lg font-semibold text-[var(--app-title-color)]">{{ item.title || 'Untitled Complaint' }}</h3>
+                <p class="mt-1 text-[0.98rem] text-[var(--app-muted-color)]">{{ item.complaint }}</p>
+                <p class="mt-2 text-xs text-[var(--app-muted-color)]">Tracking: {{ item.tracking_code || 'N/A' }}</p>
+                <p class="text-xs text-[var(--app-muted-color)]">Organization: {{ item.organization_name || 'Not assigned' }}</p>
+                <p class="text-xs text-[var(--app-muted-color)]">Department: {{ item.department_name || 'Not specified' }}</p>
                 <RouterLink
                   v-if="item.status === 'resolved' || item.status === 'closed'"
                   to="/testimonial"
-                  class="mt-3 inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-2 text-xs font-semibold text-white hover:bg-white/16"
+                  class="mt-3 inline-flex rounded-full border border-[var(--app-line)] bg-[var(--app-surface-soft)] px-3 py-2 text-xs font-semibold text-[var(--app-title-color)] hover:border-[var(--app-line-strong)]"
                 >
                   Share Testimonial
                 </RouterLink>
               </div>
-              <div class="flex flex-wrap gap-2">
-                <span class="app-badge bg-white/15 text-white">
-                  {{ item.priority }}
-                </span>
-                <span class="app-badge bg-white/15 text-white">
-                  {{ item.status }}
-                </span>
+              <div class="app-action-row flex flex-wrap gap-2">
+                <span class="app-badge app-badge-warning">{{ item.priority }}</span>
+                <span class="app-badge app-badge-neutral">{{ item.status }}</span>
               </div>
             </div>
           </article>

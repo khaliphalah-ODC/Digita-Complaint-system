@@ -7,6 +7,7 @@ import ChangePasswordPage from '../pages/ChangePasswordPage.vue';
 import SubmitComplaintPage from '../pages/SubmitComplaintPage.vue';
 import TrackComplaintPage from '../pages/TrackComplaintPage.vue';
 import UserDashboardPage from '../pages/user/DashboardPage.vue';
+import UserNotificationPage from '../pages/user/NotificationPage.vue';
 import OrgAdminDashboardPage from '../pages/orgAdmin/DashboardPage.vue';
 import OrgAdminAnalyticsPage from '../pages/orgAdmin/AnalyticsPage.vue';
 import SignUpPage from '../pages/SignUpPage.vue';
@@ -104,9 +105,9 @@ const routes = [
     path: '/',
     component: MainLayout,
     children: [
-      { path: 'submit-complaint', name: 'submit-complaint', component: SubmitComplaintPage, meta: { blockAdminFamily: true } },
+      { path: 'submit-complaint', name: 'submit-complaint', component: SubmitComplaintPage, meta: { requiresAuth: true, requiresUserOnly: true } },
       { path: 'track-complaint', name: 'track-complaint', component: TrackComplaintPage },
-      { path: 'complaints', name: 'complaints', component: SubmitComplaintPage, meta: { blockAdminFamily: true } },
+      { path: 'complaints', name: 'complaints', component: SubmitComplaintPage, meta: { requiresAuth: true, requiresUserOnly: true } },
       { path: 'complaint', redirect: '/complaints' }
     ]
   },
@@ -132,6 +133,7 @@ const routes = [
       { path: 'admin/assessments', redirect: '/admin/dashboard' },
       { path: 'admin/escalations', redirect: '/admin/dashboard' },
       { path: 'admin/reports', name: 'admin-reports', component: SuperAdminReportsPage, meta: { requiresAdmin: true } },
+      { path: 'admin/testimonials', name: 'admin-testimonials', component: OrgAdminTestimonialManagementPage, meta: { requiresAdmin: true } },
       { path: 'admin/audit-logs', name: 'admin-audit-logs', component: SharedAuditLogsPage, meta: { requiresAdmin: true } },
       { path: 'admin/settings', name: 'admin-settings', component: SuperAdminSettingsPage, meta: { requiresAdmin: true } },
       { path: 'admin/complaints', redirect: '/admin/dashboard' },
@@ -146,7 +148,7 @@ const routes = [
       { path: 'org-admin/accessments', redirect: '/org-admin/assessments' },
       { path: 'org-admin/assessments', name: 'org-admin-assessments', component: OrgAdminAssessmentManagementPage, meta: { requiresOrgAdmin: true } },
       { path: 'org-admin/escalations', name: 'org-admin-escalations', component: OrgAdminEscalationManagementPage, meta: { requiresOrgAdmin: true } },
-      { path: 'org-admin/testimonials', name: 'org-admin-testimonials', component: OrgAdminTestimonialManagementPage, meta: { requiresOrgAdmin: true } },
+      { path: 'org-admin/testimonials', redirect: '/admin/testimonials' },
       { path: 'org-admin/notifications', name: 'org-admin-notifications', component: OrgAdminNotificationManagementPage, meta: { requiresOrgAdmin: true } },
       { path: 'org-admin/status-logs', name: 'org-admin-status-logs', component: SharedAuditLogsPage, meta: { requiresOrgAdmin: true } },
       { path: 'users', redirect: '/org-admin/users' },
@@ -158,7 +160,7 @@ const routes = [
       { path: 'status-logs', redirect: '/org-admin/status-logs' },
       { path: 'feedback', name: 'feedback', component: FeedbackPage, meta: { requiresUserOnly: true } },
       { path: 'testimonial', name: 'testimonial', component: TestimonialPage, meta: { requiresUserOnly: true } },
-      { path: 'notifications', redirect: '/org-admin/notifications' },
+      { path: 'notifications', name: 'notifications', component: UserNotificationPage, meta: { requiresUserOnly: true } },
     ]
   }
 ];
@@ -186,7 +188,6 @@ router.beforeEach((to) => {
     '/assessments',
     '/escalations',
     '/status-logs',
-    '/notifications',
     '/feedback'
   ]);
 
@@ -215,11 +216,11 @@ router.beforeEach((to) => {
   }
 
   if ((to.meta.requiresAdmin || (isAdminRoute && !to.meta.requiresAdminFamily)) && !isSuperAdminRole(role)) {
-    return isOrgAdminRole(role) ? '/org-admin/dashboard' : '/submit-complaint';
+    return isOrgAdminRole(role) ? '/org-admin/dashboard' : '/track-complaint';
   }
 
   if (to.meta.requiresAdminFamily && !isAdminFamilyRole(role)) {
-    return '/submit-complaint';
+    return '/track-complaint';
   }
 
   if (to.meta.requiresOrgAdmin && !isOrgAdminRole(role)) {

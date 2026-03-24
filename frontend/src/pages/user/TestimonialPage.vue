@@ -2,7 +2,7 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSessionStore } from '../../stores/session.js';
-import AppFooter from '../../components/AppFooter.vue';
+import AuthTopNav from '../../components/AuthTopNav.vue';
 import api, { extractApiError } from '../../services/api.js';
 
 const router = useRouter();
@@ -217,7 +217,6 @@ onBeforeUnmount(() => {
 
     </div>
   </section>
-    <AppFooter/>
   </div>
 </template>
 
@@ -225,13 +224,17 @@ onBeforeUnmount(() => {
 .testimonial-page {
   font-family: 'Times New Roman', Times, serif;
   padding: 1.5rem;
+  display: flex;
+  justify-content: center;
 }
 
 /* ── Success ───────────────────────────────── */
 .success-card {
-  max-width: 32rem; margin: 4rem auto;
+  max-width: 32rem; 
+  margin: 4rem auto;
   font-family:'Georgia''Times New Roman';
-  text-align: center; padding: 3rem 2rem;
+  text-align: 
+  center; padding: 3rem 2rem;
   border-radius: 1.5rem;
   border: 1px solid rgba(16,185,129,0.15);
   background: linear-gradient(135deg, #5098c9, #ffffff);
@@ -243,23 +246,43 @@ onBeforeUnmount(() => {
 .success-title { font-size: 1.5rem; font-weight: 900; color: #0f2444; }
 .success-desc { margin-top: 0.75rem; font-size: 0.875rem; line-height: 1.7; color: #09090a; max-width: 22rem; margin-left: auto; margin-right: auto; }
 .back-btn {
-  margin-top: 2rem; display: inline-flex; align-items: center; gap: 0.5rem;
-  padding: 0.75rem 1.75rem; border-radius: 9999px;
-  background: #0f2444; color: white; font-size: 0.875rem; font-weight: 700;
-  border: none; cursor: pointer; transition: all 0.2s;
+  margin-top: 2rem; 
+  display: inline-flex; 
+  align-items: center;
+   gap: 0.5rem;
+  padding: 0.75rem 1.75rem;
+   border-radius: 9999px;
+  background: #0f2444; color: 
+  white; font-size: 0.875rem; font-weight: 700;
+  border: none; cursor: pointer; 
+  transition: all 0.2s;
   
 }
 .back-btn:hover { background: #162d5c; transform: translateY(-1px); }
 
 /* ── Form wrapper ──────────────────────────── */
 .form-wrapper {
- max-width: 100%; margin: 0 auto;
+  width: min(100%, 62rem);
+  margin: 0 auto;
   background: white;
   border: 1px solid rgba(15,36,68,0.08);
   border-radius: 1.5rem;
-   padding: 6.5rem 11rem 18rem 11rem;
+  padding: 2.5rem 3rem;
   box-shadow: 0 4px 30px rgba(15,36,68,0.07);
-  display: flex; flex-direction: column; gap: 1.5rem;
+  display: flex;
+ flex-direction: column; gap: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .form-wrapper {
+    padding: 2.25rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .form-wrapper {
+    padding: 1.75rem 1.25rem;
+  }
 }
 
 /* ── Form header ───────────────────────────── */

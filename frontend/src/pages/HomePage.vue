@@ -9,18 +9,15 @@ import AuthTopNav from '../components/AuthTopNav.vue';
 import AppFooter from '../components/AppFooter.vue';
 import TestimonialsSection from '../components/TestimonialsSection.vue';
 import heroImage1 from '../asset/heroImage/image1.avif';
-import heroImage2 from '../asset/heroImage/Gemini_Generated_Image_96bcsk96bcsk96bc.png';
-import heroImage3 from '../asset/heroImage/image3.png';
-import heroImage4 from '../asset/heroImage/image4.png';
+import heroImage2 from '../asset/heroImage/image2.jpg';
+import heroImage3 from '../asset/heroImage/image3.jpeg';
+import heroImage4 from '../asset/heroImage/image4.jpeg';
+import heroImage5 from '../asset/heroImage/image5.jpeg';
+
 
 const heroModules = [Autoplay, EffectFade, Pagination];
-const heroSlides = [heroImage1, heroImage2, heroImage3, heroImage4];
+const heroSlides = [heroImage1, heroImage2, heroImage3, heroImage4, heroImage5];
 const benefitCards = [
-  {
-    title: 'Submit complaints easily',
-    description: 'Use a guided form to report issues and send them to the right organization.',
-    icon: ['fas', 'file-lines'],
-  },
   {
     title: 'Track progress clearly',
     description: 'Follow status updates, timelines, and responses without confusion.',
@@ -68,29 +65,26 @@ const benefitCards = [
 
       <div class="hero-content-shell app-shell-gutter absolute inset-0 z-20 flex items-center justify-center pt-16">
         <div class="hero-content-group flex w-full max-w-3xl flex-col items-center justify-center text-center">
-          <p class="hero-kicker">Trusted complaint reporting and tracking</p>
+          <p class="hero-kicker">Trusted complaint tracking</p>
           <h1 class="hero-title text-5xl font-black leading-[0.95] tracking-tight text-white sm:text-6xl lg:text-8xl">
-            Submit Your
+            Track Your
             <span class="block text-[#f97316]">Complaints.</span>
           </h1>
 
           <p class="hero-subtitle mx-auto mt-7 max-w-2xl text-base leading-7 text-blue-100/80 sm:text-lg">
-            Report issues, send them to the right organization, and track every step of the response in one clear place.
+            Follow updates, timelines, and responses in one clear place without losing visibility.
           </p>
 
           <div class="hero-actions mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <RouterLink to="/submit-complaint" class="hero-btn hero-btn-primary">
-              Submit a Complaint
-            </RouterLink>
             <RouterLink to="/track-complaint" class="hero-btn hero-btn-secondary">
               Track a Complaint
             </RouterLink>
           </div>
 
           <div class="hero-trust mt-9 flex flex-wrap items-center justify-center gap-4 text-sm text-blue-100/80">
-            <span class="hero-trust-pill">Direct routing</span>
             <span class="hero-trust-pill">Status tracking</span>
-            <span class="hero-trust-pill">Anonymous options</span>
+            <span class="hero-trust-pill">Resolution timeline</span>
+            <span class="hero-trust-pill">Response visibility</span>
           </div>
         </div>
       </div>
@@ -100,13 +94,13 @@ const benefitCards = [
       <div class="app-container">
         <div class="mx-auto max-w-3xl text-center">
           <p class="section-kicker">How It Works</p>
-          <h2 class="section-title">A clearer way to report and follow up on issues</h2>
+          <h2 class="section-title">A clearer way to follow up on issues</h2>
           <p class="section-intro">
-            The platform is designed to make complaint reporting easier to start, easier to understand, and easier to trust.
+            The platform is designed to make complaint tracking easier to understand and easier to trust.
           </p>
         </div>
 
-        <div class="mt-10 grid gap-6 md:grid-cols-3">
+        <div class="mt-10 grid gap-6 md:grid-cols-2">
           <article
             v-for="card in benefitCards"
             :key="card.title"

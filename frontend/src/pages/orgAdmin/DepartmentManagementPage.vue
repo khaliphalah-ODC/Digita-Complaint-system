@@ -295,9 +295,9 @@ onMounted(async () => {
                   <td>{{ row.accessment_id ?? 'N/A' }}</td>
                   <td>{{ row.created_at }}</td>
                   <td>
-                    <div class="flex flex-wrap gap-2">
+                    <div class="app-action-row flex flex-wrap gap-2">
                       <button class="app-btn-secondary min-h-[36px] px-3 py-1.5 text-xs" @click="startEdit(row)">Edit</button>
-                      <button class="inline-flex min-h-[36px] items-center justify-center rounded-[var(--app-radius-md)] border border-[var(--app-danger)]/20 bg-[var(--app-danger-soft)] px-3 py-1.5 text-xs font-semibold text-[var(--app-danger)]" @click="deleteDepartment(row)">Delete</button>
+                      <button class="app-btn-danger min-h-[36px] px-3 py-1.5 text-xs" @click="deleteDepartment(row)">Delete</button>
                     </div>
                   </td>
                 </tr>

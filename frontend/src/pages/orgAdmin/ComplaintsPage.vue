@@ -244,20 +244,20 @@ onMounted(fetchComplaints);
                     </span>
                   </td>
                   <td>
-                    <div class="flex flex-wrap gap-2">
+                    <div class="app-action-row flex flex-wrap gap-2">
                       <span v-if="needsResponse(item)" class="app-badge app-badge-warning">Needs Response</span>
                       <span class="app-badge app-badge-neutral">{{ getComplaintWorkflowLabel(item) }}</span>
                     </div>
                   </td>
                   <td>
-                    <div class="flex flex-wrap gap-2">
+                    <div class="app-action-row flex flex-wrap gap-2">
                       <button class="app-btn-primary min-h-[36px] px-3 py-1.5 text-xs" @click="router.push(`${complaintsRoutePrefix}/${item.id}`)">
                         Review
                       </button>
                       <button class="app-btn-secondary min-h-[36px] px-3 py-1.5 text-xs" @click="openChat(item)">
                         Chat
                       </button>
-                      <button class="inline-flex min-h-[36px] items-center justify-center rounded-[var(--app-radius-md)] border border-[var(--app-danger)]/20 bg-[var(--app-danger-soft)] px-3 py-1.5 text-xs font-semibold text-[var(--app-danger)]" @click="deleteComplaint(item)">
+                      <button class="app-btn-danger min-h-[36px] px-3 py-1.5 text-xs" @click="deleteComplaint(item)">
                         Delete
                       </button>
                     </div>

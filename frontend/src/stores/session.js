@@ -1,7 +1,6 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import api, { extractApiError, unwrapResponse } from '../services/api';
-import { useRouter } from 'vue-router';
 
 const API_ROOT = import.meta.env.VITE_API_BASE_URL || '/api';
 const USERS_API_BASE = import.meta.env.VITE_API_URL || '/users';
@@ -16,10 +15,8 @@ export const useSessionStore = defineStore('session', () => {
   const loadingRegister = ref(false);
   const loadingPasswordChange = ref(false);
   const loadingForgotPassword = ref(false);
-  const loadingRequestResetToken = ref(false);
+  const loadingRequestResetCode = ref(false);
   const loadingGoogleLogin = ref(false);
-  const loadingRecentOrganizations = ref(false);
-  const recentOrganizationsError = ref('');
   const loadingDashboard = ref(false);
   const dashboardError = ref('');
 
@@ -27,18 +24,6 @@ export const useSessionStore = defineStore('session', () => {
     email: '',
     password: ''
   });
-
-  const recentOrganizations = ref([
-    { name: 'Acme Corp', status: 'Active', complaints: 342, lastActive: '2026-03-01' },
-    { name: 'TechStart', status: 'Active', complaints: 198, lastActive: '2026-02-28' },
-    { name: 'Sunrise NGO', status: 'Inactive', complaints: 45, lastActive: '2026-02-21' }
-  ]);
-
-  const activityFeed = ref([
-    { text: 'New complaint filed by user123', date: '2026-03-02', tone: 'bg-blue-100 text-blue-900' },
-    { text: 'Organization TechStart activated', date: '2026-03-01', tone: 'bg-blue-100 text-blue-900' },
-    { text: 'Escalation moved to level_2', date: '2026-02-27', tone: 'bg-slate-100 text-slate-900' }
-  ]);
 
   const dashboardStats = ref({
     totalOrganizations: 0,
@@ -234,20 +219,31 @@ export const useSessionStore = defineStore('session', () => {
     }
   };
 
-  //Older version of logout button logic
-  // const logout = async () => {
-  //   if (!token.value) return;
+  const registerWithJoinCode = async (payload) => {
+    errorMessage.value = '';
+    loadingRegister.value = true;
 
-  //   try {
-  //     await api.post(`${USERS_API_BASE}/logout`);
-  //   } finally {
-  //     token.value = '';
-  //     currentUser.value = null;
-  //     currentOrganizationName.value = '';
-  //     localStorage.removeItem('token');
-  //   }
-  // };
-
+    try {
+      const normalizedPayload = {
+        ...payload,
+        email: String(payload?.email || '').trim().toLowerCase(),
+        join_code: String(payload?.join_code || '').trim().toUpperCase()
+      };
+      const response = await api.post(`${USERS_API_BASE}/register-with-code`, normalizedPayload, { skipAuth: true });
+      const data = ensureSuccess(unwrapResponse(response), 'Sign up failed');
+      token.value = '';
+      currentUser.value = null;
+      currentOrganizationName.value = '';
+      localStorage.removeItem('token');
+      pendingVerificationEmail.value = normalizedPayload.email;
+      return data;
+    } catch (error) {
+      errorMessage.value = getReadableError(error, 'Sign up failed');
+      throw error;
+    } finally {
+      loadingRegister.value = false;
+    }
+  };
 
   const logout = async () => {
     if (!token.value) return;
@@ -260,10 +256,8 @@ export const useSessionStore = defineStore('session', () => {
       currentOrganizationName.value = '';
       pendingVerificationEmail.value = '';
       localStorage.removeItem('token');
-      window.location.href = '/';
     }
   };
-
 
   const changePassword = async (payload) => {
     errorMessage.value = '';
@@ -282,18 +276,18 @@ export const useSessionStore = defineStore('session', () => {
     }
   };
 
-  const requestPasswordResetToken = async (payload) => {
+  const requestPasswordResetCode = async (payload) => {
     errorMessage.value = '';
-    loadingRequestResetToken.value = true;
+    loadingRequestResetCode.value = true;
 
     try {
       const response = await api.post(`${USERS_API_BASE}/forgot-password/request`, payload, { skipAuth: true });
-      return ensureSuccess(unwrapResponse(response), 'Failed to request password reset token');
+      return ensureSuccess(unwrapResponse(response), 'Failed to request password reset code');
     } catch (error) {
-      errorMessage.value = getReadableError(error, 'Failed to request password reset token');
+      errorMessage.value = getReadableError(error, 'Failed to request password reset code');
       throw error;
     } finally {
-      loadingRequestResetToken.value = false;
+      loadingRequestResetCode.value = false;
     }
   };
 
@@ -315,6 +309,7 @@ export const useSessionStore = defineStore('session', () => {
   };
 
   const forgotPassword = completePasswordReset;
+  const requestPasswordResetToken = requestPasswordResetCode;
 
   const googleLogin = async (credential) => {
     errorMessage.value = '';
@@ -334,83 +329,6 @@ export const useSessionStore = defineStore('session', () => {
     }
   };
 
-  const toUiStatus = (status) => {
-    if (!status) return 'Unknown';
-    return status.charAt(0).toUpperCase() + status.slice(1);
-  };
-
-  const toUiDate = (row) => {
-    const raw = row.updated_at || row.created_at;
-    if (!raw) return 'N/A';
-    const parsed = new Date(raw);
-    return Number.isNaN(parsed.getTime()) ? raw : parsed.toISOString().slice(0, 10);
-  };
-
-  const normalizeDate = (value) => {
-    if (!value) return null;
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return null;
-    return parsed;
-  };
-
-  const formatFeedDate = (date) => {
-    if (!date) return 'N/A';
-    return date.toISOString().slice(0, 10);
-  };
-
-  const buildActivityFeed = ({ complaints = [], statusLogs = [], escalations = [] }) => {
-    const complaintItems = complaints.map((row) => ({
-      text: `New complaint: ${row.title || 'Untitled'} (${row.tracking_code || 'no-tracking'})`,
-      tone: 'bg-blue-100 text-blue-900',
-      when: normalizeDate(row.created_at) || new Date(0)
-    }));
-
-    const statusLogItems = statusLogs.map((row) => ({
-      text: `Status log for assessment #${row.accessment_id}: ${row.old_status || 'none'} -> ${row.new_status}`,
-      tone: 'bg-blue-100 text-blue-900',
-      when: normalizeDate(row.created_at) || new Date(0)
-    }));
-
-    const escalationItems = escalations.map((row) => ({
-      text: `Escalation #${row.id}: ${row.escalation_level} (${row.status})`,
-      tone: 'bg-slate-100 text-slate-900',
-      when: normalizeDate(row.updated_at || row.created_at) || new Date(0)
-    }));
-
-    return [...complaintItems, ...statusLogItems, ...escalationItems]
-      .sort((a, b) => b.when - a.when)
-      .slice(0, 12)
-      .map((item) => ({
-        text: item.text,
-        tone: item.tone,
-        date: formatFeedDate(item.when)
-      }));
-  };
-
-  const fetchRecentOrganizations = async () => {
-    loadingRecentOrganizations.value = true;
-    recentOrganizationsError.value = '';
-
-    try {
-      const response = await api.get('/organization');
-      const rows = ensureSuccess(unwrapResponse(response), 'Failed to fetch organizations');
-      recentOrganizations.value = (rows || []).slice(0, 10).map((row) => ({
-        id: row.organization_id,
-        name: row.name || 'Unnamed',
-        email: row.email || '',
-        type: row.organization_type || '',
-        status: toUiStatus(row.status),
-        complaints: Number(row.complaints_count || row.complaints || 0),
-        lastActive: toUiDate(row),
-        organization_admin: row.organization_admin || null
-      }));
-    } catch (error) {
-      recentOrganizationsError.value = getReadableError(error, 'Failed to fetch organizations');
-    } finally {
-      loadingRecentOrganizations.value = false;
-    }
-  };
-
   const loadDashboardData = async () => {
     loadingDashboard.value = true;
     dashboardError.value = '';
@@ -418,115 +336,82 @@ export const useSessionStore = defineStore('session', () => {
     try {
       const activeRole = currentUser.value?.role || decodeTokenPayload(token.value)?.role || '';
 
-      if (activeRole === 'super_admin') {
-        const [orgRes, statsRes] = await Promise.all([
-          api.get('/organization'),
-          api.get('/organization/global-stats')
-        ]);
-
-        const organizations = ensureSuccess(unwrapResponse(orgRes), 'Failed to fetch organizations');
-        const stats = ensureSuccess(unwrapResponse(statsRes), 'Failed to load platform aggregate statistics');
-        const orgRows = organizations || [];
-
-        recentOrganizations.value = orgRows.slice(0, 10).map((row) => ({
-          id: row.organization_id,
-          name: row.name || 'Unnamed',
-          email: row.email || '',
-          type: row.organization_type || '',
-          status: toUiStatus(row.status),
-          complaints: Number(row.complaints_count || 0),
-          lastActive: toUiDate(row),
-          organization_admin: row.organization_admin || null
-        }));
-
+      if (activeRole !== 'super_admin') {
         dashboardStats.value = {
-          totalOrganizations: Number(stats.totalOrganizations || 0),
-          activeOrganizations: Number(stats.activeOrganizations || 0),
-          suspendedOrganizations: Number(stats.suspendedOrganizations || 0),
-          unassignedAnonymousComplaints: Number(stats.unassignedAnonymousComplaints || 0),
-          totalComplaints: Number(stats.totalComplaints || 0),
-          submittedComplaints: Number(stats.submittedComplaints || 0),
-          inReviewComplaints: Number(stats.inReviewComplaints || 0),
-          resolvedComplaints: Number(stats.resolvedComplaints || 0),
-          closedComplaints: Number(stats.closedComplaints || 0),
-          complaintsByOrganization: (stats.complaintsByOrganization || []).map((row) => ({
-            label: row.name || 'Unnamed',
-            value: Number(row.complaints || 0)
-          })),
-          escalationStatusCounts: stats.escalationStatusCounts || {
+          totalOrganizations: 0,
+          activeOrganizations: 0,
+          suspendedOrganizations: 0,
+          unassignedAnonymousComplaints: 0,
+          totalComplaints: 0,
+          submittedComplaints: 0,
+          inReviewComplaints: 0,
+          resolvedComplaints: 0,
+          closedComplaints: 0,
+          complaintsByOrganization: [],
+          escalationStatusCounts: {
             pending: 0,
             in_progress: 0,
             resolved: 0,
             rejected: 0
           },
-          feedbackSummary: stats.feedbackSummary || {
+          feedbackSummary: {
             total: 0,
             average: 0,
             byRating: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
           },
-          complaintMonthlyTrend: (stats.complaintMonthlyTrend || []).map((row) => ({
-            label: row.month || '',
-            value: Number(row.value || 0)
-          })),
-          assessmentMonthlyTrend: (stats.assessmentMonthlyTrend || []).map((row) => ({
-            label: row.month || '',
-            value: Number(row.value || 0)
-          }))
+          complaintMonthlyTrend: [],
+          assessmentMonthlyTrend: []
         };
-
-        activityFeed.value = (stats.activityFeed || []).slice(0, 12).map((item, index) => ({
-          text: item.text || `Platform activity #${index + 1}`,
-          tone: index % 2 === 0 ? 'bg-blue-100 text-blue-900' : 'bg-slate-100 text-slate-900',
-          date: item.date ? toUiDate({ updated_at: item.date }) : 'N/A'
-        }));
         return;
       }
 
-      const [orgRes, complaintRes, statusLogRes, escalationRes] = await Promise.all([
+      const [orgRes, statsRes] = await Promise.all([
         api.get('/organization'),
-        api.get('/complaint'),
-        api.get('/status-logs'),
-        api.get('/escalations')
+        api.get('/organization/global-stats')
       ]);
 
       const organizations = ensureSuccess(unwrapResponse(orgRes), 'Failed to fetch organizations');
-      const complaints = ensureSuccess(unwrapResponse(complaintRes), 'Failed to fetch complaints');
-      const statusLogs = ensureSuccess(unwrapResponse(statusLogRes), 'Failed to fetch status logs');
-      const escalations = ensureSuccess(unwrapResponse(escalationRes), 'Failed to fetch escalations');
+      const stats = ensureSuccess(unwrapResponse(statsRes), 'Failed to load platform aggregate statistics');
 
       const orgRows = organizations || [];
-      const complaintRows = complaints || [];
-
-      recentOrganizations.value = orgRows.slice(0, 10).map((row) => ({
-        id: row.organization_id,
-        name: row.name || 'Unnamed',
-        status: toUiStatus(row.status),
-        complaints: Number(row.complaints_count || row.complaints || 0),
-        lastActive: toUiDate(row)
-      }));
 
       dashboardStats.value = {
-        totalOrganizations: orgRows.length,
-        activeOrganizations: orgRows.filter((row) => String(row.status).toLowerCase() === 'active').length,
-        suspendedOrganizations: orgRows.filter((row) => String(row.status).toLowerCase() !== 'active').length,
-        unassignedAnonymousComplaints: 0,
-        totalComplaints: complaintRows.length,
-        submittedComplaints: complaintRows.filter((row) => row.status === 'submitted').length,
-        inReviewComplaints: complaintRows.filter((row) => row.status === 'in_review').length,
-        resolvedComplaints: complaintRows.filter((row) => row.status === 'resolved').length,
-        closedComplaints: complaintRows.filter((row) => row.status === 'closed').length
+        totalOrganizations: Number(stats.totalOrganizations || orgRows.length || 0),
+        activeOrganizations: Number(stats.activeOrganizations || 0),
+        suspendedOrganizations: Number(stats.suspendedOrganizations || 0),
+        unassignedAnonymousComplaints: Number(stats.unassignedAnonymousComplaints || 0),
+        totalComplaints: Number(stats.totalComplaints || 0),
+        submittedComplaints: Number(stats.submittedComplaints || 0),
+        inReviewComplaints: Number(stats.inReviewComplaints || 0),
+        resolvedComplaints: Number(stats.resolvedComplaints || 0),
+        closedComplaints: Number(stats.closedComplaints || 0),
+        complaintsByOrganization: (stats.complaintsByOrganization || []).map((row) => ({
+          organization_id: row.organization_id,
+          label: row.name || 'Unnamed',
+          value: Number(row.complaints || 0)
+        })),
+        escalationStatusCounts: stats.escalationStatusCounts || {
+          pending: 0,
+          in_progress: 0,
+          resolved: 0,
+          rejected: 0
+        },
+        feedbackSummary: stats.feedbackSummary || {
+          total: 0,
+          average: 0,
+          byRating: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+        },
+        complaintMonthlyTrend: (stats.complaintMonthlyTrend || []).map((row) => ({
+          label: row.month || '',
+          value: Number(row.value || 0)
+        })),
+        assessmentMonthlyTrend: (stats.assessmentMonthlyTrend || []).map((row) => ({
+          label: row.month || '',
+          value: Number(row.value || 0)
+        }))
       };
-
-      activityFeed.value = buildActivityFeed({
-        complaints: complaintRows,
-        statusLogs: statusLogs || [],
-        escalations: escalations || []
-      });
     } catch (error) {
       dashboardError.value = getReadableError(error, 'Failed to load dashboard');
-      if (!recentOrganizationsError.value) {
-        recentOrganizationsError.value = dashboardError.value;
-      }
     } finally {
       loadingDashboard.value = false;
     }
@@ -543,15 +428,11 @@ export const useSessionStore = defineStore('session', () => {
     loadingRegister,
     loadingPasswordChange,
     loadingForgotPassword,
-    loadingRequestResetToken,
+    loadingRequestResetCode,
     loadingGoogleLogin,
-    loadingRecentOrganizations,
     loadingDashboard,
-    recentOrganizationsError,
     dashboardError,
     loginForm,
-    recentOrganizations,
-    activityFeed,
     dashboardStats,
     isSuperAdmin,
     isOrgAdmin,
@@ -561,13 +442,14 @@ export const useSessionStore = defineStore('session', () => {
     userInitials,
     apiRequest,
     fetchCurrentUser,
-    fetchRecentOrganizations,
     loadDashboardData,
     login,
     register,
+    registerWithJoinCode,
     googleLogin,
     forgotPassword,
     completePasswordReset,
+    requestPasswordResetCode,
     requestPasswordResetToken,
     changePassword,
     logout

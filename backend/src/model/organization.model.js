@@ -9,12 +9,25 @@ export const Organization = `CREATE TABLE IF NOT EXISTS organization (
     logo TEXT,
     status TEXT DEFAULT 'active' CHECK(status IN ('active', 'inactive')),
     join_code TEXT UNIQUE,
-    join_code_expires_at DATETIME,
+    self_signup_enabled INTEGER NOT NULL DEFAULT 1 CHECK(self_signup_enabled IN (0, 1)),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )`;
 
-export const insertOrganization = `INSERT INTO organization (name, organization_type, email, phone, address, logo, status, join_code, join_code_expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+export const insertOrganization = `
+INSERT INTO organization (
+  name,
+  organization_type,
+  email,
+  phone,
+  address,
+  logo,
+  status,
+  join_code,
+  self_signup_enabled
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+`;
+
 export const selectOrganizations = `
 SELECT
   o.*,
@@ -38,29 +51,55 @@ GROUP BY o.organization_id
 `;
 
 export const selectOrganizationByJoinCode = `
-SELECT * FROM organization WHERE join_code = ?
+SELECT *
+FROM organization
+WHERE join_code = ? AND status = 'active'
+LIMIT 1
 `;
 
-export const deleteOrganizationById = `DELETE FROM organization WHERE organization_id = ?`;
-
-export const updateOrganizationById = `UPDATE organization SET name = ?, organization_type = ?, email = ?, phone = ?, address = ?, logo = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE organization_id = ?`;
-
-export const updateOrganizationJoinCode = `UPDATE organization SET join_code = ?, join_code_expires_at = ?, updated_at = CURRENT_TIMESTAMP WHERE organization_id = ?`;
-
-// Fetch all pending users for a specific organization
-export const selectPendingUsersByOrganization = `
-SELECT id, full_name, email, role, status, created_at
-FROM users
-WHERE organization_id = ? AND status = 'pending'
-ORDER BY created_at DESC
+export const selectAnyOrganizationByJoinCode = `
+SELECT *
+FROM organization
+WHERE join_code = ?
+LIMIT 1
 `;
 
-// Approve a pending user
-export const approvePendingUser = `
-UPDATE users SET status = 'active', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND organization_id = ?
+export const deleteOrganizationById = `DELETE FROM organization WHERE organization_id= ?`;
+
+export const updateOrganizationById = `
+UPDATE organization
+SET
+  name = ?,
+  organization_type = ?,
+  email = ?,
+  phone = ?,
+  address = ?,
+  logo = ?,
+  status = ?,
+  updated_at = CURRENT_TIMESTAMP
+WHERE organization_id = ?
 `;
 
-// Reject and remove a pending user
-export const rejectPendingUser = `
-DELETE FROM users WHERE id = ? AND organization_id = ? AND status = 'pending'
+export const updateOrganizationJoinCodeById = `
+UPDATE organization
+SET
+  join_code = ?,
+  updated_at = CURRENT_TIMESTAMP
+WHERE organization_id = ?
+`;
+
+export const updateOrganizationStatusById = `
+UPDATE organization
+SET
+  status = ?,
+  updated_at = CURRENT_TIMESTAMP
+WHERE organization_id = ?
+`;
+
+export const updateOrganizationSelfSignupById = `
+UPDATE organization
+SET
+  self_signup_enabled = ?,
+  updated_at = CURRENT_TIMESTAMP
+WHERE organization_id = ?
 `;

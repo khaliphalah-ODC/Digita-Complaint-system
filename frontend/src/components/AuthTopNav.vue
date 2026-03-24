@@ -45,45 +45,24 @@ const userInitials = computed(() => {
 const wrapperClass = computed(() => (props.fixed ? 'fixed inset-x-0 top-0 z-40' : ''));
 const shellClass = computed(() => (
   props.fixed
-    ? 'app-shell-panel app-shell-gutter py-3.5'
-    : 'app-shell-panel app-shell-gutter mb-6 w-full py-3.5'
+    ? 'app-shell-panel app-shell-gutter !rounded-none py-3.5'
+    : 'app-shell-panel app-shell-gutter mb-6 w-full !rounded-none py-3.5'
 ));
 const mobileToggleClass = computed(() => (
   mobileMenuOpen.value
-    ? 'inline-flex min-h-[42px] items-center gap-2 rounded-full border border-[var(--app-line-strong)] bg-white/95 px-3.5 py-2 text-sm font-semibold text-slate-900 shadow-sm sm:hidden'
-    : 'inline-flex min-h-[42px] items-center gap-2 rounded-full border border-[var(--app-line)] bg-white/92 px-3.5 py-2 text-sm font-semibold text-slate-900 shadow-sm sm:hidden'
+    ? 'inline-flex min-h-[42px] items-center gap-2 rounded-lx border border-[var(--app-line-strong)] bg-white/95 px-3.5 py-2 text-sm font-semibold text-slate-900 shadow-sm sm:hidden'
+    : 'inline-flex min-h-[42px] items-center gap-2 rounded-lx border border-[var(--app-line)] bg-white/92 px-3.5 py-2 text-sm font-semibold text-slate-900 shadow-sm sm:hidden'
 ));
 
 const publicLinkClass = (to) => {
   const isActive = route.path === to;
   return isActive
-    ? 'inline-flex min-h-[42px] items-center rounded-full bg-[var(--app-primary)] px-4 py-2 text-sm font-semibold text-white shadow-sm'
-    : 'inline-flex min-h-[42px] items-center rounded-full px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-[var(--app-primary-mist)] hover:text-slate-900';
+    ? 'auth-nav-link inline-flex min-h-[42px] items-center rounded-xl border border-transparent bg-[var(--app-primary)] px-4 py-2 text-sm font-semibold text-white shadow-none focus:outline-none focus:border-transparent focus:ring-0 focus-visible:outline-none hover:border-[var(--app-line-strong)] hover:ring-0 hover:outline-none'
+    : 'auth-nav-link inline-flex min-h-[42px] items-center rounded-xl border border-transparent px-4 py-2 text-sm font-semibold text-slate-700 focus:outline-none focus:border-transparent focus:ring-0 focus-visible:outline-none hover:border-[var(--app-line-strong)] hover:bg-[var(--app-primary-mist)] hover:text-slate-900';
 };
-<<<<<<< Updated upstream
-
-const authLinkClass = (to) => {
-  const isActive = route.path === to;
-  if (to === '/signin') {
-      return isActive
-      ? 'inline-flex min-h-[42px] items-center rounded-full border border-[var(--app-line-strong)] bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm'
-      : 'inline-flex min-h-[42px] items-center rounded-full border border-transparent px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-[var(--app-primary-mist)]';
-  }
-
-  if (to === '/signup') {
-    return isActive
-      ? 'inline-flex min-h-[42px] items-center rounded-full bg-[var(--app-primary)] px-4.5 py-2 text-sm font-semibold text-white shadow-sm'
-      : 'inline-flex min-h-[42px] items-center rounded-full bg-[var(--app-primary)] px-4.5 py-2 text-sm font-semibold text-white hover:bg-[var(--app-primary-ink)]';
-  }
-
-  return 'inline-flex min-h-[42px] items-center rounded-full border border-[var(--app-primary)] px-4.5 py-2 text-sm font-semibold text-[var(--app-primary)] hover:bg-[var(--app-primary-mist)]';
-};
-
 watch(() => route.fullPath, () => {
   mobileMenuOpen.value = false;
 });
-=======
->>>>>>> Stashed changes
 </script>
 
 <template>
@@ -119,23 +98,7 @@ watch(() => route.fullPath, () => {
         </ul>
 
         <!-- ── Auth Buttons ──────────────────────────────────── -->
-<<<<<<< Updated upstream
         <div class="hidden flex-wrap items-center gap-2 sm:flex sm:gap-3">
-          <RouterLink to="/signin" :class="authLinkClass('/signin')">
-            Login
-          </RouterLink>
-          <RouterLink to="/signup" :class="authLinkClass('/signup')">
-            Sign Up
-          </RouterLink>
-          <RouterLink
-            v-if="isLoggedIn"
-            :to="dashboardRoute"
-            class="inline-flex min-h-[42px] items-center rounded-full border border-[var(--app-primary)] px-4.5 py-2 text-sm font-semibold text-[var(--app-primary)] hover:bg-[var(--app-primary-mist)]"
-          >
-            Dashboard
-          </RouterLink>
-=======
-        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
 
           <!-- NOT logged in: show Login + Sign Up -->
           <template v-if="!isLoggedIn">
@@ -167,10 +130,9 @@ watch(() => route.fullPath, () => {
             </RouterLink>
           </template>
 
->>>>>>> Stashed changes
         </div>
 
-        <div v-if="mobileMenuOpen" class="flex flex-col gap-4 rounded-[24px] border border-[var(--app-line)] bg-white/96 p-4 shadow-[0_18px_44px_rgba(17,28,48,0.08)] sm:hidden">
+        <div v-if="mobileMenuOpen" class="flex flex-col gap-4 rounded-none border border-[var(--app-line)] bg-white/96 p-4 shadow-[0_18px_44px_rgba(17,28,48,0.08)] sm:hidden">
           <ul class="flex flex-col gap-2 text-slate-700">
             <li v-for="item in publicItems" :key="`mobile-${item.to}`">
               <RouterLink :to="item.to" :class="`block ${publicLinkClass(item.to)}`">
@@ -179,20 +141,29 @@ watch(() => route.fullPath, () => {
             </li>
           </ul>
 
-          <div class="flex flex-wrap gap-2">
-            <RouterLink to="/signin" :class="authLinkClass('/signin')">
-              Login
-            </RouterLink>
-            <RouterLink to="/signup" :class="authLinkClass('/signup')">
-              Sign Up
-            </RouterLink>
-            <RouterLink
-              v-if="isLoggedIn"
-              :to="dashboardRoute"
-              class="inline-flex min-h-[42px] items-center rounded-full border border-[var(--app-primary)] px-4.5 py-2 text-sm font-semibold text-[var(--app-primary)] hover:bg-[var(--app-primary-mist)]"
-            >
-              Dashboard
-            </RouterLink>
+          <div class="app-action-row flex flex-wrap gap-2">
+            <template v-if="!isLoggedIn">
+              <RouterLink
+                to="/signin"
+                class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100"
+              >
+                Login
+              </RouterLink>
+              <RouterLink
+                to="/signup"
+                class="rounded-full bg-[var(--app-primary)] px-5 py-2 text-sm font-semibold text-white hover:bg-[var(--app-primary-ink)]"
+              >
+                Sign Up
+              </RouterLink>
+            </template>
+            <template v-else>
+              <RouterLink
+                :to="dashboardRoute"
+                class="rounded-full bg-[var(--app-primary)] px-5 py-2 text-sm font-semibold text-white hover:bg-[var(--app-primary-ink)]"
+              >
+                Dashboard
+              </RouterLink>
+            </template>
           </div>
         </div>
 
@@ -204,50 +175,14 @@ watch(() => route.fullPath, () => {
 <style scoped>
 .logo-link { text-decoration: none; }
 .logo-icon {
-<<<<<<< Updated upstream
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.15rem;
-  height: 2.15rem;
-  border-radius: 0.875rem;
-  background: var(--app-primary, #183a63);
-  color: white;
-  flex-shrink: 0;
-  box-shadow: 0 10px 20px rgba(24, 58, 99, 0.16);
-}
-.logo-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1;
-}
-.logo-name {
-  font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
-  font-size: 1.12rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  color: var(--app-title-color);
-}
-.logo-accent {
-  color: var(--app-primary, #1f4db7);
-=======
   display: inline-flex; align-items: center; justify-content: center;
   width: 2.25rem; height: 2.25rem; border-radius: 0.625rem;
   background: var(--app-primary, #1f4db7); color: white; flex-shrink: 0;
->>>>>>> Stashed changes
 }
 .logo-text { display: flex; flex-direction: column; line-height: 1; }
 .logo-name { font-size: 1.2rem; font-weight: 900; letter-spacing: -0.03em; color: #0f172a; }
 .logo-accent { color: var(--app-primary, #1f4db7); }
 .logo-tagline {
-<<<<<<< Updated upstream
-  font-size: 0.63rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #8a94a6;
-  margin-top: 0.2rem;
-=======
   font-size: 0.65rem; font-weight: 500;
   letter-spacing: 0.08em; color: #94a3b8; margin-top: 0.15rem;
 }
@@ -256,6 +191,12 @@ watch(() => route.fullPath, () => {
   width: 1.75rem; height: 1.75rem; border-radius: 9999px;
   background: var(--app-primary, #1f4db7); color: white;
   font-size: 0.7rem; font-weight: 700; flex-shrink: 0;
->>>>>>> Stashed changes
+}
+
+.auth-nav-link:focus,
+.auth-nav-link:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border-color: transparent;
 }
 </style>

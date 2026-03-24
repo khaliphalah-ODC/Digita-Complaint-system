@@ -6,28 +6,12 @@ import {
   fetchApprovedTestimonialsQuery,
   fetchAllTestimonialsQuery,
   fetchTestimonialByIdQuery,
-  fetchTestimonialsByOrganizationQuery,
-  fetchTestimonialByIdWithOrganizationQuery,
   approveTestimonialQuery,
   rejectTestimonialQuery,
   deleteTestimonialQuery
 } from '../model/testimonial.model.js';
 
 export const CreateTestimonialsTable = () => {
-<<<<<<< HEAD
-    complaintDB.serialize(() => {
-        complaintDB.run(testimonialsQuery, (err) => {
-            if (err) {
-                console.error('Error creating testimonials table:', err.message);
-            } else {
-                console.log('Testimonials table created or already exists');
-            }
-        });
-    });
-};
-// ── POST /api/testimonials ─────────────────────────────────
-// Logged-in user submits a public testimonial
-=======
   complaintDB.run(testimonialsQuery, (err) => {
     if (err) {
       console.error('Error creating testimonials table:', err.message);
@@ -42,12 +26,6 @@ const getNumericId = (value) => {
   return Number.isInteger(id) && id > 0 ? id : null;
 };
 
-const getOrganizationId = (req) => {
-  const id = Number.parseInt(req.user?.organization_id, 10);
-  return Number.isInteger(id) ? id : null;
-};
-
->>>>>>> stanby
 export const submitTestimonial = (req, res) => {
   const userId = req.user?.id;
 
@@ -87,22 +65,17 @@ export const submitTestimonial = (req, res) => {
 
 const updateTestimonialApproval = (req, res, query, successMessage, failureMessage) => {
   const id = getNumericId(req.params.id);
-  const organizationId = getOrganizationId(req);
   if (!id) {
     return sendError(res, 400, 'Invalid testimonial id');
   }
 
-  complaintDB.get(fetchTestimonialByIdWithOrganizationQuery, [id], (findErr, row) => {
+  complaintDB.get(fetchTestimonialByIdQuery, [id], (findErr, row) => {
     if (findErr) {
       return sendError(res, 500, 'Failed to find testimonial', findErr.message);
     }
 
     if (!row) {
       return sendError(res, 404, 'Testimonial not found');
-    }
-
-    if (Number(row.organization_id) !== organizationId) {
-      return sendError(res, 403, 'Access denied');
     }
 
     complaintDB.run(query, [id], (updateErr) => {
@@ -124,12 +97,11 @@ export const getPublicTestimonials = (req, res) => {
 };
 
 export const getAllTestimonials = (req, res) => {
-  const organizationId = getOrganizationId(req);
-  if (!organizationId) {
-    return sendError(res, 400, 'Organization context is required');
+  if (req.user?.role !== 'super_admin') {
+    return sendError(res, 403, 'Only super_admin can manage testimonials');
   }
 
-  complaintDB.all(fetchTestimonialsByOrganizationQuery, [organizationId], (err, rows) => {
+  complaintDB.all(fetchAllTestimonialsQuery, [], (err, rows) => {
     if (err) {
       return sendError(res, 500, 'Failed to fetch testimonials', err.message);
     }
@@ -157,22 +129,17 @@ export const rejectTestimonial = (req, res) =>
 
 export const deleteTestimonial = (req, res) => {
   const id = getNumericId(req.params.id);
-  const organizationId = getOrganizationId(req);
   if (!id) {
     return sendError(res, 400, 'Invalid testimonial id');
   }
 
-  complaintDB.get(fetchTestimonialByIdWithOrganizationQuery, [id], (findErr, row) => {
+  complaintDB.get(fetchTestimonialByIdQuery, [id], (findErr, row) => {
     if (findErr) {
       return sendError(res, 500, 'Failed to find testimonial', findErr.message);
     }
 
     if (!row) {
       return sendError(res, 404, 'Testimonial not found');
-    }
-
-    if (Number(row.organization_id) !== organizationId) {
-      return sendError(res, 403, 'Access denied');
     }
 
     complaintDB.run(deleteTestimonialQuery, [id], (err) => {

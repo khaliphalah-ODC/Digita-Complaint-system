@@ -133,8 +133,6 @@ import AppFooter from '../components/AppFooter.vue';
         </div>
       </div>
     </main>
-    <AppFooter/>
-
     <AppFooter />
 
   </div>

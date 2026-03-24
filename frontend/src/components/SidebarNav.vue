@@ -1,7 +1,9 @@
 <script setup>
 import { computed } from 'vue';
+import { storeToRefs } from 'pinia';
 import { useRoute } from 'vue-router';
 import { useSessionStore } from '../stores/session';
+import { useNotificationStore } from '../stores/notifications.js';
 
 const props = defineProps({
   mobile: {
@@ -13,7 +15,9 @@ const props = defineProps({
 const emit = defineEmits(['logout', 'navigate']);
 
 const session = useSessionStore();
+const notificationStore = useNotificationStore();
 const route = useRoute();
+const { unreadCount } = storeToRefs(notificationStore);
 
 const isSuperAdmin = computed(() => session.currentUser?.role === 'super_admin');
 const isOrgAdmin = computed(() => session.currentUser?.role === 'org_admin');
@@ -56,13 +60,17 @@ const navLinkClass = (target) => {
 
 const handleNavigate = () => emit('navigate');
 const handleLogout = () => emit('logout');
+const notificationCountForLink = (link) => (
+  link.to === '/notifications' && !isSuperAdmin.value && !isOrgAdmin.value ? unreadCount.value : 0
+);
 
 const superAdminLinks = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: ['fas', 'gauge-high'] },
   { to: '/admin/organizations', label: 'Organizations', icon: ['fas', 'building'] },
-  { to: '/admin/triage', label: 'Triage Queue', icon: ['fas', 'file-lines'] },
+  { to: '/admin/triage', label: 'Triage Queue', icon: ['fas', 'clipboard-list'] },
+  { to: '/admin/testimonials', label: 'Testimonials', icon: ['fas', 'file-circle-check'] },
   { to: '/admin/reports', label: 'Analytics', icon: ['fas', 'chart-line'] },
-  { to: '/admin/audit-logs', label: 'Audit Logs', icon: ['fas', 'clipboard-list'] },
+  { to: '/admin/audit-logs', label: 'Audit Logs', icon: ['fas', 'circle-info'] },
   { to: '/admin/settings', label: 'Settings', icon: ['fas', 'gear'] }
 ];
 
@@ -73,10 +81,9 @@ const orgAdminLinks = [
   { to: '/org-admin/departments', label: 'Departments', icon: ['fas', 'sitemap'] },
   { to: '/org-admin/assessments', label: 'Assessments', icon: ['fas', 'clipboard-list'] },
   { to: '/org-admin/escalations', label: 'Escalations', icon: ['fas', 'triangle-exclamation'] },
-  { to: '/org-admin/testimonials', label: 'Testimonials', icon: ['fas', 'file-circle-check'] },
   { to: '/org-admin/analytics', label: 'Analytics', icon: ['fas', 'chart-line'] },
   { to: '/org-admin/notifications', label: 'Notifications', icon: ['fas', 'bell'] },
-  { to: '/org-admin/status-logs', label: 'Status Logs', icon: ['fas', 'chart-line'] },
+  { to: '/org-admin/status-logs', label: 'Activity Logs', icon: ['fas', 'circle-info'] },
   { to: '/organizations', label: 'Organization', icon: ['fas', 'building'] }
 ];
 
@@ -84,9 +91,10 @@ const userLinks = computed(() => {
   const links = [
     { to: '/user/dashboard', label: 'Dashboard', icon: ['fas', 'gauge-high'] },
     { to: '/submit-complaint', label: 'Submit Complaint', icon: ['fas', 'file-lines'] },
-    { to: '/track-complaint', label: 'Track Complaint', icon: ['fas', 'chart-line'] },
+    { to: '/track-complaint', label: 'Track Complaint', icon: ['fas', 'eye'] },
+    { to: '/notifications', label: 'Notifications', icon: ['fas', 'bell'] },
     { to: '/feedback', label: 'Feedback', icon: ['fas', 'comments'] },
-    { to: '/testimonial', label: 'Testimonial', icon: ['fas', 'file-circle-check'] }
+    { to: '/testimonial', label: 'Testimonials', icon: ['fas', 'file-circle-check'] }
   ];
 
   if (isOrganizationMemberUser.value) {
@@ -108,7 +116,6 @@ const userLinks = computed(() => {
           <p class="mt-1 text-sm text-[var(--app-nav-text-muted)]">{{ workspaceLabel }}</p>
         </div>
 
-<<<<<<< Updated upstream
         <nav class="mt-6 space-y-1.5 pb-6">
           <RouterLink
             v-for="link in superAdminLinks"
@@ -239,7 +246,15 @@ const userLinks = computed(() => {
             :class="navLinkClass(link.to)"
             @click="handleNavigate"
           >
-            <font-awesome-icon :icon="link.icon" />
+            <span class="relative inline-flex">
+              <font-awesome-icon :icon="link.icon" />
+              <span
+                v-if="notificationCountForLink(link) > 0"
+                class="ml-2 inline-flex min-w-[1.55rem] items-center justify-center rounded-full bg-[var(--app-primary)] px-1.5 py-0.5 text-[0.68rem] font-bold leading-none text-white shadow-[0_8px_18px_rgba(24,58,99,0.32)]"
+              >
+                {{ notificationCountForLink(link) > 99 ? '99+' : notificationCountForLink(link) }}
+              </span>
+            </span>
             <span>{{ link.label }}</span>
           </RouterLink>
         </nav>
@@ -269,7 +284,15 @@ const userLinks = computed(() => {
             :title="link.label"
             @click="handleNavigate"
           >
-            <font-awesome-icon :icon="link.icon" class="text-base" />
+            <span class="relative inline-flex">
+              <font-awesome-icon :icon="link.icon" class="text-base" />
+              <span
+                v-if="notificationCountForLink(link) > 0"
+                class="absolute -right-2 -top-2 inline-flex min-w-[1.2rem] items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--app-primary),var(--app-accent))] px-1 text-[0.62rem] font-bold leading-5 text-white shadow-[0_10px_20px_rgba(24,58,99,0.3)] ring-2 ring-white"
+              >
+                {{ notificationCountForLink(link) > 9 ? '9+' : notificationCountForLink(link) }}
+              </span>
+            </span>
           </RouterLink>
         </nav>
 
@@ -282,99 +305,5 @@ const userLinks = computed(() => {
         </button>
       </template>
     </template>
-=======
-    <nav :class="props.mobile ? 'mt-6 space-y-1.5 pb-6' : 'mt-10 space-y-2'">
-      <RouterLink :to="dashboardRoute" :class="navLinkClass(dashboardRoute)" @click="handleNavigate">
-        <font-awesome-icon :icon="['fas', 'gauge-high']" />
-        <span>Dashboard</span>
-      </RouterLink>
-      <RouterLink v-if="isSuperAdmin" to="/admin/organizations" :class="navLinkClass('/admin/organizations')" @click="handleNavigate">
-        <font-awesome-icon :icon="['fas', 'building']" />
-        <span>Organizations</span>
-      </RouterLink>
-      <RouterLink v-if="isSuperAdmin" to="/admin/triage" :class="navLinkClass('/admin/triage')" @click="handleNavigate">
-        <font-awesome-icon :icon="['fas', 'file-lines']" />
-        <span>Triage Queue</span>
-      </RouterLink>
-      <RouterLink v-if="isSuperAdmin" to="/admin/reports" :class="navLinkClass('/admin/reports')" @click="handleNavigate">
-        <font-awesome-icon :icon="['fas', 'chart-line']" />
-        <span>Analytics</span>
-      </RouterLink>
-      <RouterLink v-if="isSuperAdmin" to="/admin/audit-logs" :class="navLinkClass('/admin/audit-logs')" @click="handleNavigate">
-        <font-awesome-icon :icon="['fas', 'clipboard-list']" />
-        <span>Audit Logs</span>
-      </RouterLink>
-      <RouterLink v-if="isSuperAdmin" to="/admin/settings" :class="navLinkClass('/admin/settings')" @click="handleNavigate">
-        <font-awesome-icon :icon="['fas', 'gear']" />
-        <span>Settings</span>
-      </RouterLink>
-      <RouterLink v-if="isOrgAdmin" to="/org-admin/complaints" :class="navLinkClass('/org-admin/complaints')" @click="handleNavigate">
-        <font-awesome-icon :icon="['fas', 'file-lines']" />
-        <span>Complaints</span>
-      </RouterLink>
-      <RouterLink v-if="isOrgAdmin" to="/org-admin/users" :class="navLinkClass('/org-admin/users')" @click="handleNavigate">
-        <font-awesome-icon :icon="['fas', 'users']" />
-        <span>Create New User</span>
-      </RouterLink>
-      <RouterLink v-if="isOrgAdmin" to="/org-admin/departments" :class="navLinkClass('/org-admin/departments')" @click="handleNavigate">
-        <font-awesome-icon :icon="['fas', 'sitemap']" />
-        <span>Departments</span>
-      </RouterLink>
-      <RouterLink v-if="isOrgAdmin" to="/org-admin/accessments" :class="navLinkClass('/org-admin/accessments')" @click="handleNavigate">
-        <font-awesome-icon :icon="['fas', 'clipboard-list']" />
-        <span>Accessment</span>
-      </RouterLink>
-      <RouterLink v-if="isOrgAdmin" to="/org-admin/escalations" :class="navLinkClass('/org-admin/escalations')" @click="handleNavigate">
-        <font-awesome-icon :icon="['fas', 'triangle-exclamation']" />
-        <span>Escalations</span>
-      </RouterLink>
-      <RouterLink v-if="isOrgAdmin" to="/org-admin/analytics" :class="navLinkClass('/org-admin/analytics')" @click="handleNavigate">
-        <font-awesome-icon :icon="['fas', 'chart-line']" />
-        <span>Analytics</span>
-      </RouterLink>
-      <RouterLink v-if="isOrgAdmin" to="/org-admin/notifications" :class="navLinkClass('/org-admin/notifications')" @click="handleNavigate">
-        <font-awesome-icon :icon="['fas', 'bell']" />
-        <span>Notifications</span>
-      </RouterLink>
-      <RouterLink v-if="isOrgAdmin" to="/org-admin/status-logs" :class="navLinkClass('/org-admin/status-logs')" @click="handleNavigate">
-        <font-awesome-icon :icon="['fas', 'chart-line']" />
-        <span>Status Logs</span>
-      </RouterLink>
-      <RouterLink v-if="isOrgAdmin" to="/organizations" :class="navLinkClass('/organizations')" @click="handleNavigate">
-        <font-awesome-icon :icon="['fas', 'building']" />
-        <span>Organization</span>
-      </RouterLink>
-      <RouterLink v-if="!isSuperAdmin && !isOrgAdmin" to="/submit-complaint" :class="navLinkClass('/submit-complaint')" @click="handleNavigate">
-        <font-awesome-icon :icon="['fas', 'file-lines']" />
-        <span>Submit Complaint</span>
-      </RouterLink>
-      <RouterLink v-if="!isSuperAdmin && !isOrgAdmin" to="/track-complaint" :class="navLinkClass('/track-complaint')" @click="handleNavigate">
-        <font-awesome-icon :icon="['fas', 'chart-line']" />
-        <span>Track Complaint</span>
-      </RouterLink>
-      <RouterLink v-if="isOrganizationMemberUser" to="/organizations" :class="navLinkClass('/organizations')" @click="handleNavigate">
-        <font-awesome-icon :icon="['fas', 'building']" />
-        <span>My Organization</span>
-      </RouterLink>
-      <RouterLink v-if="!isSuperAdmin && !isOrgAdmin" to="/feedback" :class="navLinkClass('/feedback')" @click="handleNavigate">
-        <font-awesome-icon :icon="['fas', 'comments']" />
-        <span>Feedback</span>
-      </RouterLink>
-    </nav>
-
-   <!-- <button
-      :class="isDarkShell
-        ? 'mt-auto flex items-center gap-3 rounded-none border border-white/10 bg-white/6 px-4 py-3 text-left text-sm text-white/90 hover:bg-white/10'
-        : isOrgAdminShell
-          ? 'mt-auto flex items-center gap-3 rounded-none org-admin-logout-btn'
-      : isUserShell
-        ? 'mt-auto flex items-center gap-3 rounded-none border border-[#c8d9f7] bg-white/88 px-4 py-3 text-left text-sm text-[var(--app-primary-ink)] hover:bg-[#eaf2ff] hover:text-[var(--app-primary)]'
-        : 'mt-auto flex items-center gap-3 rounded-none border border-slate-300/90 bg-white px-4 py-3 text-left text-sm text-slate-700 hover:bg-[var(--app-primary-mist)] hover:text-[var(--app-primary-ink)]'"
-      @click="handleLogout"
-    >
-      <font-awesome-icon :icon="['fas', 'right-from-bracket']" />
-      <span>Logout</span>
-    </button>-->
->>>>>>> Stashed changes
   </aside>
 </template>

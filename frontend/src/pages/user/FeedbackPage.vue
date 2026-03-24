@@ -259,7 +259,7 @@ onMounted(async () => {
             <div class="flex flex-wrap items-center gap-2">
               <span class="app-badge app-badge-neutral">Rating: {{ row.rating }}/5</span>
               <button class="app-btn-secondary px-3 py-1 text-xs" @click="startEdit(row)">Edit</button>
-              <button class="inline-flex items-center justify-center rounded-full border border-[var(--app-danger)]/20 bg-[var(--app-danger-soft)] px-3 py-1 text-xs font-semibold text-[var(--app-danger)]" @click="deleteFeedback(row)">Delete</button>
+              <button class="app-btn-danger min-h-[30px] px-3 py-1 text-xs" @click="deleteFeedback(row)">Delete</button>
             </div>
           </div>
         </article>

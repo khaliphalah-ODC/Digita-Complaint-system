@@ -91,6 +91,21 @@ const goToVerificationHelp = () => {
 
         <form class="app-auth-form px-7 py-8 sm:w-[56%] sm:px-10 sm:py-10 lg:px-12 lg:py-12" @submit.prevent="submit">
           <div class="mx-auto max-w-[360px]">
+            <div class="mb-6 flex rounded-full border border-[var(--app-line)] bg-white/90 p-1 text-sm font-semibold text-slate-600 shadow-sm sm:hidden">
+              <RouterLink
+                to="/signin"
+                class="flex-1 rounded-full px-3 py-2 text-center text-white"
+                style="background: var(--app-primary);"
+              >
+                Sign In
+              </RouterLink>
+              <RouterLink
+                to="/signup"
+                class="flex-1 rounded-full px-3 py-2 text-center text-slate-600"
+              >
+                Sign Up
+              </RouterLink>
+            </div>
             <p class="app-auth-title text-[28px] font-black uppercase tracking-[0.04em]">Sign In</p>
 
             <div class="mt-10 space-y-5">

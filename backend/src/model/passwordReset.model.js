@@ -1,9 +1,10 @@
-// passwordReset.model: schema and queries for password reset tokens.
+// passwordReset.model: schema and queries for password reset OTP codes.
 export const passwordResetTokensQuery = `
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
-  token TEXT NOT NULL,
+  token TEXT DEFAULT NULL,
+  code TEXT DEFAULT NULL,
   expires_at DATETIME NOT NULL,
   consumed INTEGER NOT NULL DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -20,6 +21,18 @@ export const selectActivePasswordResetTokenQuery = `
 SELECT *
 FROM password_reset_tokens
 WHERE token = ? AND consumed = 0 AND expires_at >= ?
+LIMIT 1;
+`;
+
+export const insertPasswordResetCodeQuery = `
+INSERT INTO password_reset_tokens (user_id, code, expires_at)
+VALUES (?, ?, ?);
+`;
+
+export const selectActivePasswordResetCodeQuery = `
+SELECT *
+FROM password_reset_tokens
+WHERE code = ? AND consumed = 0 AND expires_at >= ?
 LIMIT 1;
 `;
 

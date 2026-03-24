@@ -268,6 +268,10 @@ const returnHome = () => {
   router.push('/');
 };
 
+const goToSignIn = () => {
+  router.push('/signin');
+};
+
 onMounted(() => {
   if (session.currentUser?.role === 'super_admin') {
     router.replace('/admin/dashboard');
@@ -303,6 +307,30 @@ watch(selectedOrganizationId, (organizationId) => {
     </button>
   </section>
 
+  <section
+    v-else-if="isGuestUser"
+    class="app-shell-panel mx-auto w-full max-w-5xl rounded-[30px] px-4 py-8 text-center sm:px-6 md:px-8 md:py-10"
+  >
+    <h1 class="text-2xl font-black tracking-tight text-slate-800 sm:text-3xl">Sign In To Submit A Complaint</h1>
+    <p class="mt-2 text-sm text-slate-600">
+      Complaint submission is available to signed-in users only. Sign in to continue, or track an existing complaint.
+    </p>
+    <div class="mt-5 flex flex-wrap items-center justify-center gap-3">
+      <button
+        class="rounded-full bg-[var(--app-primary)] px-5 py-3 text-sm font-bold text-white"
+        @click="goToSignIn"
+      >
+        Sign In
+      </button>
+      <button
+        class="rounded-full border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+        @click="returnHome"
+      >
+        Return Home
+      </button>
+    </div>
+  </section>
+
   <section v-else :class="shellClass">
     <header :class="heroClass">
       <h1 :class="heroTitleClass">How can we help you today?</h1>
@@ -336,7 +364,7 @@ watch(selectedOrganizationId, (organizationId) => {
               placeholder="Infrastructure, Sanitation, Billing"
               :class="fieldClass"
             >
-            <div class="mt-2 flex flex-wrap gap-2">
+            <div class="app-action-row mt-2 flex flex-wrap gap-2">
               <button
                 v-for="category in categorySuggestions"
                 :key="category"
@@ -351,7 +379,7 @@ watch(selectedOrganizationId, (organizationId) => {
 
           <div>
             <label class="mb-1 block text-xs font-semibold text-[var(--app-primary-ink)]">Priority</label>
-            <div class="flex flex-wrap gap-2">
+            <div class="app-action-row flex flex-wrap gap-2">
               <button
                 v-for="priority in priorityOptions"
                 :key="priority"

@@ -2,6 +2,7 @@
 import express from 'express';
 import {
   assignExistingUserToOrganization,
+  changeOwnEmail,
   changeOwnPassword,
   createUser,
   deleteUser,
@@ -13,8 +14,9 @@ import {
   loginWithGoogle,
   logoutUser,
   registerUser,
+  registerUserWithJoinCode,
   requestPasswordReset,
-  resetPasswordWithToken,
+  resetPasswordWithCode,
   verifyEmail,
   resendVerificationEmail,
   updateUser,
@@ -25,18 +27,22 @@ import { allowRoles } from '../middleware/roleAccess.js';
 import { passwordEncryption } from '../middleware/passwordEncryption.js';
 import {
   validate,
-  passwordOnlySchema,
+  changeEmailSchema,
   emailVerificationSchema,
   emailOnlySchema,
-  resetPasswordSchema,
-  changePasswordSchema,
-  userCreateSchema
+  validateWithPlatformSettings,
+  passwordOnlySchemaFactory,
+  registerWithJoinCodeSchemaFactory,
+  resetPasswordSchemaFactory,
+  changePasswordSchemaFactory,
+  userCreateSchemaFactory
 } from '../utils/middleware/passwordValidation.js';
 
 const router = express.Router();
 
 //router.post('/register', validate(passwordOnlySchema), passwordEncryption, registerUser);
-router.post('/register', validate(userCreateSchema), passwordEncryption, registerUser);
+router.post('/register', validateWithPlatformSettings(userCreateSchemaFactory), passwordEncryption, registerUser);
+router.post('/register-with-code', validateWithPlatformSettings(registerWithJoinCodeSchemaFactory), passwordEncryption, registerUserWithJoinCode);
 // router.post('/verify-email', verifyEmail);
 // router.post('/resend-verification', resendVerificationEmail);
 router.post('/verify-email', validate(emailVerificationSchema), verifyEmail);
@@ -46,13 +52,14 @@ router.post('/forgot-password/request', validate(emailOnlySchema), requestPasswo
 router.post('/login', loginUser);
 router.post('/google-login', loginWithGoogle);
 //router.post('/forgot-password/request', requestPasswordReset);
-router.post('/forgot-password', validate(resetPasswordSchema), passwordEncryption, resetPasswordWithToken);
+router.post('/forgot-password', validateWithPlatformSettings(resetPasswordSchemaFactory), passwordEncryption, resetPasswordWithCode);
 router.get('/me', verifyToken, getCurrentUser);
 router.post('/logout', verifyToken, logoutUser);
-router.post('/change-password', verifyToken, validate(changePasswordSchema), passwordEncryption, changeOwnPassword);
+router.post('/change-password', verifyToken, validateWithPlatformSettings(changePasswordSchemaFactory), passwordEncryption, changeOwnPassword);
+router.post('/change-email', verifyToken, validate(changeEmailSchema), changeOwnEmail);
 
 router.post('/assign-existing', verifyToken, allowRoles('org_admin'), assignExistingUserToOrganization);
-router.post('/', verifyToken, allowRoles('super_admin', 'org_admin'), validate(userCreateSchema), passwordEncryption, createUser);
+router.post('/', verifyToken, allowRoles('super_admin', 'org_admin'), validateWithPlatformSettings(userCreateSchemaFactory), passwordEncryption, createUser);
 router.get('/', verifyToken, allowRoles('super_admin', 'org_admin'), getAllUsers);
 router.get('/id/:id', verifyToken, allowRoles('super_admin', 'org_admin'), getUserById);
 router.get('/email/:email', verifyToken, allowRoles('super_admin', 'org_admin'), getUserByEmail);

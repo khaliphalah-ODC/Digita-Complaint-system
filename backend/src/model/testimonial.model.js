@@ -26,9 +26,21 @@ ORDER BY created_at DESC;
 `;
 
 export const fetchAllTestimonialsQuery = `
-SELECT id, user_id, display_name, role_label, message, rating, is_approved, created_at
+SELECT
+  testimonials.id,
+  testimonials.user_id,
+  testimonials.display_name,
+  testimonials.role_label,
+  testimonials.message,
+  testimonials.rating,
+  testimonials.is_approved,
+  testimonials.created_at,
+  users.organization_id,
+  users.full_name AS user_full_name,
+  users.email AS user_email
 FROM testimonials
-ORDER BY created_at DESC;
+LEFT JOIN users ON users.id = testimonials.user_id
+ORDER BY testimonials.created_at DESC;
 `;
 
 export const fetchTestimonialsByOrganizationQuery = `

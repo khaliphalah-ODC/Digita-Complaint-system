@@ -10,21 +10,21 @@ const session = useSessionStore();
 
 const form = reactive({
   email: '',
-  token: '',
+  code: '',
   new_password: '',
   confirm_password: ''
 });
-const tokenRequestMessage = ref('');
-const tokenPreview = ref('');
-const tokenExpiresAt = ref('');
+const codeRequestMessage = ref('');
+const codePreview = ref('');
+const codeExpiresAt = ref('');
 const showNewPassword = ref(false);
 const showConfirmPassword = ref(false);
 
-const sendResetToken = async () => {
+const sendResetCode = async () => {
   session.errorMessage = '';
-  tokenRequestMessage.value = '';
-  tokenPreview.value = '';
-  tokenExpiresAt.value = '';
+  codeRequestMessage.value = '';
+  codePreview.value = '';
+  codeExpiresAt.value = '';
 
   if (!form.email.trim()) {
     session.errorMessage = 'Enter the email associated with your account';
@@ -32,10 +32,10 @@ const sendResetToken = async () => {
   }
 
   try {
-    const data = await session.requestPasswordResetToken({ email: form.email.trim().toLowerCase() });
-    tokenRequestMessage.value = 'Reset code sent if the account exists';
-    tokenPreview.value = data?.reset_token_preview || '';
-    tokenExpiresAt.value = data?.expires_at || '';
+    const data = await session.requestPasswordResetCode({ email: form.email.trim().toLowerCase() });
+    codeRequestMessage.value = 'Reset code sent if the account exists';
+    codePreview.value = data?.reset_code_preview || '';
+    codeExpiresAt.value = data?.expires_at || '';
   } catch (_error) {
     // Store already tracks the message.
   }
@@ -48,7 +48,7 @@ const submit = async () => {
     session.errorMessage = 'Passwords do not match';
     return;
   }
-  if (!form.token.trim()) {
+  if (!form.code.trim()) {
     session.errorMessage = 'Enter the reset code you received';
     return;
   }
@@ -60,7 +60,7 @@ const submit = async () => {
   try {
     await session.completePasswordReset({
       email: form.email.trim().toLowerCase(),
-      token: form.token.trim(),
+      code: form.code.trim(),
       new_password: form.new_password
     });
 
@@ -130,29 +130,31 @@ const submit = async () => {
                   <button
                     type="button"
                     class="w-full rounded-full border border-[var(--app-primary)] bg-white px-3 py-2 text-sm font-semibold text-[var(--app-primary)] transition hover:bg-[var(--app-primary)]/10 sm:w-auto"
-                    :disabled="session.loadingRequestResetToken"
-                    @click="sendResetToken"
+                    :disabled="session.loadingRequestResetCode"
+                    @click="sendResetCode"
                   >
-                    {{ session.loadingRequestResetToken ? 'Sending…' : 'Send reset code' }}
+                    {{ session.loadingRequestResetCode ? 'Sending…' : 'Send reset code' }}
                   </button>
                 </div>
               </label>
               <div class="text-xs text-slate-500">
                 Request a reset code so we can verify your identity before accepting a new password.
-                <span v-if="tokenRequestMessage" class="block text-slate-700">
-                  {{ tokenRequestMessage }}
-                  <span v-if="tokenExpiresAt"> · expires {{ tokenExpiresAt }}</span>
+                <span v-if="codeRequestMessage" class="block text-slate-700">
+                  {{ codeRequestMessage }}
+                  <span v-if="codeExpiresAt"> · expires {{ codeExpiresAt }}</span>
                 </span>
-                <span v-if="tokenPreview" class="block font-mono text-[0.8rem] text-slate-700">
-                  Preview token (dev): {{ tokenPreview }}
+                <span v-if="codePreview" class="block font-mono text-[0.8rem] text-slate-700">
+                  Preview code (dev): {{ codePreview }}
                 </span>
               </div>
 
               <label class="block">
                 <span class="app-auth-label mb-2 block text-sm font-medium">Reset code</span>
                 <input
-                  v-model="form.token"
+                  v-model="form.code"
                   type="text"
+                  inputmode="numeric"
+                  maxlength="6"
                   placeholder="Enter the code from email"
                   class="app-auth-input"
                 >

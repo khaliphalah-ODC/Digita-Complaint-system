@@ -10,8 +10,7 @@ import {
   getUnassignedAnonymousComplaints,
   updateComplaint
 } from '../controllers/complaint.controller.js';
-import { optionalAuthenticateToken } from '../middleware/auth.middleware.js';
-import verifyToken from '../middleware/verifyToken.js';
+import verifyToken, { optionalAuthenticateToken } from '../middleware/verifyToken.js';
 
 const router = express.Router();
 

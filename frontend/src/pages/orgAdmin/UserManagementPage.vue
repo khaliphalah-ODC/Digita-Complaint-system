@@ -131,7 +131,7 @@ const saveUser = async () => {
   try {
     const payload = {
       organization_id: isSuperAdmin.value && form.organization_id !== '' ? Number(form.organization_id) : null,
-      department_id: form.department_id === '' ? null : Number(form.department_id),
+      department_id: editingId.value && form.department_id !== '' ? Number(form.department_id) : null,
       full_name: form.full_name.trim(),
       email: form.email.trim().toLowerCase(),
       password: form.password,
@@ -322,7 +322,6 @@ watch(assignableRoles, normalizeRoleFilters, { immediate: false });
               <input v-model="form.email" type="email" placeholder="Email" class="app-input">
               <input v-model="form.password" type="password" placeholder="Password" class="app-input">
               <input v-if="isSuperAdmin" v-model="form.organization_id" placeholder="Organization ID" class="app-input">
-              <input v-model="form.department_id" placeholder="Department ID (optional)" class="app-input">
               <select v-model="form.role" class="app-select">
                 <option v-for="role in assignableRoles" :key="role" :value="role">{{ role }}</option>
               </select>
@@ -399,7 +398,6 @@ watch(assignableRoles, normalizeRoleFilters, { immediate: false });
                   <th>Role</th>
                   <th>Status</th>
                   <th>Organization</th>
-                  <th>Department</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -420,9 +418,8 @@ watch(assignableRoles, normalizeRoleFilters, { immediate: false });
                   </td>
                   <td>{{ row.status }}</td>
                   <td>{{ row.organization_id ?? 'N/A' }}</td>
-                  <td>{{ row.department_id ?? 'N/A' }}</td>
                   <td>
-                    <div class="flex flex-wrap gap-2">
+                    <div class="app-action-row flex flex-wrap gap-2">
                       <button
                         type="button"
                         :disabled="!canManageRow(row)"
@@ -435,7 +432,7 @@ watch(assignableRoles, normalizeRoleFilters, { immediate: false });
                       <button
                         type="button"
                         :disabled="!canManageRow(row)"
-                        class="inline-flex min-h-[36px] items-center gap-2 rounded-[var(--app-radius-md)] border border-[var(--app-danger)]/20 bg-[var(--app-danger-soft)] px-3 py-1.5 text-xs font-semibold text-[var(--app-danger)] disabled:cursor-not-allowed disabled:opacity-50"
+                        class="app-btn-danger min-h-[36px] px-3 py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-50"
                         @click="deleteUser(row)"
                       >
                         <font-awesome-icon :icon="faTrashCan" class="text-sm" />

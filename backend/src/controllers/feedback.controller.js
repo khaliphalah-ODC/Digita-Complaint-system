@@ -4,13 +4,9 @@ import { sendSuccess, sendError } from '../utils/response.js';
 import {
   Feedback,
   createFeedbackQuery,
-  fetchAllFeedbackQuery,
   fetchFeedbackByIdQuery,
-  fetchFeedbackByComplaintIdQuery,
-  fetchFeedbackByOrganizationIdQuery,
   fetchFeedbackByUserIdQuery,
   updateFeedbackQuery,
-  deleteFeedbackByComplaintIdQuery,
   deleteFeedbackByIdQuery
 } from '../model/feedback.model.js';
 import { selectComplaintById } from '../model/complaint.model.js';
@@ -174,34 +170,6 @@ export const getFeedbackById = (req, res) => {
   });
 };
 
-export const getFeedbackByComplaintId = (req, res) => {
-  if (denySuperAdminInternalAccess(req, res, 'Super admin cannot access feedback records directly')) {
-    return;
-  }
-  if (req.user?.role !== 'user') {
-    return sendError(res, 403, 'Only users can access feedback records');
-  }
-
-  complaintDB.get(selectComplaintById, [req.params.complaintId], (complaintErr, complaintRow) => {
-    if (complaintErr) {
-      return sendError(res, 500, 'Failed to validate complaint', complaintErr.message);
-    }
-    if (!complaintRow) {
-      return sendError(res, 404, 'Complaint not found');
-    }
-    if (Number(complaintRow.user_id) !== Number(req.user.id)) {
-      return sendError(res, 403, 'Access denied');
-    }
-
-    complaintDB.all(fetchFeedbackByComplaintIdQuery, [req.params.complaintId], (err, rows) => {
-      if (err) {
-        return sendError(res, 500, 'Failed to fetch feedback by complaint', err.message);
-      }
-      return sendSuccess(res, 200, 'Feedback retrieved successfully', rows);
-    });
-  });
-};
-
 export const updateFeedback = (req, res) => {
   const { rating, comment = null } = req.body;
 
@@ -261,37 +229,6 @@ export const deleteFeedback = (req, res) => {
         return sendError(res, 500, 'Failed to delete feedback', err.message);
       }
       return sendSuccess(res, 200, 'Feedback deleted successfully', { id: req.params.id });
-    });
-  });
-};
-
-export const deleteFeedbackByComplaintId = (req, res) => {
-  if (denySuperAdminInternalAccess(req, res, 'Super admin cannot delete feedback records directly')) {
-    return;
-  }
-  if (req.user?.role !== 'user') {
-    return sendError(res, 403, 'Only users can delete feedback records');
-  }
-
-  complaintDB.get(selectComplaintById, [req.params.complaintId], (complaintErr, complaintRow) => {
-    if (complaintErr) {
-      return sendError(res, 500, 'Failed to validate complaint', complaintErr.message);
-    }
-    if (!complaintRow) {
-      return sendError(res, 404, 'Complaint not found');
-    }
-    if (Number(complaintRow.user_id) !== Number(req.user.id)) {
-      return sendError(res, 403, 'Access denied');
-    }
-
-    complaintDB.run(deleteFeedbackByComplaintIdQuery, [req.params.complaintId], function onDelete(err) {
-      if (err) {
-        return sendError(res, 500, 'Failed to delete feedback', err.message);
-      }
-      return sendSuccess(res, 200, 'Feedback deleted successfully', {
-        complaint_id: req.params.complaintId,
-        deleted_count: this.changes
-      });
     });
   });
 };

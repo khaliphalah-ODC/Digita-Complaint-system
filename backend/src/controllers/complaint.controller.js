@@ -21,6 +21,11 @@ import { fetchUserByIdQuery } from '../model/user.model.js';
 import { selectOrganizationById } from '../model/organization.model.js';
 import { selectDepartmentById } from '../model/department.model.js';
 import { denySuperAdminInternalAccess } from '../utils/tenantScope.js';
+import {
+  createSystemNotificationSafely,
+  NOTIFICATION_TYPES
+} from '../services/notification.service.js';
+import { getPlatformSettingsSafe } from '../utils/platformSettings.js';
 
 const runQuery = (sql, params = []) =>
   new Promise((resolve, reject) => {
@@ -41,6 +46,53 @@ const allQuery = (sql, params = []) =>
 const generateTrackingCode = () => {
   const serial = String((Date.now() + Math.floor(Math.random() * 1000)) % 1000000).padStart(6, '0');
   return `TRK-${serial.slice(0, 3)}-${serial.slice(3)}`;
+};
+
+const notifyComplaintOwner = (complaintRow, type, message) => {
+  if (!complaintRow?.user_id) {
+    return Promise.resolve(null);
+  }
+
+  return createSystemNotificationSafely(
+    {
+      organizationId: complaintRow.complaint_organization_id || complaintRow.organization_id || null,
+      userId: complaintRow.user_id,
+      complaintId: complaintRow.id,
+      type,
+      message
+    },
+    'complaint notification'
+  );
+};
+
+const notifyOrganizationAdmins = (complaintRow, type, message) => {
+  const organizationId = complaintRow?.complaint_organization_id || complaintRow?.organization_id || null;
+  if (!organizationId) {
+    return Promise.resolve(null);
+  }
+
+  return createSystemNotificationSafely(
+    {
+      organizationId,
+      complaintId: complaintRow.id,
+      type,
+      message
+    },
+    'organization notification'
+  );
+};
+
+const isAllowedStatusTransition = (fromStatus, toStatus) => {
+  if (fromStatus === toStatus) {
+    return true;
+  }
+  const allowed = {
+    submitted: ['in_review'],
+    in_review: ['resolved', 'closed'],
+    resolved: ['closed'],
+    closed: []
+  };
+  return (allowed[fromStatus] || []).includes(toStatus);
 };
 
 const ensureComplaintTableSchema = async () => {
@@ -144,9 +196,8 @@ export const createComplaint = (req, res) => {
       department_id === null || department_id === undefined || department_id === ''
         ? null
         : Number(department_id);
-    // AFTER
-    const finalUserId = req.user?.id || null;
-    const finalOrganizationId = resolvedOrganizationId || req.user?.organization_id || null;
+    const finalUserId = isAnonymousComplaint ? null : req.user?.id || null;
+    const finalOrganizationId = resolvedOrganizationId;
     const finalAnonymousLabel = isAnonymousComplaint ? anonymous_label || 'Anonymous Reporter' : null;
     const trackingCode = generateTrackingCode();
 
@@ -179,6 +230,21 @@ export const createComplaint = (req, res) => {
             if (getErr) {
               return sendError(res, 500, 'Failed to fetch complaint', getErr.message);
             }
+
+            void notifyComplaintOwner(
+              row,
+              NOTIFICATION_TYPES.COMPLAINT_CREATED,
+              `Your complaint "${row.title || 'Untitled Complaint'}" was submitted successfully.`
+            );
+
+            if (row.complaint_organization_id) {
+              void notifyOrganizationAdmins(
+                row,
+                NOTIFICATION_TYPES.COMPLAINT_CREATED,
+                `A new complaint "${row.title || 'Untitled Complaint'}" was submitted to your organization.`
+              );
+            }
+
             return sendSuccess(res, 201, 'Complaint created successfully', row);
           });
         }
@@ -310,29 +376,42 @@ export const assignComplaintOrganization = (req, res) => {
         return sendError(res, 400, 'Selected organization is not active');
       }
 
-      complaintDB.run(assignComplaintOrganizationById, [organizationId, req.params.id], function onAssign(updateErr) {
-        if (updateErr) {
-          return sendError(res, 500, 'Failed to assign complaint organization', updateErr.message);
-        }
+          complaintDB.run(assignComplaintOrganizationById, [organizationId, req.params.id], function onAssign(updateErr) {
+            if (updateErr) {
+              return sendError(res, 500, 'Failed to assign complaint organization', updateErr.message);
+            }
 
-        complaintDB.get(selectComplaintById, [req.params.id], (getErr, row) => {
-          if (getErr) {
-            return sendError(res, 500, 'Complaint assigned but failed to reload complaint', getErr.message);
-          }
-          const auditMeta = buildAuditMetadata(req);
-          auditMeta.complaint_id = row.id;
-          auditMeta.assigned_to = organizationId;
-          void logAuditEntry(req, {
-            action: 'assign_complaint_organization',
-            targetTable: 'complaint',
-            targetId: row.id,
-            metadata: auditMeta
-          }).catch((_) => {
-            console.error('Failed to record audit log for complaint assignment');
+            complaintDB.get(selectComplaintById, [req.params.id], (getErr, row) => {
+              if (getErr) {
+                return sendError(res, 500, 'Complaint assigned but failed to reload complaint', getErr.message);
+              }
+
+              void notifyOrganizationAdmins(
+                row,
+                NOTIFICATION_TYPES.COMPLAINT_ASSIGNED,
+                `A complaint "${row.title || 'Untitled Complaint'}" was assigned to your organization.`
+              );
+
+              void notifyComplaintOwner(
+                row,
+                NOTIFICATION_TYPES.COMPLAINT_ASSIGNED,
+                `Your complaint "${row.title || 'Untitled Complaint'}" was assigned to ${row.organization_name || 'an organization'}.`
+              );
+
+              const auditMeta = buildAuditMetadata(req);
+              auditMeta.complaint_id = row.id;
+              auditMeta.assigned_to = organizationId;
+              void logAuditEntry(req, {
+                action: 'assign_complaint_organization',
+                targetTable: 'complaint',
+                targetId: row.id,
+                metadata: auditMeta
+              }).catch((_) => {
+                console.error('Failed to record audit log for complaint assignment');
+              });
+              return sendSuccess(res, 200, 'Complaint assigned to organization successfully', row);
+            });
           });
-          return sendSuccess(res, 200, 'Complaint assigned to organization successfully', row);
-        });
-      });
     });
   });
 };
@@ -462,6 +541,29 @@ export const updateComplaint = (req, res) => {
       return sendError(res, 400, 'department_id must be a valid department id when provided');
     }
 
+    const enforceWorkflowRules = async () => {
+      if (req.user.role !== 'org_admin') {
+        return null;
+      }
+
+      const settings = await getPlatformSettingsSafe();
+      if (Number(settings.enforce_status_sequence || 0) === 1) {
+        if (!isAllowedStatusTransition(existing.status, updated.status)) {
+          throw new Error(`Status transition not allowed: ${existing.status} → ${updated.status}`);
+        }
+      }
+
+      if (Number(settings.require_admin_response_on_resolve || 0) === 1) {
+        const isResolving = updated.status === 'resolved' || updated.status === 'closed';
+        const hasResponse = String(updated.admin_response || '').trim().length > 0;
+        if (isResolving && !hasResponse) {
+          throw new Error('Admin response is required before resolving or closing a complaint');
+        }
+      }
+
+      return null;
+    };
+
     const continueUpdate = () => {
       complaintDB.run(
         updateComplaintById,
@@ -488,28 +590,76 @@ export const updateComplaint = (req, res) => {
             if (getErr) {
               return sendError(res, 500, 'Failed to fetch updated complaint', getErr.message);
             }
+
+            const statusChanged = updated.status !== existing.status;
+            const responseChanged = updated.admin_response !== existing.admin_response && updated.admin_response;
+
+            if (req.user.role === 'org_admin') {
+              if (statusChanged) {
+                const statusType = updated.status === 'resolved'
+                  ? NOTIFICATION_TYPES.COMPLAINT_RESOLVED
+                  : updated.status === 'closed'
+                    ? NOTIFICATION_TYPES.COMPLAINT_CLOSED
+                    : NOTIFICATION_TYPES.COMPLAINT_UPDATED;
+
+                void notifyComplaintOwner(
+                  row,
+                  statusType,
+                  `Your complaint "${row.title || 'Untitled Complaint'}" is now ${updated.status.replace('_', ' ')}.`
+                );
+              } else {
+                void notifyComplaintOwner(
+                  row,
+                  NOTIFICATION_TYPES.COMPLAINT_UPDATED,
+                  `Your complaint "${row.title || 'Untitled Complaint'}" was updated by your organization.`
+                );
+              }
+
+              if (responseChanged) {
+                void notifyComplaintOwner(
+                  row,
+                  NOTIFICATION_TYPES.COMPLAINT_RESPONSE,
+                  `Your complaint "${row.title || 'Untitled Complaint'}" received an admin response.`
+                );
+              }
+            } else if (req.user.role === 'user') {
+              void notifyOrganizationAdmins(
+                row,
+                NOTIFICATION_TYPES.COMPLAINT_UPDATED,
+                `A user updated complaint "${row.title || 'Untitled Complaint'}".`
+              );
+            }
+
             return sendSuccess(res, 200, 'Complaint updated successfully', row);
           });
         }
       );
     };
 
-    if (normalizedDepartmentId === null) {
-      return continueUpdate();
-    }
+    const proceedWithUpdate = () => {
+      if (normalizedDepartmentId === null) {
+        return continueUpdate();
+      }
 
-    complaintDB.get(selectDepartmentById, [normalizedDepartmentId], (departmentErr, departmentRow) => {
-      if (departmentErr) {
-        return sendError(res, 500, 'Failed to validate department', departmentErr.message);
-      }
-      if (!departmentRow) {
-        return sendError(res, 404, 'Selected department not found');
-      }
-      if (String(departmentRow.organization_id) !== String(existing.complaint_organization_id)) {
-        return sendError(res, 400, 'Selected department does not belong to the complaint organization');
-      }
-      return continueUpdate();
-    });
+      complaintDB.get(selectDepartmentById, [normalizedDepartmentId], (departmentErr, departmentRow) => {
+        if (departmentErr) {
+          return sendError(res, 500, 'Failed to validate department', departmentErr.message);
+        }
+        if (!departmentRow) {
+          return sendError(res, 404, 'Selected department not found');
+        }
+        if (String(departmentRow.organization_id) !== String(existing.complaint_organization_id)) {
+          return sendError(res, 400, 'Selected department does not belong to the complaint organization');
+        }
+        return continueUpdate();
+      });
+    };
+
+    enforceWorkflowRules()
+      .then(proceedWithUpdate)
+      .catch((policyError) => {
+        return sendError(res, 400, policyError.message || 'Complaint update violates workflow policy');
+      });
   });
 };
 

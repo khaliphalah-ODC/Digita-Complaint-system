@@ -33,7 +33,7 @@ const infoTextClass = computed(() => (isOrgAdmin.value ? 'text-sm text-white/70'
 const footerClass = computed(() => (isOrgAdmin.value ? 'mt-3 flex items-center justify-between text-xs text-white/70' : 'mt-3 flex items-center justify-between text-xs text-slate-600'));
 const pagerButtonClass = computed(() => (isOrgAdmin.value ? 'rounded border border-white/20 bg-white/10 px-2 py-1 text-white disabled:opacity-50' : 'rounded border border-slate-300 px-2 py-1 disabled:opacity-50'));
 const editButtonClass = computed(() => (isOrgAdmin.value ? 'rounded bg-white/10 px-2 py-1 text-xs font-semibold text-white' : 'rounded bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700'));
-const deleteButtonClass = computed(() => (isOrgAdmin.value ? 'rounded bg-red-500/20 px-2 py-1 text-xs font-semibold text-red-100' : 'rounded bg-red-50 px-2 py-1 text-xs font-semibold text-red-700'));
+const deleteButtonClass = computed(() => (isOrgAdmin.value ? 'app-btn-danger min-h-[30px] px-2 py-1 text-xs' : 'rounded bg-red-50 px-2 py-1 text-xs font-semibold text-red-700'));
 
 const form = reactive({
   complaint_id: '',
@@ -241,7 +241,7 @@ onMounted(async () => {
               <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.assessor_id || 'N/A' }}</td>
               <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.updated_at || row.created_at }}</td>
               <td class="py-2">
-                <div class="flex flex-wrap gap-2">
+                <div class="app-action-row flex flex-wrap gap-2">
                   <button :class="editButtonClass" @click="startEdit(row)">Edit</button>
                   <button :class="deleteButtonClass" @click="deleteAssessment(row)">Delete</button>
                 </div>
