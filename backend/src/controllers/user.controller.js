@@ -589,45 +589,73 @@ export const registerUser = (req, res) => {
       return sendError(res, 409, 'Email already registered');
     }
 
-    complaintDB.run(
-      `INSERT INTO users (
-        organization_id,
-        department_id,
-        full_name,
-        email,
-        password,
-        email_verified,
-        email_verified_at,
-        must_change_password,
-        status,
-        role
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [organization_id, department_id, full_name, normalizedEmail, password, 0, null, 0, status, 'user'],
-      function onCreate(createErr) {
-        if (createErr) {
-          return sendError(res, 500, 'Failed to register user', createErr.message);
-        }
+    getPlatformSettings()
+      .then((settings) => {
+        const requireEmailVerification = Number(settings?.require_email_verification ?? 1) === 1;
+        const emailVerifiedValue = requireEmailVerification ? 0 : 1;
+        const emailVerifiedAt = requireEmailVerification ? null : new Date().toISOString();
 
-        complaintDB.get(fetchUserByIdQuery, [this.lastID], async (getErr, userRow) => {
-          if (getErr) {
-            return sendError(res, 500, 'Failed to fetch registered user', getErr.message);
-          }
-          if (!userRow) {
-            return sendError(res, 500, 'Registered user could not be loaded');
-          }
+        complaintDB.run(
+          `INSERT INTO users (
+            organization_id,
+            department_id,
+            full_name,
+            email,
+            password,
+            email_verified,
+            email_verified_at,
+            must_change_password,
+            status,
+            role
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            organization_id,
+            department_id,
+            full_name,
+            normalizedEmail,
+            password,
+            emailVerifiedValue,
+            emailVerifiedAt,
+            0,
+            status,
+            'user'
+          ],
+          function onCreate(createErr) {
+            if (createErr) {
+              return sendError(res, 500, 'Failed to register user', createErr.message);
+            }
 
-          try {
-            await createAndSendEmailVerification(userRow);
-          } catch (verificationErr) {
-            return sendError(res, 500, 'User created but failed to send verification email', verificationErr.message);
-          }
+            complaintDB.get(fetchUserByIdQuery, [this.lastID], async (getErr, userRow) => {
+              if (getErr) {
+                return sendError(res, 500, 'Failed to fetch registered user', getErr.message);
+              }
+              if (!userRow) {
+                return sendError(res, 500, 'Registered user could not be loaded');
+              }
 
-          return sendSuccess(res, 201, 'User registered successfully. Please verify your email before logging in.', {
-            user: sanitizeUser(userRow),
-          });
-        });
-      }
-    );
+              if (requireEmailVerification) {
+                try {
+                  await createAndSendEmailVerification(userRow);
+                } catch (verificationErr) {
+                  return sendError(res, 500, 'User created but failed to send verification email', verificationErr.message);
+                }
+              }
+
+              return sendSuccess(
+                res,
+                201,
+                requireEmailVerification
+                  ? 'User registered successfully. Please verify your email before logging in.'
+                  : 'User registered successfully.',
+                {
+                  user: sanitizeUser(userRow),
+                }
+              );
+            });
+          }
+        );
+      })
+      .catch((settingsErr) => sendError(res, 500, 'Failed to load platform settings', settingsErr.message));
   });
 };
 
@@ -674,55 +702,79 @@ export const registerUserWithJoinCode = (req, res) => {
         return sendError(res, 403, 'Self-signup is disabled for this organization');
       }
 
-      const createJoinedUser = (resolvedDepartmentId = null) => {
-        complaintDB.run(
-          `INSERT INTO users (
-            organization_id,
-            department_id,
-            full_name,
-            email,
-            password,
-            email_verified,
-            email_verified_at,
-            must_change_password,
-            status,
-            role
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [organizationRow.organization_id, resolvedDepartmentId, full_name, normalizedEmail, password, 0, null, 0, status, 'user'],
-          function onCreate(createErr) {
-            if (createErr) {
-              return sendError(res, 500, 'Failed to register user', createErr.message);
-            }
+      const createJoinedUser = async (resolvedDepartmentId = null) => {
+        try {
+          const settings = await getPlatformSettings();
+          const requireEmailVerification = Number(settings?.require_email_verification ?? 1) === 1;
+          const emailVerifiedValue = requireEmailVerification ? 0 : 1;
+          const emailVerifiedAt = requireEmailVerification ? null : new Date().toISOString();
 
-            complaintDB.get(fetchUserByIdQuery, [this.lastID], async (getErr, userRow) => {
-              if (getErr) {
-                return sendError(res, 500, 'Failed to fetch registered user', getErr.message);
-              }
-              if (!userRow) {
-                return sendError(res, 500, 'Registered user could not be loaded');
+          complaintDB.run(
+            `INSERT INTO users (
+              organization_id,
+              department_id,
+              full_name,
+              email,
+              password,
+              email_verified,
+              email_verified_at,
+              must_change_password,
+              status,
+              role
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              organizationRow.organization_id,
+              resolvedDepartmentId,
+              full_name,
+              normalizedEmail,
+              password,
+              emailVerifiedValue,
+              emailVerifiedAt,
+              0,
+              status,
+              'user'
+            ],
+            function onCreate(createErr) {
+              if (createErr) {
+                return sendError(res, 500, 'Failed to register user', createErr.message);
               }
 
-              try {
-                await createAndSendEmailVerification(userRow);
-              } catch (verificationErr) {
-                return sendError(res, 500, 'User created but failed to send verification email', verificationErr.message);
-              }
+              complaintDB.get(fetchUserByIdQuery, [this.lastID], async (getErr, userRow) => {
+                if (getErr) {
+                  return sendError(res, 500, 'Failed to fetch registered user', getErr.message);
+                }
+                if (!userRow) {
+                  return sendError(res, 500, 'Registered user could not be loaded');
+                }
 
-              return sendSuccess(
-                res,
-                201,
-                'User registered successfully. Please verify your email before logging in.',
-                {
-                  user: sanitizeUser(userRow),
-                  organization: {
-                    organization_id: organizationRow.organization_id,
-                    name: organizationRow.name
+                if (requireEmailVerification) {
+                  try {
+                    await createAndSendEmailVerification(userRow);
+                  } catch (verificationErr) {
+                    return sendError(res, 500, 'User created but failed to send verification email', verificationErr.message);
                   }
                 }
-              );
-            });
-          }
-        );
+
+                return sendSuccess(
+                  res,
+                  201,
+                  requireEmailVerification
+                    ? 'User registered successfully. Please verify your email before logging in.'
+                    : 'User registered successfully.',
+                  {
+                    user: sanitizeUser(userRow),
+                    organization: {
+                      organization_id: organizationRow.organization_id,
+                      name: organizationRow.name
+                    }
+                  }
+                );
+              });
+            }
+          );
+        } catch (settingsErr) {
+          return sendError(res, 500, 'Failed to load platform settings', settingsErr.message);
+        }
       };
 
       if (normalizedDepartmentId === null) {
