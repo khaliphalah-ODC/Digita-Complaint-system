@@ -62,16 +62,14 @@ const resolveJoinCode = async (codeOverride = '') => {
   }
 };
 
-const redirectAfterAuth = () => {
-  if (session.currentUser?.role === 'super_admin') {
-    router.push('/admin/dashboard');
-    return;
-  }
-  if (session.currentUser?.role === 'org_admin') {
-    router.push('/org-admin/dashboard');
-    return;
-  }
-  router.push('/user/dashboard');
+const redirectToLogin = async (email) => {
+  await router.push({
+    path: '/signin',
+    query: {
+      email: String(email || '').trim().toLowerCase(),
+      registered: '1'
+    }
+  });
 };
 
 const submit = async () => {
@@ -100,17 +98,7 @@ const submit = async () => {
       data = await session.register(basePayload);
     }
 
-    if (data?.token) {
-      redirectAfterAuth();
-      return;
-    }
-
-    await router.push({
-      path: '/verify-email',
-      query: {
-        email: String(data?.user?.email || signUpForm.email || '').trim().toLowerCase()
-      }
-    });
+    await redirectToLogin(data?.user?.email || signUpForm.email);
   } catch (_error) {
     // Store already tracks and displays error message.
   }
@@ -119,7 +107,15 @@ const submit = async () => {
 const submitGoogle = async (credential) => {
   try {
     await session.googleLogin(credential);
-    redirectAfterAuth();
+    if (session.currentUser?.role === 'super_admin') {
+      router.push('/admin/dashboard');
+      return;
+    }
+    if (session.currentUser?.role === 'org_admin') {
+      router.push('/org-admin/dashboard');
+      return;
+    }
+    router.push('/user/dashboard');
   } catch (_error) {
     // Store tracks and displays the message.
   }
