@@ -641,6 +641,15 @@ export const registerUser = (req, res) => {
                 }
               }
 
+              let token;
+              if (!requireEmailVerification) {
+                try {
+                  token = await generateToken(userRow.id);
+                } catch (tokenErr) {
+                  return sendError(res, 500, 'User registered but failed to generate token', tokenErr.message);
+                }
+              }
+
               return sendSuccess(
                 res,
                 201,
@@ -649,6 +658,7 @@ export const registerUser = (req, res) => {
                   : 'User registered successfully.',
                 {
                   user: sanitizeUser(userRow),
+                  token: token || null,
                 }
               );
             });
@@ -755,6 +765,15 @@ export const registerUserWithJoinCode = (req, res) => {
                   }
                 }
 
+                let token;
+                if (!requireEmailVerification) {
+                  try {
+                    token = await generateToken(userRow.id);
+                  } catch (tokenErr) {
+                    return sendError(res, 500, 'User registered but failed to generate token', tokenErr.message);
+                  }
+                }
+
                 return sendSuccess(
                   res,
                   201,
@@ -763,6 +782,7 @@ export const registerUserWithJoinCode = (req, res) => {
                     : 'User registered successfully.',
                   {
                     user: sanitizeUser(userRow),
+                    token: token || null,
                     organization: {
                       organization_id: organizationRow.organization_id,
                       name: organizationRow.name

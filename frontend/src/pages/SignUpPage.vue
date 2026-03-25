@@ -100,6 +100,11 @@ const submit = async () => {
       data = await session.register(basePayload);
     }
 
+    if (data?.token) {
+      redirectAfterAuth();
+      return;
+    }
+
     await router.push({
       path: '/verify-email',
       query: {

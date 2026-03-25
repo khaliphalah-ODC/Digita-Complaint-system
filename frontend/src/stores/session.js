@@ -191,11 +191,16 @@ export const useSessionStore = defineStore('session', () => {
       };
       const response = await api.post(`${USERS_API_BASE}/register`, normalizedPayload, { skipAuth: true });
       const data = ensureSuccess(unwrapResponse(response), 'Sign up failed');
-      token.value = '';
-      currentUser.value = null;
-      currentOrganizationName.value = '';
-      localStorage.removeItem('token');
-      pendingVerificationEmail.value = normalizedPayload.email;
+      if (data?.token) {
+        applyAuthPayload(data);
+        pendingVerificationEmail.value = '';
+      } else {
+        token.value = '';
+        currentUser.value = null;
+        currentOrganizationName.value = '';
+        localStorage.removeItem('token');
+        pendingVerificationEmail.value = normalizedPayload.email;
+      }
       return data;
     } catch (error) {
       errorMessage.value = getReadableError(error, 'Sign up failed');
@@ -217,11 +222,16 @@ export const useSessionStore = defineStore('session', () => {
       };
       const response = await api.post(`${USERS_API_BASE}/register-with-code`, normalizedPayload, { skipAuth: true });
       const data = ensureSuccess(unwrapResponse(response), 'Sign up failed');
-      token.value = '';
-      currentUser.value = null;
-      currentOrganizationName.value = '';
-      localStorage.removeItem('token');
-      pendingVerificationEmail.value = normalizedPayload.email;
+      if (data?.token) {
+        applyAuthPayload(data);
+        pendingVerificationEmail.value = '';
+      } else {
+        token.value = '';
+        currentUser.value = null;
+        currentOrganizationName.value = '';
+        localStorage.removeItem('token');
+        pendingVerificationEmail.value = normalizedPayload.email;
+      }
       return data;
     } catch (error) {
       errorMessage.value = getReadableError(error, 'Sign up failed');
