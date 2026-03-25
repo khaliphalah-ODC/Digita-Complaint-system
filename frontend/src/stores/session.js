@@ -164,23 +164,8 @@ export const useSessionStore = defineStore('session', () => {
         email: String(loginForm.value.email || '').trim().toLowerCase(),
         password: String(loginForm.value.password || '').trim()
       };
-      const loginPaths = [`${USERS_API_BASE}/login`, '/users/login'];
-      let data = null;
-      let lastError = null;
-
-      for (const path of loginPaths) {
-        try {
-          const response = await api.post(path, payload, { skipAuth: true });
-          data = ensureSuccess(unwrapResponse(response), 'Login failed');
-          break;
-        } catch (requestError) {
-          lastError = requestError;
-        }
-      }
-
-      if (!data) {
-        throw lastError || new Error('Login failed');
-      }
+      const response = await api.post(`${USERS_API_BASE}/login`, payload, { skipAuth: true });
+      const data = ensureSuccess(unwrapResponse(response), 'Login failed');
 
       applyAuthPayload(data);
       pendingVerificationEmail.value = '';
