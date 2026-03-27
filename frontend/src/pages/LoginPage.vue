@@ -74,7 +74,7 @@ const goToVerificationHelp = () => {
           </div>
 
           <div class="relative text-center">
-            <h1 class="text-5xl font-black tracking-tight">Hey There!</h1>
+            <h1 class="text-5xl !text-white tracking-tight">Hey There!</h1>
             <p class="mt-8 text-lg leading-8 text-white/80">
               Welcome Back.
               <br>

@@ -197,7 +197,7 @@ watch(() => route.fullPath, () => {
   justify-content: center;
   gap: 0.4rem;
   padding: 0.35rem 0.45rem;
-  background: rgba(255, 255, 255, 0.04);
+  /* background: rgba(255, 255, 255, 0.04); */
   flex: 1;
   max-width: 38rem;
   min-width: 0;
@@ -272,18 +272,19 @@ watch(() => route.fullPath, () => {
   background: rgba(255, 255, 255, 0.04);
 }
 
+/* hover login */
 .public-nav__btn-ghost:hover {
   background: rgba(255, 255, 255, 0.1);
 }
 
 .public-nav__btn-primary {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
   color: white;
-  box-shadow: 0 10px 20px rgba(29, 78, 216, 0.26);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.04);
 }
-
+ /* /hover signup */
 .public-nav__btn-primary:hover {
-  background: #1d4ed8;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .public-nav__btn-outline {
