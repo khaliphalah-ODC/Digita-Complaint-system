@@ -106,6 +106,15 @@ const infoPanelClass = computed(() => (
     ? 'rounded-[20px] border border-[var(--app-line)] bg-[var(--app-surface-soft)] px-4 py-3 text-sm text-[var(--app-primary-ink)]'
     : 'rounded-[20px] border border-[var(--app-line)] bg-[var(--app-surface-soft)] px-4 py-3 text-sm text-[var(--app-primary-ink)]'
 ));
+const submitButtonClass = computed(() => (
+  'w-full rounded-xl bg-[linear-gradient(90deg,#163462_0%,#1f4db7_58%,#4f8df7_100%)] px-6 py-3 text-sm font-bold text-white shadow-[var(--app-shadow-sm)] hover:brightness-110 disabled:opacity-60 sm:w-auto'
+));
+const footerActionClass = computed(() => (
+  'w-full rounded-full border border-blue-300 px-4 py-2 font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-60 sm:w-auto'
+));
+const footerSecondaryActionClass = computed(() => (
+  'w-full rounded-full px-4 py-2 font-semibold text-slate-700 hover:bg-slate-100 sm:w-auto'
+));
 
 const priorityClasses = (priority) => {
   if (priority === 'low') return 'bg-slate-500 text-white';
@@ -340,7 +349,7 @@ watch(selectedOrganizationId, (organizationId) => {
     </header>
 
     <div class="grid grid-cols-1 gap-5 px-4 py-5 sm:px-6 md:px-8 xl:grid-cols-[1.2fr,0.9fr] xl:items-start">
-      <form class="space-y-4" @submit.prevent="submitComplaint">
+      <form class="space-y-4 min-w-0" @submit.prevent="submitComplaint">
         <div :class="compactCardClass">
           <p class="text-xs font-semibold uppercase tracking-wide text-[var(--app-muted-color)]">Complaint Type</p>
           <p class="mt-1 text-sm font-semibold text-[var(--app-primary-ink)]">{{ complaintAudienceLabel }}</p>
@@ -488,46 +497,46 @@ watch(selectedOrganizationId, (organizationId) => {
         <button
           type="submit"
           :disabled="submitting || namedComplaintNeedsLogin"
-          class="rounded-xl bg-[linear-gradient(90deg,#163462_0%,#1f4db7_58%,#4f8df7_100%)] px-6 py-3 text-sm font-bold text-white shadow hover:brightness-110 disabled:opacity-60"
+          :class="submitButtonClass"
         >
           {{ submitting ? 'Submitting...' : 'Submit Complaint' }}
         </button>
       </form>
 
-      <aside :class="cardClass">
+      <aside :class="`${cardClass} min-w-0`">
         <div :class="isUserWorkspace ? 'rounded-[22px] border border-[#d2e0f8] bg-[#dfeaff] p-4 text-center' : 'rounded-[22px] border border-slate-200 bg-[var(--app-primary-mist)] p-4 text-center'">
           <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[var(--app-primary)] text-xl font-black text-white">✓</div>
           <p class="mt-2 text-sm font-semibold text-[var(--app-primary-ink)]">Thank you for your feedback!</p>
-          <div class="mt-3 rounded-2xl border border-[var(--app-accent-soft)] bg-white px-3 py-2 text-base font-black tracking-wide text-[var(--app-primary-ink)]">
+          <div class="mt-3 break-all rounded-2xl border border-[var(--app-accent-soft)] bg-white px-3 py-2 text-base font-black tracking-wide text-[var(--app-primary-ink)] sm:text-lg">
             {{ activeTrackingCode }}
           </div>
         </div>
 
         <div :class="isUserWorkspace ? 'mt-4 grid grid-cols-1 gap-3 rounded-xl border border-[#d2e0f8] bg-white/70 p-3 sm:grid-cols-[1fr,auto] sm:items-center' : 'mt-4 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 p-3 sm:grid-cols-[1fr,auto] sm:items-center'">
-          <p class="text-xs text-[var(--app-muted-color)]">Scan to track on mobile</p>
+          <p class="text-xs leading-5 text-[var(--app-muted-color)]">Scan to track on mobile</p>
           <img :src="qrUrl" alt="Track QR" class="h-20 w-20 rounded border border-slate-300 bg-white p-1">
         </div>
 
-        <p class="mt-3 text-xs text-[var(--app-muted-color)]">Route: {{ routeSummary }}</p>
-        <p class="mt-1 text-xs text-[var(--app-muted-color)]">
+        <p class="mt-3 break-words text-xs leading-5 text-[var(--app-muted-color)]">Route: {{ routeSummary }}</p>
+        <p class="mt-1 text-xs leading-5 text-[var(--app-muted-color)]">
           Type: {{ complaintAudienceLabel }}
         </p>
-        <p class="mt-1 text-xs text-[var(--app-muted-color)]">
+        <p class="mt-1 break-words text-xs leading-5 text-[var(--app-muted-color)]">
           Department:
           {{ departmentOptions.find((department) => String(department.id) === String(form.department_id))?.name || 'Not selected' }}
         </p>
       </aside>
     </div>
 
-    <footer class="flex flex-col items-stretch justify-center gap-3 border-t border-slate-200 px-4 py-5 text-sm sm:flex-row sm:items-center sm:px-6 md:px-8">
+    <footer class="flex flex-col items-stretch justify-center gap-3 border-t border-slate-200 px-4 py-5 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:px-6 md:px-8">
       <button
-        class="rounded-full border border-blue-300 px-4 py-2 font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-60"
+        :class="footerActionClass"
         :disabled="!lastSubmitted"
         @click="downloadReceiptPdf"
       >
         Download Receipt (PDF)
       </button>
-      <button class="rounded-full px-4 py-2 font-semibold text-slate-700 hover:bg-slate-100" @click="returnHome">
+      <button :class="footerSecondaryActionClass" @click="returnHome">
         Return to Home
       </button>
     </footer>

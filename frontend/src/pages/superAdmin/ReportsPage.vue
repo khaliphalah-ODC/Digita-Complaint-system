@@ -285,11 +285,12 @@ onMounted(fetchReports);
           </article>
         </div>
 
-        <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
           <AnalyticsBarChart
             title="Complaints by Organization"
             subtitle="Use this to confirm whether complaint volume is clustering in a few organizations."
             :series="complaintsByOrganization"
+            compact
             empty-message="Organization complaint volume is too low or unavailable, so this chart is hidden until stronger data is reported."
           />
           <AnalyticsDonutChart
@@ -297,6 +298,7 @@ onMounted(fetchReports);
             subtitle="Use this to confirm whether complaint flow is balanced or stuck in open states."
             :series="complaintStatusSeries"
             center-label="Complaints"
+            compact
             empty-message="Complaint status data is not strong enough to visualize yet."
           />
         </div>
@@ -333,6 +335,7 @@ onMounted(fetchReports);
           title="Escalation Status Distribution"
           subtitle="Shown only as supporting context after the key escalation message is already clear."
           :series="escalationBars"
+          compact
           empty-message="There are no reported escalations to visualize right now, so the chart has been replaced with this operational empty state."
         />
       </section>
@@ -342,7 +345,7 @@ onMounted(fetchReports);
           <h2 class="text-lg font-semibold text-slate-900">Feedback Overview</h2>
           <p class="mt-1 text-sm text-slate-600">Feedback supports supervision, but it should not outweigh the complaint and escalation message.</p>
         </div>
-        <div class="grid grid-cols-1 gap-6 xl:grid-cols-[0.8fr,1.2fr]">
+        <div class="grid grid-cols-1 gap-4 xl:grid-cols-[0.8fr,1.2fr]">
           <section class="app-section-card">
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <article class="rounded-xl border border-slate-200 p-4">
@@ -360,6 +363,7 @@ onMounted(fetchReports);
             :subtitle="`Total feedback: ${feedbackSummary.total} | Average rating: ${Number(feedbackSummary.average || 0).toFixed(2)}`"
             :series="feedbackBars"
             center-label="Ratings"
+            compact
             empty-message="Feedback volume is too low to support a useful rating chart right now."
           />
         </div>
@@ -370,12 +374,13 @@ onMounted(fetchReports);
           <h2 class="text-lg font-semibold text-slate-900">Monthly Trends</h2>
           <p class="mt-1 text-sm text-slate-600">Trend charts come last so they support decisions instead of replacing them.</p>
         </div>
-        <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
           <AnalyticsLineChart
             title="Monthly Complaint Trend"
             subtitle="Complaint volume over the last 12 months."
             :series="complaintMonthlyTrend"
             line-color="#2563eb"
+            compact
             empty-message="Complaint trend data is too low to show a useful monthly chart right now."
           />
           <AnalyticsLineChart
@@ -383,6 +388,7 @@ onMounted(fetchReports);
             subtitle="Completed assessments over the last 12 months."
             :series="assessmentMonthlyTrend"
             line-color="#16a34a"
+            compact
             empty-message="Assessment trend data is too low to show a useful monthly chart right now."
           />
         </div>

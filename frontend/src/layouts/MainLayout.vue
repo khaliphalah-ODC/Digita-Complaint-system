@@ -5,7 +5,6 @@ import { useRoute, useRouter } from 'vue-router';
 import { RouterLink, RouterView } from 'vue-router';
 import SidebarNav from '../components/SidebarNav.vue';
 import AppToast from '../components/AppToast.vue';
-import AppFooter from '../components/AppFooter.vue';
 import { useSessionStore } from '../stores/session';
 import { useNotificationStore } from '../stores/notifications.js';
 
@@ -194,7 +193,7 @@ onMounted(() => {
 
       <main :class="mainClass">
         <div :class="headerWrapClass">
-          <header class="app-shell-gutter border-b border-[var(--app-nav-border)] bg-[rgba(255,255,255,0.88)] py-3 shadow-[0_14px_40px_rgba(17,28,48,0.06)] backdrop-blur-2xl">
+          <header class="app-shell-gutter border-b border-[var(--app-nav-border)] bg-[rgba(255,255,255,0.88)] py-3 shadow-[var(--app-shadow-sm)] backdrop-blur-2xl md:shadow-[var(--app-shadow)]">
             <div class="app-content-wrap flex flex-wrap items-center justify-between gap-3">
               <div class="flex min-w-0 items-start gap-3">
                 <button
@@ -220,13 +219,13 @@ onMounted(() => {
                 <RouterLink
                   v-if="shouldShowUserNotificationBell"
                   to="/notifications"
-                  class="group relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--app-nav-border)] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.98),rgba(239,244,249,0.92))] text-[var(--app-primary)] shadow-[0_12px_28px_rgba(17,28,48,0.08)] hover:-translate-y-0.5 hover:border-[var(--app-primary)]/20 hover:text-[var(--app-primary-ink)]"
+                  class="group relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--app-nav-border)] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.98),rgba(239,244,249,0.92))] text-[var(--app-primary)] shadow-[var(--app-shadow-sm)] hover:-translate-y-0.5 hover:border-[var(--app-primary)]/20 hover:text-[var(--app-primary-ink)]"
                   title="Notifications"
                 >
                   <font-awesome-icon :icon="['fas', 'bell']" class="text-sm" />
                   <span
                     v-if="unreadCount > 0"
-                    class="absolute -right-1.5 -top-1.5 inline-flex min-w-[1.4rem] items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--app-primary),var(--app-accent))] px-1.5 py-0.5 text-[0.64rem] font-bold leading-none text-white shadow-[0_10px_20px_rgba(24,58,99,0.28)] ring-2 ring-white"
+                    class="absolute -right-1.5 -top-1.5 inline-flex min-w-[1.4rem] items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--app-primary),var(--app-accent))] px-1.5 py-0.5 text-[0.64rem] font-bold leading-none text-white shadow-[var(--app-shadow-sm)] ring-2 ring-white"
                   >
                     {{ unreadCount > 99 ? '99+' : unreadCount }}
                   </span>
@@ -236,7 +235,7 @@ onMounted(() => {
                   ></span>
                 </RouterLink>
 
-                <div class="hidden min-w-0 text-right sm:block">
+                <div class="hidden min-w-0 text-right md:block">
                   <p class="truncate text-sm font-semibold text-[var(--app-title-color)]">
                     {{ session.currentUser?.full_name || 'User' }}
                   </p>
@@ -249,18 +248,18 @@ onMounted(() => {
                   v-if="profileAvatar"
                   :src="profileAvatar"
                   alt="User Avatar"
-                  class="h-9 w-9 rounded-full border border-[var(--app-line)] object-cover sm:h-10 sm:w-10"
+                  class="hidden h-9 w-9 rounded-full border border-[var(--app-line)] object-cover md:block md:h-10 md:w-10"
                 >
 
                 <div
                   v-else
-                  class="h-9 w-9 rounded-full bg-[var(--app-primary)] text-center text-sm font-bold leading-9 text-white sm:h-10 sm:w-10 sm:leading-10"
+                  class="hidden h-9 w-9 rounded-full bg-[var(--app-primary)] text-center text-sm font-bold leading-9 text-white md:block md:h-10 md:w-10 md:leading-10"
                 >
                   {{ session.userInitials }}
                 </div>
 
                 <button
-                  class="inline-flex min-h-[40px] items-center rounded-[var(--app-radius-md)] border border-[var(--app-nav-border)] bg-[var(--app-nav-surface-strong)] px-3 py-2 text-xs font-semibold text-[var(--app-nav-text)] hover:bg-[var(--app-nav-hover)]"
+                  class="hidden min-h-[40px] items-center rounded-[var(--app-radius-md)] border border-[var(--app-nav-border)] bg-[var(--app-nav-surface-strong)] px-3 py-2 text-xs font-semibold text-[var(--app-nav-text)] hover:bg-[var(--app-nav-hover)] xl:inline-flex"
                   @click="showLogoutConfirm = true"
                 >
                   Logout
@@ -288,12 +287,11 @@ onMounted(() => {
         <section :class="contentClass">
           <RouterView />
         </section>
-        <AppFooter />
       </main>
     </div>
 
     <div v-if="showLogoutConfirm" class="fixed inset-0 z-[999] flex items-center justify-center bg-black/40 px-4">
-      <div class="w-full max-w-sm rounded-2xl border border-[var(--app-line)] bg-white p-6 shadow-[0_24px_60px_rgba(0,0,0,0.2)]">
+      <div class="app-modal-panel w-full max-w-sm p-6">
         <div class="flex items-center gap-3">
           <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
             <font-awesome-icon :icon="['fas', 'triangle-exclamation']" />
@@ -312,7 +310,7 @@ onMounted(() => {
             Cancel
           </button>
           <button
-            class="flex-1 rounded-full bg-[var(--app-primary)] py-2.5 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(24,58,99,0.28)] transition hover:bg-[var(--app-primary-ink)]"
+            class="flex-1 rounded-full bg-[var(--app-primary)] py-2.5 text-sm font-semibold text-white shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-primary-ink)]"
             @click="confirmLogout"
           >
             Yes, Logout

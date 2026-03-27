@@ -1,7 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import AppFooter from '../components/AppFooter.vue';
 import AuthTopNav from '../components/AuthTopNav.vue';
 import GoogleAuthButton from '../components/GoogleAuthButton.vue';
 import { socialLinks } from '../config/socialLinks';
@@ -12,6 +11,11 @@ const session = useSessionStore();
 
 const form = computed(() => session.loginForm);
 const showPassword = ref(false);
+const googleClientId = String(import.meta.env.VITE_GOOGLE_CLIENT_ID || '').trim();
+const showGoogleAuth = computed(() => (
+  Boolean(googleClientId) &&
+  googleClientId !== 'your-google-client-id.apps.googleusercontent.com'
+));
 const hasVerificationPrompt = computed(() => /verify your email/i.test(session.errorMessage || ''));
 const verificationEmail = computed(() => String(form.value?.email || session.pendingVerificationEmail || '').trim().toLowerCase());
 
@@ -175,7 +179,7 @@ const goToVerificationHelp = () => {
               {{ session.loadingLogin ? 'Signing in...' : 'Sign In' }}
             </button>
 
-            <div class="mt-5">
+            <div v-if="showGoogleAuth" class="mt-5">
               <p class="app-auth-meta mb-3 text-center text-sm">Or continue with Google</p>
               <GoogleAuthButton text="continue_with" @credential="submitGoogle" />
             </div>
@@ -203,6 +207,5 @@ const goToVerificationHelp = () => {
         </div>
       </div>
     </div>
-    <!--<AppFooter />-->
   </div>
 </template>

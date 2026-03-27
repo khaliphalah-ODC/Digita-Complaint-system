@@ -4,6 +4,7 @@ import { RouterLink } from 'vue-router';
 import api, { extractApiError, unwrapResponse } from '../../services/api';
 import AnalyticsBarChart from '../../components/superAdmin/AnalyticsBarChart.vue';
 import AnalyticsLineChart from '../../components/superAdmin/AnalyticsLineChart.vue';
+import MobileDataCardList from '../../components/MobileDataCardList.vue';
 import PageHeader from '../../components/superAdmin/PageHeader.vue';
 import { useSessionStore } from '../../stores/session';
 
@@ -168,6 +169,14 @@ const organizationOverviewRows = computed(() => {
 
   return rows.sort((a, b) => b.riskScore - a.riskScore);
 });
+const organizationOverviewCardFields = [
+  { key: 'organization', label: 'Organization' },
+  { key: 'total', label: 'Total Complaints' },
+  { key: 'pending', label: 'Pending Complaints' },
+  { key: 'response', label: 'Response Rate' },
+  { key: 'escalation', label: 'Escalation Rate' },
+  { key: 'status', label: 'Status' }
+];
 
 const organizationStatusSeries = computed(() => [
   {
@@ -441,8 +450,39 @@ onMounted(refreshDashboard);
               Loading organization oversight data...
             </div>
 
-            <div v-else-if="organizationOverviewRows.length" class="app-table-shell overflow-x-auto">
-              <table class="app-table min-w-full">
+            <MobileDataCardList
+              v-else-if="organizationOverviewRows.length"
+              :items="organizationOverviewRows"
+              :fields="organizationOverviewCardFields"
+              key-field="id"
+            >
+              <template #field-organization="{ item }">
+                <div class="min-w-0">
+                  <p class="break-words font-semibold text-[var(--app-title-color)]">{{ item.name }}</p>
+                  <p class="mt-1 text-xs text-[var(--app-muted-color)]">Org admin: {{ item.adminName }}</p>
+                </div>
+              </template>
+              <template #field-total="{ item }">
+                <p class="font-medium text-[var(--app-title-color)]">{{ item.totalComplaints }}</p>
+              </template>
+              <template #field-pending="{ item }">
+                <p class="font-medium text-[var(--app-title-color)]">{{ item.pendingComplaints }}</p>
+              </template>
+              <template #field-response="{ item }">
+                <p class="font-medium text-[var(--app-title-color)]">{{ toPercent(item.responseRate) }}</p>
+              </template>
+              <template #field-escalation="{ item }">
+                <p class="font-medium text-[var(--app-title-color)]">{{ toPercent(item.escalationRate) }}</p>
+              </template>
+              <template #field-status="{ item }">
+                <span :class="statusBadgeClass(item.status)">
+                  {{ item.status === 'active' ? 'Active' : 'Inactive' }}
+                </span>
+              </template>
+            </MobileDataCardList>
+
+            <div v-if="organizationOverviewRows.length" class="hidden md:block app-table-shell overflow-x-auto">
+              <table class="app-table app-table-responsive min-w-full">
                 <thead>
                   <tr>
                     <th>Organization</th>
@@ -455,17 +495,17 @@ onMounted(refreshDashboard);
                 </thead>
                 <tbody>
                   <tr v-for="row in organizationOverviewRows" :key="row.id">
-                    <td>
+                    <td data-label="Organization">
                       <div class="min-w-[180px]">
                         <p class="font-semibold text-[var(--app-title-color)]">{{ row.name }}</p>
                         <p class="text-xs text-[var(--app-muted-color)]">Org admin: {{ row.adminName }}</p>
                       </div>
                     </td>
-                    <td>{{ row.totalComplaints }}</td>
-                    <td>{{ row.pendingComplaints }}</td>
-                    <td>{{ toPercent(row.responseRate) }}</td>
-                    <td>{{ toPercent(row.escalationRate) }}</td>
-                    <td>
+                    <td data-label="Total Complaints">{{ row.totalComplaints }}</td>
+                    <td data-label="Pending Complaints">{{ row.pendingComplaints }}</td>
+                    <td data-label="Response Rate">{{ toPercent(row.responseRate) }}</td>
+                    <td data-label="Escalation Rate">{{ toPercent(row.escalationRate) }}</td>
+                    <td data-label="Status">
                       <span :class="statusBadgeClass(row.status)">
                         {{ row.status === 'active' ? 'Active' : 'Inactive' }}
                       </span>

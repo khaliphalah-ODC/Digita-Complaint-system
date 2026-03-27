@@ -1,115 +1,223 @@
 <script setup>
-import { ref } from 'vue';
-import { RouterLink } from 'vue-router';
+import { computed } from 'vue';
+import { RouterLink, useRoute } from 'vue-router';
 import { socialLinks } from '../config/socialLinks';
-import { useUiToastStore } from '../stores/uiToast';
+import { useSessionStore } from '../stores/session';
 
-const email = ref('');
-const uiToast = useUiToastStore();
+const route = useRoute();
+const session = useSessionStore();
 
-const subscribe = () => {
-  if (!String(email.value || '').trim()) {
-    uiToast.error('Enter an email address for the newsletter.');
-    return;
-  }
-  uiToast.success('Newsletter signup captured.');
-  email.value = '';
-};
+const isLoggedIn = computed(() => session.isLoggedIn);
+
+const dashboardRoute = computed(() => {
+  if (session.currentUser?.role === 'super_admin') return '/admin/dashboard';
+  if (session.currentUser?.role === 'org_admin') return '/org-admin/dashboard';
+  if (session.currentUser?.role === 'user') return '/user/dashboard';
+  return '/signin';
+});
+
+const isActive = (path) => route.path === path;
 </script>
 
 <template>
-  <footer class="mt-6 pb-3">
-    <div class="w-full">
-      <div class="app-footer-panel footer-shell w-full px-5 py-6 sm:px-6 md:px-8">
-        <div class="flex w-full flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div class="max-w-xl">
-            <p class="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--app-primary)]">Platform Updates</p>
-            <h3 class="mt-2 text-2xl font-semibold text-[var(--app-title-color)]">Complaint Management System</h3>
-            <p class="mt-2 text-sm leading-6 text-[var(--app-muted-color)]">
-              Submit, monitor, and resolve complaints with a clear organization workflow for users, organization admins, and super admins.
-            </p>
+  <footer class="border-t border-white/10 bg-slate-950 text-slate-300">
+    <div class="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-6 py-14 md:grid-cols-3 md:gap-12 md:py-16">
+      <section class="group border-l-2 border-transparent pl-4 transition-all duration-300 hover:border-orange-500">
+        <h2 class="text-2xl font-black text-white">
+          <span class="text-blue-500">
+            Complaint
+          </span><span class="text-orange-500">MS</span>
+        </h2>
 
-            <div class="mt-5">
-              <p class="text-sm font-semibold text-[var(--app-title-color)]">Quick Links</p>
-              <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[var(--app-muted-color)]">
-                <RouterLink to="/" class="transition hover:text-[var(--app-primary)]">
-                  Home
-                </RouterLink>
-                <RouterLink to="/about" class="transition hover:text-[var(--app-primary)]">
-                  About
-                </RouterLink>
-                <RouterLink to="/features" class="transition hover:text-[var(--app-primary)]">
-                  Features
-                </RouterLink>
-              </div>
-            </div>
-          </div>
+        <p class="mt-4 max-w-sm text-sm leading-relaxed text-slate-400">
+          Empowering users to report, track, and resolve complaints efficiently with transparency and control.
+        </p>
+      </section>
 
-          <div class="min-w-0 flex-[1.2] lg:max-w-none lg:px-6">
-            <p class="text-sm font-semibold text-[var(--app-title-color)]">Newsletter</p>
-            <p class="mt-1 text-sm text-[var(--app-muted-color)]">Receive product updates, complaint workflow improvements, and release notes.</p>
-            <form class="mt-3 flex w-full flex-col gap-3 sm:flex-row sm:items-stretch" @submit.prevent="subscribe">
-              <input
-                v-model="email"
-                type="email"
-                placeholder="Enter your email"
-                class="app-input min-w-0 flex-1"
-              >
-              <button
-                type="submit"
-                class="app-btn-primary w-full shrink-0 sm:w-auto"
-              >
-                Subscribe
-              </button>
-            </form>
-          </div>
+      <nav class="group border-l-2 border-transparent pl-4 transition-all duration-300 hover:border-orange-500">
+        <h3 class="mb-5 text-lg font-semibold text-white">
+          Navigation
+        </h3>
 
-          <div class="min-w-0">
-            <p class="text-sm font-semibold text-[var(--app-title-color)]">Follow</p>
-            <div class="mt-3 flex items-center gap-3 text-[var(--app-primary)]">
-              <a :href="socialLinks.facebook" target="_blank" rel="noreferrer" class="flex h-10 w-10 items-center justify-center border border-[var(--app-line)] bg-[var(--app-surface)] hover:bg-[var(--app-primary-mist)]">
-                <font-awesome-icon :icon="['fab', 'facebook-f']" />
-              </a>
-              <a :href="socialLinks.x" target="_blank" rel="noreferrer" class="flex h-10 w-10 items-center justify-center border border-[var(--app-line)] bg-[var(--app-surface)] hover:bg-[var(--app-primary-mist)]">
-                <font-awesome-icon :icon="['fab', 'x-twitter']" />
-              </a>
-              <a :href="socialLinks.instagram" target="_blank" rel="noreferrer" class="flex h-10 w-10 items-center justify-center border border-[var(--app-line)] bg-[var(--app-surface)] hover:bg-[var(--app-primary-mist)]">
-                <font-awesome-icon :icon="['fab', 'instagram']" />
-              </a>
-              <a :href="socialLinks.linkedin" target="_blank" rel="noreferrer" class="flex h-10 w-10 items-center justify-center border border-[var(--app-line)] bg-[var(--app-surface)] hover:bg-[var(--app-primary-mist)]">
-                <font-awesome-icon :icon="['fab', 'linkedin-in']" />
-              </a>
-            </div>
-          </div>
+        <ul class="space-y-4 text-sm">
+          <li>
+            <RouterLink
+              to="/"
+              :class="['nav-link', isActive('/') ? 'active' : '']"
+            >
+              Home
+            </RouterLink>
+          </li>
+
+          <li>
+            <RouterLink
+              to="/about"
+              :class="['nav-link', isActive('/about') ? 'active' : '']"
+            >
+              About
+            </RouterLink>
+          </li>
+
+          <li>
+            <RouterLink
+              to="/features"
+              :class="['nav-link', isActive('/features') ? 'active' : '']"
+            >
+              Features
+            </RouterLink>
+          </li>
+
+          <li>
+            <RouterLink
+              to="/services"
+              :class="['nav-link', isActive('/services') ? 'active' : '']"
+            >
+              Services
+            </RouterLink>
+          </li>
+
+          <li>
+            <RouterLink
+              to="/contact"
+              :class="['nav-link', isActive('/contact') ? 'active' : '']"
+            >
+              Contact
+            </RouterLink>
+          </li>
+
+          <li>
+            <RouterLink
+              :to="isLoggedIn ? dashboardRoute : '/signin'"
+              :class="['nav-link', isActive('/signin') ? 'active' : '']"
+            >
+              {{ isLoggedIn ? 'Open Dashboard' : 'Sign In' }}
+            </RouterLink>
+          </li>
+        </ul>
+      </nav>
+
+      <section class="group border-l-2 border-transparent pl-4 transition-all duration-300 hover:border-orange-500">
+        <h3 class="mb-5 text-lg font-semibold text-white">
+          Contact
+        </h3>
+
+        <p class="text-sm text-slate-400">
+          Email:
+          <a
+            href="mailto:support@complaintms.com"
+            class="footer-inline-link"
+          >
+            support@complaintms.com
+          </a>
+        </p>
+
+        <p class="mt-2 text-sm text-slate-400">
+          Phone: +231 77 000 0000
+        </p>
+
+        <div class="mt-6 flex gap-6">
+          <a :href="socialLinks.x" target="_blank" rel="noreferrer" class="social-icon" aria-label="X">
+            <font-awesome-icon :icon="['fab', 'x-twitter']" class="icon" />
+          </a>
+
+          <a :href="socialLinks.facebook" target="_blank" rel="noreferrer" class="social-icon" aria-label="Facebook">
+            <font-awesome-icon :icon="['fab', 'facebook-f']" class="icon" />
+          </a>
+
+          <a :href="socialLinks.instagram" target="_blank" rel="noreferrer" class="social-icon" aria-label="Instagram">
+            <font-awesome-icon :icon="['fab', 'instagram']" class="icon" />
+          </a>
+
+          <a :href="socialLinks.linkedin" target="_blank" rel="noreferrer" class="social-icon" aria-label="LinkedIn">
+            <font-awesome-icon :icon="['fab', 'linkedin-in']" class="icon" />
+          </a>
         </div>
+      </section>
+    </div>
 
-        <div class="footer-bottom">
-          <p class="footer-copy">&#169; 2026 ComplaintTrack. All rights reserved.</p>
-          <div class="footer-legal">
-            <a href="#" class="legal-link">Privacy Policy</a>
-            <a href="#" class="legal-link">Terms of Service</a>
-          </div>
-        </div>
-      </div>
+    <div class="border-t border-white/10 py-6 text-center text-xs text-slate-500">
+      © 2026 Complaint MS. All rights reserved.
     </div>
   </footer>
 </template>
 
 <style scoped>
-.footer-shell {
-  border-radius: 0;
+.nav-link {
+  position: relative;
+  display: inline-block;
+  color: #cbd5e1;
+  transition: color 0.3s ease;
 }
 
-.footer-bottom {
-  margin-top: 3.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--app-line);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: space-between; gap: 1rem;
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 0%;
+  height: 2px;
+  background: #f97316;
+  transition: width 0.3s ease;
 }
-@media (min-width: 640px) { .footer-bottom { flex-direction: row; } }
-.footer-copy { font-size: 0.875rem; color: #475569; }
-.footer-legal { display: flex; flex-wrap: wrap; gap: 1.25rem; }
-.legal-link { font-size: 0.875rem; color: #475569; text-decoration: none; transition: color 0.2s; }
-.legal-link:hover { color: #cbd5e1; }
+
+.nav-link:hover {
+  color: #f97316;
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+.active {
+  color: #f97316;
+}
+
+.active::after {
+  width: 100%;
+}
+
+.footer-inline-link {
+  position: relative;
+  display: inline-block;
+  color: #e2e8f0;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.footer-inline-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 0%;
+  height: 2px;
+  background: #f97316;
+  transition: width 0.3s ease;
+}
+
+.footer-inline-link:hover {
+  color: #f97316;
+}
+
+.footer-inline-link:hover::after {
+  width: 100%;
+}
+
+.social-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  transition: transform 0.25s ease, color 0.25s ease;
+}
+
+.social-icon:hover {
+  transform: translateY(-3px) scale(1.15);
+  color: #f97316;
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+}
 </style>

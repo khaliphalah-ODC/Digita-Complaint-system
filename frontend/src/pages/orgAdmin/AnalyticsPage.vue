@@ -117,7 +117,7 @@ onUnmounted(() => {
 <template>
   <section class="app-admin-page">
     <div class="app-workspace-stack">
-    <header class="rounded-[30px] border border-slate-200 bg-white/80 p-5 shadow-[0_26px_60px_rgba(15,23,42,0.15)]">
+    <header class="rounded-[30px] border border-slate-200 bg-white/80 p-4 shadow-[var(--app-shadow)] sm:p-5">
       <p class="app-kicker text-[var(--app-primary)]">Organization Analytics</p>
       <h1 class="mt-2 text-3xl font-black text-slate-900">Operational Pulse</h1>
       <p class="mt-2 text-sm text-slate-600">Live insights for your organization with rolling refresh every 30 seconds.</p>
@@ -143,24 +143,26 @@ onUnmounted(() => {
 
     <p v-if="error" class="rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{{ error }}</p>
 
-    <section class="space-y-5 rounded-[30px] border border-slate-200 bg-white/80 p-5 shadow-[0_26px_60px_rgba(15,23,42,0.15)]">
+    <section class="space-y-5 rounded-[30px] border border-slate-200 bg-white/80 p-4 shadow-[var(--app-shadow)] sm:p-5">
       <header class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <h2 class="text-lg font-bold text-slate-900">Live Charts</h2>
         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{{ lastUpdatedLabel }}</p>
       </header>
 
-      <div class="grid grid-cols-1 gap-5 lg:grid-cols-[1.35fr,0.65fr]">
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-[1.35fr,0.65fr]">
         <AnalyticsLineChart
           title="Complaint Trend (Rolling 7 days)"
           subtitle="Counts per day for your organization."
           :series="complaintTrendSeries"
           line-color="#1f4db7"
+          compact
         />
         <AnalyticsDonutChart
           title="Status Distribution"
           subtitle="Live proportion of complaint states."
           center-label="Complaints"
           :series="statusSeries"
+          compact
         />
       </div>
     </section>

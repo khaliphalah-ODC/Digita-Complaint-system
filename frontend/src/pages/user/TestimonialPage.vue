@@ -83,7 +83,7 @@ onBeforeUnmount(() => {
 
 
 <template>
- <div class="min-h-screen w-screen flex flex-col">
+ <div class="min-h-screen w-full flex flex-col">
     <AuthTopNav fixed />
     <section class="testimonial-page w-full flex-1 pt-24">
 

@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import { faPenToSquare, faTrashCan } from '@fortawesome/free-solid-svg-icons';
 import api, { extractApiError, unwrapResponse } from '../../services/api';
+import MobileDataCardList from '../../components/MobileDataCardList.vue';
 import PageHeader from '../../components/superAdmin/PageHeader.vue';
 import { useUiToastStore } from '../../stores/uiToast';
 import { useSessionStore } from '../../stores/session';
@@ -233,6 +234,13 @@ const paginatedUsers = computed(() => {
   const start = (page.value - 1) * pageSize;
   return filteredUsers.value.slice(start, start + pageSize);
 });
+const mobileCardFields = [
+  { key: 'name', label: 'Name' },
+  { key: 'email', label: 'Email' },
+  { key: 'role', label: 'Role' },
+  { key: 'status', label: 'Status' },
+  { key: 'organization', label: 'Organization' }
+];
 
 const goToPage = (nextPage) => {
   page.value = Math.min(Math.max(1, nextPage), totalPages.value);
@@ -389,8 +397,61 @@ watch(assignableRoles, normalizeRoleFilters, { immediate: false });
           <p v-if="loading" class="text-sm text-[var(--app-muted-color)]">Loading users...</p>
           <p v-else-if="filteredUsers.length === 0" class="app-empty-state">No users match the current filters.</p>
 
-          <div v-else class="app-table-shell overflow-x-auto">
-            <table class="app-table min-w-full">
+          <MobileDataCardList
+            v-else
+            :items="paginatedUsers"
+            :fields="mobileCardFields"
+            key-field="id"
+          >
+            <template #field-name="{ item }">
+              <p class="break-words font-semibold text-[var(--app-title-color)]">{{ item.full_name }}</p>
+            </template>
+            <template #field-email="{ item }">
+              <p class="break-all font-medium text-[var(--app-title-color)]">{{ item.email }}</p>
+            </template>
+            <template #field-role="{ item }">
+              <select
+                v-if="canManageRow(item)"
+                class="app-select min-h-[36px] px-3 py-1 text-xs"
+                :value="item.role"
+                @change="updateUserRoleQuick(item, $event.target.value)"
+              >
+                <option v-for="role in assignableRoles" :key="role" :value="role">{{ role }}</option>
+              </select>
+              <span v-else class="font-medium text-[var(--app-title-color)]">{{ item.role }}</span>
+            </template>
+            <template #field-status="{ item }">
+              <p class="font-medium text-[var(--app-title-color)]">{{ item.status }}</p>
+            </template>
+            <template #field-organization="{ item }">
+              <p class="font-medium text-[var(--app-title-color)]">{{ item.organization_id ?? 'N/A' }}</p>
+            </template>
+            <template #actions="{ item }">
+              <div class="app-action-row flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  :disabled="!canManageRow(item)"
+                  class="app-btn-secondary min-h-[36px] px-3 py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-50"
+                  @click="startEdit(item)"
+                >
+                  <font-awesome-icon :icon="faPenToSquare" class="text-sm" />
+                  <span>Edit</span>
+                </button>
+                <button
+                  type="button"
+                  :disabled="!canManageRow(item)"
+                  class="app-btn-danger min-h-[36px] px-3 py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-50"
+                  @click="deleteUser(item)"
+                >
+                  <font-awesome-icon :icon="faTrashCan" class="text-sm" />
+                  <span>Delete</span>
+                </button>
+              </div>
+            </template>
+          </MobileDataCardList>
+
+          <div v-if="filteredUsers.length > 0" class="hidden md:block app-table-shell overflow-x-auto">
+            <table class="app-table app-table-responsive min-w-full">
               <thead>
                 <tr>
                   <th>Name</th>
@@ -403,9 +464,9 @@ watch(assignableRoles, normalizeRoleFilters, { immediate: false });
               </thead>
               <tbody>
                 <tr v-for="row in paginatedUsers" :key="row.id">
-                  <td class="font-medium text-[var(--app-title-color)]">{{ row.full_name }}</td>
-                  <td>{{ row.email }}</td>
-                  <td>
+                  <td data-label="Name" class="font-medium text-[var(--app-title-color)]">{{ row.full_name }}</td>
+                  <td data-label="Email">{{ row.email }}</td>
+                  <td data-label="Role">
                     <select
                       v-if="canManageRow(row)"
                       class="app-select min-h-[36px] px-3 py-1 text-xs"
@@ -416,9 +477,9 @@ watch(assignableRoles, normalizeRoleFilters, { immediate: false });
                     </select>
                     <span v-else>{{ row.role }}</span>
                   </td>
-                  <td>{{ row.status }}</td>
-                  <td>{{ row.organization_id ?? 'N/A' }}</td>
-                  <td>
+                  <td data-label="Status">{{ row.status }}</td>
+                  <td data-label="Organization">{{ row.organization_id ?? 'N/A' }}</td>
+                  <td data-label="Actions" data-actions="true">
                     <div class="app-action-row flex flex-wrap gap-2">
                       <button
                         type="button"

@@ -6,7 +6,6 @@ import 'swiper/css';
 import 'swiper/css/effect-fade';
 import 'swiper/css/pagination';
 import AuthTopNav from '../components/AuthTopNav.vue';
-import AppFooter from '../components/AppFooter.vue';
 import TestimonialsSection from '../components/TestimonialsSection.vue';
 import heroImage1 from '../asset/heroImage/image1.avif';
 import heroImage2 from '../asset/heroImage/image2.jpg';
@@ -32,7 +31,7 @@ const benefitCards = [
 </script>
 
 <template>
-  <div class="flex min-h-screen w-screen flex-col font-sans">
+  <div class="flex min-h-screen w-full flex-col font-sans">
     <AuthTopNav fixed />
 
     <section class="hero-section relative flex items-center justify-center overflow-hidden pt-20">
@@ -75,12 +74,6 @@ const benefitCards = [
             Follow updates, timelines, and responses in one clear place without losing visibility.
           </p>
 
-          <div class="hero-actions mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <RouterLink to="/track-complaint" class="hero-btn hero-btn-secondary">
-              Track a Complaint
-            </RouterLink>
-          </div>
-
           <div class="hero-trust mt-9 flex flex-wrap items-center justify-center gap-4 text-sm text-blue-100/80">
             <span class="hero-trust-pill">Status tracking</span>
             <span class="hero-trust-pill">Resolution timeline</span>
@@ -117,8 +110,6 @@ const benefitCards = [
     </section>
 
     <TestimonialsSection />
-
-    <AppFooter />
   </div>
 </template>
 

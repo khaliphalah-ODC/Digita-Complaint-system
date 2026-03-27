@@ -159,7 +159,7 @@ onUnmounted(() => {
   <section :class="shellClass">
     <header class="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div class="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-        <h1 class="break-all text-3xl font-semibold text-slate-800 sm:text-4xl">{{ complaint?.tracking_code || 'TRK-000-000' }}</h1>
+        <h1 class="break-all text-[1.85rem] font-semibold text-slate-800 sm:text-4xl">{{ complaint?.tracking_code || 'TRK-000-000' }}</h1>
         <span class="app-badge px-3 py-1 text-sm" :class="statusBadgeClass">
           {{ prettyStatus(complaint?.status) }}
         </span>
@@ -184,18 +184,18 @@ onUnmounted(() => {
       <div class="mb-5 grid grid-cols-1 gap-3 md:grid-cols-2">
         <article :class="cardClass">
           <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Organization</p>
-          <p class="mt-2 text-[0.98rem] font-semibold text-slate-700">{{ complaint.organization_name || 'N/A' }}</p>
-          <p class="mt-1 text-xs text-slate-500">Department: {{ complaint.department_name || 'Not specified' }}</p>
-          <p class="text-xs text-slate-500">{{ complaint.organization_address || '' }}</p>
+          <p class="mt-2 break-words text-[0.98rem] font-semibold text-slate-700">{{ complaint.organization_name || 'N/A' }}</p>
+          <p class="mt-1 break-words text-xs leading-5 text-slate-500">Department: {{ complaint.department_name || 'Not specified' }}</p>
+          <p class="break-words text-xs leading-5 text-slate-500">{{ complaint.organization_address || '' }}</p>
         </article>
         <article :class="`${cardClass} text-left md:text-right`">
           <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Handled by</p>
-          <p class="mt-2 text-[0.98rem] font-semibold text-slate-700">{{ complaint.reviewer_name || 'Pending assignment' }}</p>
+          <p class="mt-2 break-words text-[0.98rem] font-semibold text-slate-700">{{ complaint.reviewer_name || 'Pending assignment' }}</p>
         </article>
       </div>
 
-      <div class="mb-6 rounded-[24px] border border-[var(--app-line)] bg-[var(--app-surface-soft)] px-4 py-4">
-        <div class="grid grid-cols-5 items-center gap-2 text-center text-[11px] font-semibold text-slate-600">
+      <div class="mb-6 rounded-[24px] border border-[var(--app-line)] bg-[var(--app-surface-soft)] px-3 py-4 sm:px-4">
+        <div class="grid grid-cols-5 items-start gap-2 text-center text-[10px] font-semibold leading-4 text-slate-600 sm:text-[11px]">
           <span v-for="step in workflowSteps" :key="`${step.key}-label`">{{ step.label }}</span>
         </div>
         <div class="mt-2 flex items-center justify-between">
@@ -219,8 +219,8 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <section :class="isUserWorkspace ? 'user-shell-card rounded-[26px] p-5 md:p-6' : 'app-ink-card rounded-[26px] p-5 md:p-6'">
-        <h2 class="text-2xl font-semibold text-slate-800 sm:text-3xl">Complaint Title: {{ complaint.title }}</h2>
+      <section :class="isUserWorkspace ? 'user-shell-card rounded-[26px] p-4 sm:p-5 md:p-6' : 'app-ink-card rounded-[26px] p-4 sm:p-5 md:p-6'">
+        <h2 class="break-words text-2xl font-semibold text-slate-800 sm:text-3xl">Complaint Title: {{ complaint.title }}</h2>
 
         <div class="mt-4 flex flex-wrap items-center gap-2">
           <span class="app-badge app-badge-warning">{{ prettyStatus(complaint.status) }}</span>
@@ -230,14 +230,14 @@ onUnmounted(() => {
         </div>
 
         <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-[1fr,0.8fr]">
-          <article class="rounded-[22px] border border-[var(--app-line)] bg-white/90 p-5 text-[0.98rem] leading-8 text-slate-700">
-            <p>{{ complaint.description || complaint.complaint }}</p>
-            <p class="mt-4 text-xs text-slate-500">Submitted by: {{ reporterName }}</p>
+          <article class="rounded-[22px] border border-[var(--app-line)] bg-white/90 p-4 text-[0.98rem] leading-7 text-slate-700 sm:p-5 sm:leading-8">
+            <p class="break-words">{{ complaint.description || complaint.complaint }}</p>
+            <p class="mt-4 break-words text-xs text-slate-500">Submitted by: {{ reporterName }}</p>
           </article>
 
-          <article class="rounded-[22px] border border-[var(--app-line)] bg-[var(--app-surface-soft)] p-5">
+          <article class="rounded-[22px] border border-[var(--app-line)] bg-[var(--app-surface-soft)] p-4 sm:p-5">
             <p class="text-lg font-semibold text-slate-800">Resolution</p>
-            <p class="mt-2 text-[0.98rem] text-slate-700">
+            <p class="mt-2 break-words text-[0.98rem] text-slate-700">
               {{ complaint.admin_response || 'Admin response pending. Your complaint is being reviewed.' }}
             </p>
             <p class="mt-2 text-xs text-slate-500">(Resolved on: {{ formatDate(resolvedDate) }})</p>
@@ -246,10 +246,10 @@ onUnmounted(() => {
       </section>
 
       <footer class="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-between">
-        <button class="app-btn-primary disabled:cursor-not-allowed disabled:opacity-60" :disabled="!canOpenChat" @click="openChat">
+        <button class="app-btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto" :disabled="!canOpenChat" @click="openChat">
           Message Support
         </button>
-        <button class="app-btn-secondary" @click="downloadReceiptPdf">
+        <button class="app-btn-secondary w-full sm:w-auto" @click="downloadReceiptPdf">
           Download Receipt (PDF)
         </button>
       </footer>

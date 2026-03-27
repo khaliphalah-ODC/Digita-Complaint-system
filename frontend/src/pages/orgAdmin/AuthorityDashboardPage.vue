@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
 import api, { extractApiError, unwrapResponse } from '../../services/api';
 import { useSessionStore } from '../../stores/session';
 import { useUiToastStore } from '../../stores/uiToast';
+import MobileDataCardList from '../../components/MobileDataCardList.vue';
 import AnalyticsDonutChart from '../../components/superAdmin/AnalyticsDonutChart.vue';
 import AnalyticsLineChart from '../../components/superAdmin/AnalyticsLineChart.vue';
 
@@ -22,6 +23,12 @@ const codeCopied = ref(false);
 const error = ref('');
 const lastRefresh = ref(null);
 let pollTimer = null;
+const authorityUserCardFields = [
+  { key: 'name', label: 'Name' },
+  { key: 'email', label: 'Email' },
+  { key: 'role', label: 'Role' },
+  { key: 'status', label: 'Status' }
+];
 
 const form = reactive({
   full_name: '',
@@ -435,8 +442,33 @@ const lastUpdatedLabel = computed(() => {
 
           <p v-if="loadingUsers" class="text-sm text-white/70">Loading users...</p>
           <p v-else-if="users.length === 0" class="text-sm text-white/70">No users found in your organization.</p>
-          <div v-else class="overflow-x-auto">
-            <table class="org-admin-table min-w-full text-left text-sm">
+          <MobileDataCardList
+            v-else
+            :items="users"
+            :fields="authorityUserCardFields"
+            key-field="id"
+          >
+            <template #field-name="{ item }">
+              <p class="break-words font-semibold text-[var(--app-title-color)]">{{ item.full_name }}</p>
+            </template>
+            <template #field-email="{ item }">
+              <p class="break-all font-medium text-[var(--app-title-color)]">{{ item.email }}</p>
+            </template>
+            <template #field-role="{ item }">
+              <p class="font-medium text-[var(--app-title-color)]">{{ item.role }}</p>
+            </template>
+            <template #field-status="{ item }">
+              <span
+                class="rounded-full px-2 py-0.5 text-xs font-semibold"
+                :class="item.status === 'active' ? 'bg-emerald-500/15 text-emerald-300' : item.status === 'pending' ? 'bg-amber-500/15 text-amber-300' : 'bg-white/10 text-white/60'"
+              >
+                {{ item.status }}
+              </span>
+            </template>
+          </MobileDataCardList>
+
+          <div v-if="users.length > 0" class="hidden md:block app-table-shell-responsive overflow-x-auto">
+            <table class="org-admin-table org-admin-table-responsive min-w-full text-left text-sm">
               <thead>
                 <tr>
                   <th class="pb-2 pr-3 text-xs uppercase tracking-wide text-white/70">Name</th>
@@ -447,10 +479,10 @@ const lastUpdatedLabel = computed(() => {
               </thead>
               <tbody>
                 <tr v-for="row in users" :key="row.id" class="border-t border-white/10">
-                  <td class="py-2 pr-3 text-white">{{ row.full_name }}</td>
-                  <td class="py-2 pr-3 text-white/80">{{ row.email }}</td>
-                  <td class="py-2 pr-3 text-white/80">{{ row.role }}</td>
-                  <td class="py-2 pr-3">
+                  <td data-label="Name" class="py-2 pr-3 text-white">{{ row.full_name }}</td>
+                  <td data-label="Email" class="py-2 pr-3 text-white/80">{{ row.email }}</td>
+                  <td data-label="Role" class="py-2 pr-3 text-white/80">{{ row.role }}</td>
+                  <td data-label="Status" class="py-2 pr-3">
                     <span
                       class="rounded-full px-2 py-0.5 text-xs font-semibold"
                       :class="row.status === 'active' ? 'bg-emerald-500/15 text-emerald-300' : row.status === 'pending' ? 'bg-amber-500/15 text-amber-300' : 'bg-white/10 text-white/60'"

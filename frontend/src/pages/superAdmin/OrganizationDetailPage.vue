@@ -191,7 +191,7 @@ onMounted(load);
         <template v-else-if="organization">
           <section class="app-section-card">
         <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div class="flex items-start gap-4">
+          <div class="flex min-w-0 items-start gap-4">
             <img
               v-if="organization.logo"
               :src="organization.logo"
@@ -200,8 +200,8 @@ onMounted(load);
             >
             <div v-else class="flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-lg font-semibold text-blue-700">ORG</div>
 
-            <div>
-              <h2 class="text-2xl font-semibold text-slate-900">{{ organization.name }}</h2>
+            <div class="min-w-0">
+              <h2 class="break-words text-2xl font-semibold text-slate-900">{{ organization.name }}</h2>
               <p class="mt-1 text-sm text-slate-600">Platform directory record used for routing coverage, oversight, and org-admin assignment.</p>
 
               <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -221,10 +221,10 @@ onMounted(load);
             </div>
           </div>
 
-          <article class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+          <article class="min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
             <p class="text-xs font-medium text-slate-500">Primary admin contact</p>
-            <p class="mt-2 text-base font-semibold text-slate-900">{{ organization.organization_admin?.full_name || 'Not assigned' }}</p>
-            <p class="mt-1 text-sm text-slate-600">{{ organization.organization_admin?.email || 'No admin email available' }}</p>
+            <p class="mt-2 break-words text-base font-semibold text-slate-900">{{ organization.organization_admin?.full_name || 'Not assigned' }}</p>
+            <p class="mt-1 break-words text-sm text-slate-600">{{ organization.organization_admin?.email || 'No admin email available' }}</p>
           </article>
         </div>
           </section>
@@ -239,7 +239,7 @@ onMounted(load);
               class="rounded-xl border border-slate-200 p-4"
             >
               <p class="text-sm font-medium text-slate-500">{{ item.label }}</p>
-              <p class="mt-2 text-sm font-semibold text-slate-900">{{ item.value }}</p>
+              <p class="mt-2 break-words text-sm font-semibold text-slate-900">{{ item.value }}</p>
             </article>
           </div>
             </article>
@@ -249,11 +249,11 @@ onMounted(load);
           <div class="mt-4 space-y-4 text-sm text-slate-600">
             <div>
               <p class="font-medium text-slate-900">Address</p>
-              <p class="mt-1">{{ organization.address || 'No address available' }}</p>
+              <p class="mt-1 break-words">{{ organization.address || 'No address available' }}</p>
             </div>
             <div>
               <p class="font-medium text-slate-900">Organization email</p>
-              <p class="mt-1">{{ organization.email || 'N/A' }}</p>
+              <p class="mt-1 break-words">{{ organization.email || 'N/A' }}</p>
             </div>
             <div>
               <p class="font-medium text-slate-900">Phone</p>
@@ -277,11 +277,11 @@ onMounted(load);
             <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
               <article class="rounded-xl border border-slate-200 p-4">
                 <p class="text-sm font-medium text-slate-500">Organization admin</p>
-                <p class="mt-2 text-sm font-semibold text-slate-900">{{ organization.organization_admin?.full_name || 'Not assigned' }}</p>
+                <p class="mt-2 break-words text-sm font-semibold text-slate-900">{{ organization.organization_admin?.full_name || 'Not assigned' }}</p>
               </article>
               <article class="rounded-xl border border-slate-200 p-4">
                 <p class="text-sm font-medium text-slate-500">Admin email</p>
-                <p class="mt-2 text-sm font-semibold text-slate-900">{{ organization.organization_admin?.email || 'N/A' }}</p>
+                <p class="mt-2 break-words text-sm font-semibold text-slate-900">{{ organization.organization_admin?.email || 'N/A' }}</p>
               </article>
               <article class="rounded-xl border border-slate-200 p-4">
                 <p class="text-sm font-medium text-slate-500">Admin status</p>
@@ -306,19 +306,19 @@ onMounted(load);
             </p>
 
             <div class="mt-4 grid gap-6 xl:grid-cols-[1.1fr,0.9fr]">
-              <article class="rounded-xl border border-slate-200 p-4">
+              <article class="min-w-0 rounded-xl border border-slate-200 p-4">
                 <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Join Code</p>
-                <p class="mt-2 text-2xl font-semibold text-slate-900">
+                <p class="mt-2 break-all text-2xl font-semibold text-slate-900">
                   {{ joinCodeLoading ? 'Loading...' : (joinCode?.join_code || 'Not available') }}
                 </p>
                 <p class="mt-2 break-all text-sm text-slate-600">
                   {{ joinCode?.join_url || 'Join link will appear here once the code is ready.' }}
                 </p>
-                <div class="mt-4 flex flex-wrap gap-2">
-                  <button class="app-btn-secondary" :disabled="!joinCode?.join_code || joinCodeCopying" @click="copyJoinCode">
+                <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  <button class="app-btn-secondary w-full sm:w-auto" :disabled="!joinCode?.join_code || joinCodeCopying" @click="copyJoinCode">
                     {{ joinCodeCopying ? 'Copying...' : 'Copy Code' }}
                   </button>
-                  <button class="app-btn-secondary" :disabled="!joinCode?.join_url || joinLinkCopying" @click="copyJoinLink">
+                  <button class="app-btn-secondary w-full sm:w-auto" :disabled="!joinCode?.join_url || joinLinkCopying" @click="copyJoinLink">
                     {{ joinLinkCopying ? 'Copying...' : 'Copy Link' }}
                   </button>
                 </div>
@@ -326,7 +326,7 @@ onMounted(load);
 
               <article class="rounded-xl border border-slate-200 p-4">
                 <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">QR Code</p>
-                <div class="mt-3 flex flex-col items-start gap-3">
+                <div class="mt-3 flex flex-col items-center gap-3 sm:items-start">
                   <img
                     v-if="joinCode?.join_qr_url"
                     :src="joinCode.join_qr_url"
@@ -336,7 +336,7 @@ onMounted(load);
                   <p v-else class="text-sm text-slate-600">
                     QR code will appear once the join code is generated.
                   </p>
-                  <button class="app-btn-secondary" :disabled="!joinCode?.join_qr_url || joinCodeDownloading" @click="downloadJoinQr">
+                  <button class="app-btn-secondary w-full sm:w-auto" :disabled="!joinCode?.join_qr_url || joinCodeDownloading" @click="downloadJoinQr">
                     {{ joinCodeDownloading ? 'Downloading...' : 'Download QR' }}
                   </button>
                 </div>

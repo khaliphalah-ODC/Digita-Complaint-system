@@ -39,6 +39,14 @@ export const changeEmailSchema = Joi.object({
   current_password: Joi.string().required()
 });
 
+export const contactFormSchema = Joi.object({
+  full_name: Joi.string().trim().min(3).max(120).required(),
+  email: Joi.string().email().required(),
+  organization: Joi.string().trim().max(120).allow('', null),
+  subject: Joi.string().trim().min(5).max(140).required(),
+  message: Joi.string().trim().min(20).max(4000).required()
+});
+
 
 
 const buildResetPasswordSchema = (minLength) => Joi.object({

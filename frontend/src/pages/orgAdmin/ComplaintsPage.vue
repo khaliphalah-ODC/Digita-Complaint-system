@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import api, { extractApiError, unwrapResponse } from '../../services/api';
 import LiveSupportModal from '../../components/LiveSupportModal.vue';
+import MobileDataCardList from '../../components/MobileDataCardList.vue';
 import PageHeader from '../../components/superAdmin/PageHeader.vue';
 import { useSessionStore } from '../../stores/session';
 
@@ -129,6 +130,14 @@ const paginatedComplaints = computed(() => {
   const start = (page.value - 1) * pageSize;
   return filteredComplaints.value.slice(start, start + pageSize);
 });
+const mobileCardFields = [
+  { key: 'complaint', label: 'Complaint' },
+  { key: 'reporter', label: 'Reporter' },
+  { key: 'department', label: 'Department' },
+  { key: 'priority', label: 'Priority' },
+  { key: 'status', label: 'Status' },
+  { key: 'workflow', label: 'Workflow' }
+];
 
 const goToPage = (nextPage) => {
   page.value = Math.min(Math.max(1, nextPage), totalPages.value);
@@ -205,8 +214,60 @@ onMounted(fetchComplaints);
           <p v-if="loading" class="text-sm text-[var(--app-muted-color)]">Loading complaints...</p>
           <p v-else-if="filteredComplaints.length === 0" class="app-empty-state">No complaints match the current queue filters.</p>
 
-          <div v-else class="app-table-shell overflow-x-auto">
-            <table class="app-table min-w-full">
+          <MobileDataCardList
+            v-else
+            :items="paginatedComplaints"
+            :fields="mobileCardFields"
+            key-field="id"
+          >
+            <template #field-complaint="{ item }">
+              <div class="min-w-0">
+                <p class="break-words font-semibold text-[var(--app-title-color)]">{{ item.title || 'Untitled Complaint' }}</p>
+                <p class="mt-1 text-xs text-[var(--app-muted-color)]">Tracking: {{ item.tracking_code || 'N/A' }}</p>
+              </div>
+            </template>
+            <template #field-reporter="{ item }">
+              <div class="min-w-0">
+                <p class="break-words font-medium text-[var(--app-title-color)]">{{ item.is_anonymous ? (item.anonymous_label || 'Anonymous') : (item.user_full_name || 'N/A') }}</p>
+                <p v-if="!item.is_anonymous && item.user_email" class="mt-1 break-all text-xs text-[var(--app-muted-color)]">{{ item.user_email }}</p>
+              </div>
+            </template>
+            <template #field-department="{ item }">
+              <p class="break-words font-medium text-[var(--app-title-color)]">{{ item.department_name || 'Unassigned' }}</p>
+            </template>
+            <template #field-priority="{ item }">
+              <span :class="priorityBadgeClass(item.priority)">
+                {{ item.priority || 'medium' }}
+              </span>
+            </template>
+            <template #field-status="{ item }">
+              <span :class="statusBadgeClass(item.status)">
+                {{ item.status || 'submitted' }}
+              </span>
+            </template>
+            <template #field-workflow="{ item }">
+              <div class="app-action-row flex flex-wrap gap-2">
+                <span v-if="needsResponse(item)" class="app-badge app-badge-warning">Needs Response</span>
+                <span class="app-badge app-badge-neutral">{{ getComplaintWorkflowLabel(item) }}</span>
+              </div>
+            </template>
+            <template #actions="{ item }">
+              <div class="app-action-row flex flex-wrap gap-2">
+                <button class="app-btn-primary min-h-[36px] px-3 py-1.5 text-xs" @click="router.push(`${complaintsRoutePrefix}/${item.id}`)">
+                  Review
+                </button>
+                <button class="app-btn-secondary min-h-[36px] px-3 py-1.5 text-xs" @click="openChat(item)">
+                  Chat
+                </button>
+                <button class="app-btn-danger min-h-[36px] px-3 py-1.5 text-xs" @click="deleteComplaint(item)">
+                  Delete
+                </button>
+              </div>
+            </template>
+          </MobileDataCardList>
+
+          <div v-if="filteredComplaints.length > 0" class="hidden md:block app-table-shell overflow-x-auto">
+            <table class="app-table app-table-responsive min-w-full">
               <thead>
                 <tr>
                   <th>Complaint</th>
@@ -220,36 +281,36 @@ onMounted(fetchComplaints);
               </thead>
               <tbody>
                 <tr v-for="item in paginatedComplaints" :key="item.id">
-                  <td>
+                  <td data-label="Complaint">
                     <div class="min-w-[220px]">
                       <p class="font-semibold text-[var(--app-title-color)]">{{ item.title || 'Untitled Complaint' }}</p>
                       <p class="text-xs text-[var(--app-muted-color)]">Tracking: {{ item.tracking_code || 'N/A' }}</p>
                     </div>
                   </td>
-                  <td>
+                  <td data-label="Reporter">
                     <div class="min-w-[180px]">
                       <p>{{ item.is_anonymous ? (item.anonymous_label || 'Anonymous') : (item.user_full_name || 'N/A') }}</p>
                       <p v-if="!item.is_anonymous && item.user_email" class="text-xs text-[var(--app-muted-color)]">{{ item.user_email }}</p>
                     </div>
                   </td>
-                  <td>{{ item.department_name || 'Unassigned' }}</td>
-                  <td>
+                  <td data-label="Department">{{ item.department_name || 'Unassigned' }}</td>
+                  <td data-label="Priority">
                     <span :class="priorityBadgeClass(item.priority)">
                       {{ item.priority || 'medium' }}
                     </span>
                   </td>
-                  <td>
+                  <td data-label="Status">
                     <span :class="statusBadgeClass(item.status)">
                       {{ item.status || 'submitted' }}
                     </span>
                   </td>
-                  <td>
+                  <td data-label="Workflow">
                     <div class="app-action-row flex flex-wrap gap-2">
                       <span v-if="needsResponse(item)" class="app-badge app-badge-warning">Needs Response</span>
                       <span class="app-badge app-badge-neutral">{{ getComplaintWorkflowLabel(item) }}</span>
                     </div>
                   </td>
-                  <td>
+                  <td data-label="Actions" data-actions="true">
                     <div class="app-action-row flex flex-wrap gap-2">
                       <button class="app-btn-primary min-h-[36px] px-3 py-1.5 text-xs" @click="router.push(`${complaintsRoutePrefix}/${item.id}`)">
                         Review

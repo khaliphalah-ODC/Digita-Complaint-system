@@ -263,7 +263,7 @@ onUnmounted(stopPolling);
     class="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(17,28,48,0.34)] p-3 backdrop-blur-md md:items-center md:p-5"
     @click.self="emit('close')"
   >
-    <section class="flex h-[78vh] min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-[calc(var(--app-radius-xl)+6px)] border border-[var(--app-line)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(250,248,244,0.98))] shadow-[var(--app-shadow-lg)] md:h-[76vh]">
+    <section class="app-modal-panel flex h-[78vh] min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-[calc(var(--app-radius-xl)+6px)] md:h-[76vh]">
       <header class="flex items-center justify-between border-b border-[var(--app-line)] bg-[linear-gradient(135deg,rgba(24,58,99,0.96)_0%,rgba(36,74,121,0.96)_48%,rgba(43,90,142,0.96)_100%)] px-4 py-4 text-white sm:px-6">
         <div class="flex min-w-0 items-center gap-3">
           <div class="flex h-11 w-11 items-center justify-center rounded-[var(--app-radius-lg)] border border-white/20 bg-white/12 text-sm font-bold shadow-[0_10px_24px_rgba(0,0,0,0.12)]">
@@ -287,7 +287,7 @@ onUnmounted(stopPolling);
 
       <div class="flex min-h-0 flex-1 flex-col bg-[linear-gradient(180deg,var(--app-bg-soft)_0%,var(--app-bg)_100%)] p-3 sm:p-4">
         <div v-if="requiresSignIn" class="flex flex-1 items-center justify-center">
-          <div class="max-w-md rounded-2xl border border-[var(--app-line)] bg-white px-5 py-6 text-center shadow-sm">
+          <div class="app-modal-panel max-w-md px-5 py-6 text-center shadow-sm">
             <p class="text-base font-semibold text-slate-900">Sign in required</p>
             <p class="mt-2 text-sm text-slate-600">
               Sign in with the complaint owner account to view or send support messages.

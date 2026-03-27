@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
 import api, { extractApiError, unwrapResponse } from '../../services/api';
+import MobileDataCardList from '../../components/MobileDataCardList.vue';
 import { useSessionStore } from '../../stores/session';
 import { useUiToastStore } from '../../stores/uiToast';
 
@@ -28,7 +29,7 @@ const selectClass = computed(() => (isOrgAdmin.value ? 'org-admin-select' : 'rou
 const refreshButtonClass = computed(() => (isOrgAdmin.value ? 'org-admin-outline-btn' : 'rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700'));
 const primaryButtonClass = computed(() => (isOrgAdmin.value ? 'org-admin-btn disabled:opacity-70' : 'rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white'));
 const secondaryButtonClass = computed(() => (isOrgAdmin.value ? 'org-admin-outline-btn' : 'rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700'));
-const tableClass = computed(() => (isOrgAdmin.value ? 'org-admin-table min-w-full text-left text-sm' : 'min-w-full text-left text-sm'));
+const tableClass = computed(() => (isOrgAdmin.value ? 'org-admin-table org-admin-table-responsive min-w-full text-left text-sm' : 'app-table-responsive min-w-full text-left text-sm'));
 const tableHeadClass = computed(() => (isOrgAdmin.value ? 'text-white/60' : 'text-slate-500'));
 const tableRowClass = computed(() => (isOrgAdmin.value ? 'border-t border-white/10' : 'border-t border-slate-100'));
 const infoTextClass = computed(() => (isOrgAdmin.value ? 'text-sm text-white/70' : 'text-sm text-slate-500'));
@@ -198,6 +199,14 @@ const paginatedEscalations = computed(() => {
   const start = (currentPage.value - 1) * pageSize;
   return filteredEscalations.value.slice(start, start + pageSize);
 });
+const mobileCardFields = [
+  { key: 'id', label: 'ID' },
+  { key: 'assessment', label: 'Assessment' },
+  { key: 'level', label: 'Level' },
+  { key: 'status', label: 'Status' },
+  { key: 'assigned', label: 'Assigned To' },
+  { key: 'updated', label: 'Updated' }
+];
 const goToPage = (nextPage) => {
   page.value = Math.min(Math.max(1, nextPage), totalPages.value);
 };
@@ -280,7 +289,46 @@ onMounted(async () => {
       <p v-if="loading" :class="infoTextClass">Loading escalations...</p>
       <p v-else-if="filteredEscalations.length === 0" :class="infoTextClass">No escalations found.</p>
 
-      <div v-else class="-mx-1 overflow-x-auto pb-1">
+      <MobileDataCardList
+        v-else
+        :items="paginatedEscalations"
+        :fields="mobileCardFields"
+        key-field="id"
+      >
+        <template #field-id="{ item }">
+          <p class="font-medium text-[var(--app-title-color)]">#{{ item.id }}</p>
+        </template>
+        <template #field-assessment="{ item }">
+          <p class="break-words font-medium text-[var(--app-title-color)]">{{ accessmentTitleById.get(Number(item.accessment_id)) || item.accessment_id }}</p>
+        </template>
+        <template #field-level="{ item }">
+          <p class="font-medium text-[var(--app-title-color)]">{{ item.escalation_level }}</p>
+        </template>
+        <template #field-status="{ item }">
+          <p class="font-medium text-[var(--app-title-color)]">{{ item.status }}</p>
+        </template>
+        <template #field-assigned="{ item }">
+          <p class="break-words font-medium text-[var(--app-title-color)]">{{ userNameById.get(Number(item.assigned_to)) || item.assigned_to || 'N/A' }}</p>
+        </template>
+        <template #field-updated="{ item }">
+          <p class="break-words font-medium text-[var(--app-title-color)]">{{ item.updated_at || item.created_at }}</p>
+        </template>
+        <template #actions="{ item }">
+          <div class="app-action-row flex flex-wrap gap-2">
+            <button :class="editButtonClass" @click="startEdit(item)">Edit</button>
+            <button
+              v-if="item.status !== 'resolved'"
+              :class="resolveButtonClass"
+              @click="markResolvedNow(item)"
+            >
+              Resolve
+            </button>
+            <button :class="deleteButtonClass" @click="deleteEscalation(item)">Delete</button>
+          </div>
+        </template>
+      </MobileDataCardList>
+
+      <div v-if="filteredEscalations.length > 0" class="hidden md:block app-table-shell overflow-x-auto pb-1">
         <table :class="tableClass">
           <thead :class="tableHeadClass">
             <tr>
@@ -295,13 +343,13 @@ onMounted(async () => {
           </thead>
           <tbody>
             <tr v-for="row in paginatedEscalations" :key="row.id" :class="tableRowClass">
-              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white' : ''">#{{ row.id }}</td>
-              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ accessmentTitleById.get(Number(row.accessment_id)) || row.accessment_id }}</td>
-              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.escalation_level }}</td>
-              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.status }}</td>
-              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ userNameById.get(Number(row.assigned_to)) || row.assigned_to || 'N/A' }}</td>
-              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.updated_at || row.created_at }}</td>
-              <td class="py-2">
+              <td data-label="ID" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white' : ''">#{{ row.id }}</td>
+              <td data-label="Assessment" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ accessmentTitleById.get(Number(row.accessment_id)) || row.accessment_id }}</td>
+              <td data-label="Level" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.escalation_level }}</td>
+              <td data-label="Status" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.status }}</td>
+              <td data-label="Assigned To" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ userNameById.get(Number(row.assigned_to)) || row.assigned_to || 'N/A' }}</td>
+              <td data-label="Updated" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.updated_at || row.created_at }}</td>
+              <td data-label="Actions" data-actions="true" class="py-2">
                 <div class="app-action-row flex flex-wrap gap-2">
                   <button :class="editButtonClass" @click="startEdit(row)">Edit</button>
                   <button

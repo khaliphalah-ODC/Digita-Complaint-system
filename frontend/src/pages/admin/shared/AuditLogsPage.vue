@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
+import MobileDataCardList from '../../../components/MobileDataCardList.vue';
 import PageHeader from '../../../components/superAdmin/PageHeader.vue';
 import api, { extractApiError, unwrapResponse } from '../../../services/api';
 
@@ -48,6 +49,14 @@ const paginatedLogs = computed(() => {
   const start = (page.value - 1) * pageSize;
   return filteredLogs.value.slice(start, start + pageSize);
 });
+const auditLogCardFields = [
+  { key: 'assessment', label: 'Assessment' },
+  { key: 'changedBy', label: 'Changed By' },
+  { key: 'oldStatus', label: 'Old Status' },
+  { key: 'newStatus', label: 'New Status' },
+  { key: 'notes', label: 'Notes' },
+  { key: 'createdAt', label: 'Created At' }
+];
 
 const goToPage = (nextPage) => {
   page.value = Math.min(Math.max(1, nextPage), totalPages.value);
@@ -114,8 +123,34 @@ onMounted(fetchLogs);
       <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
       <p v-else-if="filteredLogs.length === 0" class="text-sm text-[var(--app-muted-color)]">No audit logs found.</p>
 
-      <div v-else class="app-table-shell overflow-x-auto">
-        <table class="app-table min-w-full text-left text-sm">
+      <MobileDataCardList
+        v-else
+        :items="paginatedLogs"
+        :fields="auditLogCardFields"
+        key-field="id"
+      >
+        <template #field-assessment="{ item }">
+          <p class="font-medium text-[var(--app-title-color)]">#{{ item.accessment_id }}</p>
+        </template>
+        <template #field-changedBy="{ item }">
+          <p class="break-words font-medium text-[var(--app-title-color)]">{{ item.changed_by }}</p>
+        </template>
+        <template #field-oldStatus="{ item }">
+          <p class="font-medium text-[var(--app-title-color)]">{{ item.old_status || 'N/A' }}</p>
+        </template>
+        <template #field-newStatus="{ item }">
+          <p class="font-medium text-[var(--app-title-color)]">{{ item.new_status }}</p>
+        </template>
+        <template #field-notes="{ item }">
+          <p class="break-words font-medium text-[var(--app-title-color)]">{{ item.notes || 'N/A' }}</p>
+        </template>
+        <template #field-createdAt="{ item }">
+          <p class="break-words font-medium text-[var(--app-title-color)]">{{ item.created_at }}</p>
+        </template>
+      </MobileDataCardList>
+
+      <div v-if="filteredLogs.length > 0" class="hidden md:block app-table-shell overflow-x-auto">
+        <table class="app-table app-table-responsive min-w-full text-left text-sm">
           <thead>
             <tr>
               <th>Assessment</th>
@@ -128,12 +163,12 @@ onMounted(fetchLogs);
           </thead>
           <tbody>
             <tr v-for="row in paginatedLogs" :key="row.id">
-              <td>#{{ row.accessment_id }}</td>
-              <td>{{ row.changed_by }}</td>
-              <td>{{ row.old_status || 'N/A' }}</td>
-              <td>{{ row.new_status }}</td>
-              <td>{{ row.notes || 'N/A' }}</td>
-              <td>{{ row.created_at }}</td>
+              <td data-label="Assessment">#{{ row.accessment_id }}</td>
+              <td data-label="Changed By">{{ row.changed_by }}</td>
+              <td data-label="Old Status">{{ row.old_status || 'N/A' }}</td>
+              <td data-label="New Status">{{ row.new_status }}</td>
+              <td data-label="Notes">{{ row.notes || 'N/A' }}</td>
+              <td data-label="Created At">{{ row.created_at }}</td>
             </tr>
           </tbody>
         </table>

@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink } from 'vue-router';
+import MobileDataCardList from '../../components/MobileDataCardList.vue';
 import PageHeader from '../../components/superAdmin/PageHeader.vue';
 import api, { extractApiError, unwrapResponse } from '../../services/api.js';
 import { useSessionStore } from '../../stores/session.js';
@@ -59,6 +60,18 @@ const auditPagination = reactive({
   limit: 50,
   offset: 0
 });
+const organizationCardFields = [
+  { key: 'organization', label: 'Organization' },
+  { key: 'status', label: 'Status' },
+  { key: 'complaints', label: 'Complaints' }
+];
+const auditCardFields = [
+  { key: 'time', label: 'Time' },
+  { key: 'actor', label: 'Actor' },
+  { key: 'action', label: 'Action' },
+  { key: 'target', label: 'Target' },
+  { key: 'metadata', label: 'Metadata' }
+];
 
 const ensureSuccess = (payload, fallbackMessage) => {
   if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
@@ -565,8 +578,39 @@ onMounted(syncAccountEmail);
             No organizations found.
           </div>
 
-          <div v-else class="mt-4 app-table-shell overflow-x-auto">
-            <table class="app-table min-w-full">
+          <MobileDataCardList
+            v-else
+            :items="organizations"
+            :fields="organizationCardFields"
+            key-field="organization_id"
+          >
+            <template #field-organization="{ item }">
+              <div class="min-w-0">
+                <p class="break-words font-semibold text-[var(--app-title-color)]">{{ item.name }}</p>
+                <p class="mt-1 break-all text-xs text-[var(--app-muted-color)]">{{ item.email }}</p>
+              </div>
+            </template>
+            <template #field-status="{ item }">
+              <span :class="item.status === 'active' ? 'app-badge app-badge-success' : 'app-badge app-badge-danger'">
+                {{ item.status || 'inactive' }}
+              </span>
+            </template>
+            <template #field-complaints="{ item }">
+              <p class="font-medium text-[var(--app-title-color)]">{{ item.complaints_count ?? 0 }}</p>
+            </template>
+            <template #actions="{ item }">
+              <button
+                class="app-btn-secondary min-h-[32px] px-3 py-1 text-xs"
+                :disabled="orgActionId === item.organization_id"
+                @click="toggleOrganizationStatus(item)"
+              >
+                {{ item.status === 'active' ? 'Suspend' : 'Activate' }}
+              </button>
+            </template>
+          </MobileDataCardList>
+
+          <div v-if="organizations.length > 0" class="hidden md:block mt-4 app-table-shell overflow-x-auto">
+            <table class="app-table app-table-responsive min-w-full">
               <thead>
                 <tr>
                   <th>Organization</th>
@@ -577,17 +621,17 @@ onMounted(syncAccountEmail);
               </thead>
               <tbody>
                 <tr v-for="org in organizations" :key="org.organization_id">
-                  <td>
+                  <td data-label="Organization">
                     <p class="font-semibold text-[var(--app-title-color)]">{{ org.name }}</p>
                     <p class="text-xs text-[var(--app-muted-color)]">{{ org.email }}</p>
                   </td>
-                  <td>
+                  <td data-label="Status">
                     <span :class="org.status === 'active' ? 'app-badge app-badge-success' : 'app-badge app-badge-danger'">
                       {{ org.status || 'inactive' }}
                     </span>
                   </td>
-                  <td>{{ org.complaints_count ?? 0 }}</td>
-                  <td>
+                  <td data-label="Complaints">{{ org.complaints_count ?? 0 }}</td>
+                  <td data-label="Actions" data-actions="true">
                     <button
                       class="app-btn-secondary min-h-[32px] px-3 py-1 text-xs"
                       :disabled="orgActionId === org.organization_id"
@@ -644,8 +688,31 @@ onMounted(syncAccountEmail);
           <p v-if="auditError" class="mt-3 text-sm text-red-600">{{ auditError }}</p>
           <div v-if="auditLoading" class="mt-3 text-sm text-[var(--app-muted-color)]">Loading audit logs...</div>
 
-          <div v-else class="mt-4 app-table-shell overflow-x-auto">
-            <table class="app-table min-w-full">
+          <MobileDataCardList
+            v-else
+            :items="auditRows"
+            :fields="auditCardFields"
+            key-field="id"
+          >
+            <template #field-time="{ item }">
+              <p class="break-words font-medium text-[var(--app-title-color)]">{{ item.created_at }}</p>
+            </template>
+            <template #field-actor="{ item }">
+              <p class="font-medium text-[var(--app-title-color)]">{{ item.actor_role || 'system' }}</p>
+            </template>
+            <template #field-action="{ item }">
+              <p class="font-semibold text-[var(--app-title-color)]">{{ item.action }}</p>
+            </template>
+            <template #field-target="{ item }">
+              <p class="break-words font-medium text-[var(--app-title-color)]">{{ item.target_table }}<span v-if="item.target_id"> #{{ item.target_id }}</span></p>
+            </template>
+            <template #field-metadata="{ item }">
+              <p class="break-words text-xs text-[var(--app-muted-color)]">{{ formatAuditMetadata(item.metadata) }}</p>
+            </template>
+          </MobileDataCardList>
+
+          <div v-if="auditRows.length > 0" class="hidden md:block mt-4 app-table-shell overflow-x-auto">
+            <table class="app-table app-table-responsive min-w-full">
               <thead>
                 <tr>
                   <th>Time</th>
@@ -660,13 +727,13 @@ onMounted(syncAccountEmail);
                   <td colspan="5" class="text-sm text-[var(--app-muted-color)]">No audit logs found.</td>
                 </tr>
                 <tr v-for="log in auditRows" :key="log.id">
-                  <td class="text-xs text-[var(--app-muted-color)]">{{ log.created_at }}</td>
-                  <td class="text-sm text-[var(--app-text-color)]">{{ log.actor_role || 'system' }}</td>
-                  <td class="text-sm font-semibold text-[var(--app-title-color)]">{{ log.action }}</td>
-                  <td class="text-sm text-[var(--app-text-color)]">
+                  <td data-label="Time" class="text-xs text-[var(--app-muted-color)]">{{ log.created_at }}</td>
+                  <td data-label="Actor" class="text-sm text-[var(--app-text-color)]">{{ log.actor_role || 'system' }}</td>
+                  <td data-label="Action" class="text-sm font-semibold text-[var(--app-title-color)]">{{ log.action }}</td>
+                  <td data-label="Target" class="text-sm text-[var(--app-text-color)]">
                     {{ log.target_table }}<span v-if="log.target_id"> #{{ log.target_id }}</span>
                   </td>
-                  <td class="text-xs text-[var(--app-muted-color)]">{{ formatAuditMetadata(log.metadata) }}</td>
+                  <td data-label="Metadata" class="text-xs text-[var(--app-muted-color)]">{{ formatAuditMetadata(log.metadata) }}</td>
                 </tr>
               </tbody>
             </table>

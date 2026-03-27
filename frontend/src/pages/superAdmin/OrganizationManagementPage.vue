@@ -9,6 +9,7 @@ import {
   faXmark
 } from '@fortawesome/free-solid-svg-icons';
 import api, { extractApiError, unwrapResponse } from '../../services/api';
+import MobileDataCardList from '../../components/MobileDataCardList.vue';
 import OrganizationCreateForm from '../../components/OrganizationCreateForm.vue';
 import PageHeader from '../../components/superAdmin/PageHeader.vue';
 
@@ -193,6 +194,13 @@ const filteredOrganizations = computed(() => {
     String(row.email || '').toLowerCase().includes(keyword)
   ));
 });
+const organizationCardFields = [
+  { key: 'name', label: 'Name' },
+  { key: 'type', label: 'Type' },
+  { key: 'email', label: 'Email' },
+  { key: 'admin', label: 'Org Admin' },
+  { key: 'status', label: 'Status' }
+];
 
 const managementSummary = computed(() => {
   const active = organizations.value.filter((row) => String(row.status).toLowerCase() === 'active').length;
@@ -279,8 +287,69 @@ onMounted(fetchOrganizations);
       <p v-else-if="error" class="mt-4 text-sm text-red-600">{{ error }}</p>
       <p v-else-if="filteredOrganizations.length === 0" class="mt-4 text-sm text-slate-500">No organizations found.</p>
 
-      <div v-else class="mt-4 overflow-x-auto rounded-xl border border-slate-200">
-        <table class="min-w-full text-left text-sm">
+      <MobileDataCardList
+        v-else
+        :items="filteredOrganizations"
+        :fields="organizationCardFields"
+        key-field="organization_id"
+      >
+        <template #field-name="{ item }">
+          <p class="break-words font-semibold text-[var(--app-title-color)]">{{ item.name }}</p>
+        </template>
+        <template #field-type="{ item }">
+          <p class="font-medium text-[var(--app-title-color)]">{{ item.organization_type }}</p>
+        </template>
+        <template #field-email="{ item }">
+          <p class="break-all font-medium text-[var(--app-title-color)]">{{ item.email }}</p>
+        </template>
+        <template #field-admin="{ item }">
+          <div class="space-y-1">
+            <p class="break-words font-medium text-[var(--app-title-color)]">{{ item.organization_admin?.full_name || 'Not assigned' }}</p>
+            <p v-if="item.organization_admin?.email" class="break-all text-xs text-[var(--app-muted-color)]">{{ item.organization_admin.email }}</p>
+          </div>
+        </template>
+        <template #field-status="{ item }">
+          <span
+            class="inline-flex rounded-lg px-2.5 py-1 text-xs font-medium"
+            :class="String(item.status).toLowerCase() === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700'"
+          >
+            {{ item.status }}
+          </span>
+        </template>
+        <template #actions="{ item }">
+          <div class="flex flex-col gap-2 min-[420px]:flex-row min-[420px]:flex-wrap min-[420px]:items-center">
+            <button
+              type="button"
+              class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+              title="View details"
+              aria-label="View organization details"
+              @click="router.push(`/admin/organizations/${item.organization_id}`)"
+            >
+              <font-awesome-icon :icon="faCircleInfo" class="text-sm" />
+              <span>View</span>
+            </button>
+            <button
+              type="button"
+              class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+              @click="startEdit(item)"
+            >
+              <font-awesome-icon :icon="faPenToSquare" class="text-sm" />
+              <span>Edit</span>
+            </button>
+            <button
+              type="button"
+              class="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-100"
+              @click="deleteOrganization(item)"
+            >
+              <font-awesome-icon :icon="faTrashCan" class="text-sm" />
+              <span>Delete</span>
+            </button>
+          </div>
+        </template>
+      </MobileDataCardList>
+
+      <div v-if="filteredOrganizations.length > 0" class="hidden md:block mt-4 app-table-shell overflow-x-auto rounded-xl border border-slate-200">
+        <table class="app-table app-table-responsive min-w-full text-left text-sm">
           <thead class="bg-slate-50 text-slate-500">
             <tr>
               <th class="px-4 py-3 font-medium">Name</th>
@@ -294,23 +363,23 @@ onMounted(fetchOrganizations);
           <tbody>
             <tr v-for="row in filteredOrganizations" :key="row.organization_id" class="border-t border-slate-200 align-top text-slate-700 first:border-t-0">
               <template v-if="Number(editingId) === Number(row.organization_id)">
-                <td class="px-4 py-3">
+                <td data-label="Name" class="px-4 py-3">
                   <input v-model="editForm.name" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500">
                 </td>
-                <td class="px-4 py-3">
+                <td data-label="Type" class="px-4 py-3">
                   <input v-model="editForm.organization_type" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500">
                 </td>
-                <td class="px-4 py-3">
+                <td data-label="Email" class="px-4 py-3">
                   <input v-model="editForm.email" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500">
                 </td>
-                <td class="px-4 py-3">{{ row.organization_admin?.full_name || 'Not assigned' }}</td>
-                <td class="px-4 py-3">
+                <td data-label="Org Admin" class="px-4 py-3">{{ row.organization_admin?.full_name || 'Not assigned' }}</td>
+                <td data-label="Status" class="px-4 py-3">
                   <select v-model="editForm.status" class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500">
                     <option value="active">active</option>
                     <option value="inactive">inactive</option>
                   </select>
                 </td>
-                <td class="px-4 py-3">
+                <td data-label="Actions" data-actions="true" class="px-4 py-3">
                   <div class="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
@@ -333,11 +402,11 @@ onMounted(fetchOrganizations);
                 </td>
               </template>
               <template v-else>
-                <td class="px-4 py-3 font-medium text-slate-900">{{ row.name }}</td>
-                <td class="px-4 py-3">{{ row.organization_type }}</td>
-                <td class="px-4 py-3">{{ row.email }}</td>
-                <td class="px-4 py-3">{{ row.organization_admin?.full_name || 'Not assigned' }}</td>
-                <td class="px-4 py-3">
+                <td data-label="Name" class="px-4 py-3 font-medium text-slate-900">{{ row.name }}</td>
+                <td data-label="Type" class="px-4 py-3">{{ row.organization_type }}</td>
+                <td data-label="Email" class="px-4 py-3">{{ row.email }}</td>
+                <td data-label="Org Admin" class="px-4 py-3">{{ row.organization_admin?.full_name || 'Not assigned' }}</td>
+                <td data-label="Status" class="px-4 py-3">
                   <span
                     class="inline-flex rounded-lg px-2.5 py-1 text-xs font-medium"
                     :class="String(row.status).toLowerCase() === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700'"
@@ -345,7 +414,7 @@ onMounted(fetchOrganizations);
                     {{ row.status }}
                   </span>
                 </td>
-                <td class="px-4 py-3">
+                <td data-label="Actions" data-actions="true" class="px-4 py-3">
                   <div class="flex flex-wrap items-center gap-2">
                     <button
                       type="button"

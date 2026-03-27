@@ -5,6 +5,7 @@ import api, { extractApiError, unwrapResponse } from '../../services/api';
 import AnalyticsBarChart from '../../components/superAdmin/AnalyticsBarChart.vue';
 import AnalyticsDonutChart from '../../components/superAdmin/AnalyticsDonutChart.vue';
 import AnalyticsLineChart from '../../components/superAdmin/AnalyticsLineChart.vue';
+import MobileDataCardList from '../../components/MobileDataCardList.vue';
 import PageHeader from '../../components/superAdmin/PageHeader.vue';
 import { useSessionStore } from '../../stores/session';
 
@@ -307,6 +308,13 @@ const recentActivity = computed(() => {
 });
 
 const recentComplaints = computed(() => complaintsSorted.value.slice(0, 8));
+const recentComplaintCardFields = [
+  { key: 'complaint', label: 'Complaint' },
+  { key: 'department', label: 'Department' },
+  { key: 'priority', label: 'Priority' },
+  { key: 'status', label: 'Status' },
+  { key: 'updated', label: 'Updated' }
+];
 
 const recentUsers = computed(() =>
   [...users.value]
@@ -575,8 +583,41 @@ onUnmounted(() => {
             </RouterLink>
           </div>
 
-          <div v-if="recentComplaints.length" class="app-table-shell overflow-x-auto">
-            <table class="app-table min-w-full">
+          <MobileDataCardList
+            v-if="recentComplaints.length"
+            :items="recentComplaints"
+            :fields="recentComplaintCardFields"
+            key-field="id"
+          >
+            <template #field-complaint="{ item }">
+              <div class="min-w-0">
+                <p class="break-words font-semibold text-[var(--app-title-color)]">{{ item.title || 'Untitled Complaint' }}</p>
+                <p class="mt-1 text-xs text-[var(--app-muted-color)]">Tracking: {{ item.tracking_code || 'N/A' }}</p>
+              </div>
+            </template>
+            <template #field-department="{ item }">
+              <p class="break-words font-medium text-[var(--app-title-color)]">{{ item.department_name || 'Unassigned' }}</p>
+            </template>
+            <template #field-priority="{ item }">
+              <p class="font-medium text-[var(--app-title-color)]">{{ item.priority || 'medium' }}</p>
+            </template>
+            <template #field-status="{ item }">
+              <span :class="complaintStatusBadgeClass(item.status)">
+                {{ item.status || 'submitted' }}
+              </span>
+            </template>
+            <template #field-updated="{ item }">
+              <p class="font-medium text-[var(--app-title-color)]">{{ toShortDate(item.updated_at || item.reviewed_at || item.created_at) }}</p>
+            </template>
+            <template #actions="{ item }">
+              <RouterLink :to="`/org-admin/complaints/${item.id}`" class="app-btn-secondary min-h-[36px] px-3 py-1.5 text-xs">
+                Open
+              </RouterLink>
+            </template>
+          </MobileDataCardList>
+
+          <div v-if="recentComplaints.length" class="hidden md:block app-table-shell overflow-x-auto">
+            <table class="app-table app-table-responsive min-w-full">
               <thead>
                 <tr>
                   <th>Complaint</th>
@@ -589,21 +630,21 @@ onUnmounted(() => {
               </thead>
               <tbody>
                 <tr v-for="row in recentComplaints" :key="row.id">
-                  <td>
+                  <td data-label="Complaint">
                     <div class="min-w-[220px]">
                       <p class="font-semibold text-[var(--app-title-color)]">{{ row.title || 'Untitled Complaint' }}</p>
                       <p class="text-xs text-[var(--app-muted-color)]">Tracking: {{ row.tracking_code || 'N/A' }}</p>
                     </div>
                   </td>
-                  <td>{{ row.department_name || 'Unassigned' }}</td>
-                  <td>{{ row.priority || 'medium' }}</td>
-                  <td>
+                  <td data-label="Department">{{ row.department_name || 'Unassigned' }}</td>
+                  <td data-label="Priority">{{ row.priority || 'medium' }}</td>
+                  <td data-label="Status">
                     <span :class="complaintStatusBadgeClass(row.status)">
                       {{ row.status || 'submitted' }}
                     </span>
                   </td>
-                  <td>{{ toShortDate(row.updated_at || row.reviewed_at || row.created_at) }}</td>
-                  <td>
+                  <td data-label="Updated">{{ toShortDate(row.updated_at || row.reviewed_at || row.created_at) }}</td>
+                  <td data-label="Actions" data-actions="true">
                     <RouterLink :to="`/org-admin/complaints/${row.id}`" class="app-btn-secondary min-h-[36px] px-3 py-1.5 text-xs">
                       Open
                     </RouterLink>

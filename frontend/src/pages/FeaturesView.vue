@@ -1,11 +1,10 @@
 <script setup>
 import { RouterLink } from 'vue-router';
 import AuthTopNav from '../components/AuthTopNav.vue';
-import AppFooter from '../components/AppFooter.vue';
 </script>
 
 <template>
-  <div class="page-root flex min-h-screen w-screen flex-col">
+  <div class="page-root flex min-h-screen w-full flex-col">
     <AuthTopNav fixed />
 
  <!-- Hero Section -->
@@ -133,8 +132,6 @@ import AppFooter from '../components/AppFooter.vue';
         </div>
       </div>
     </main>
-    <AppFooter />
-
   </div>
 </template>
 

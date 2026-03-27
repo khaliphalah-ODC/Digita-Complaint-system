@@ -1,7 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import AppFooter from '../components/AppFooter.vue';
 import AuthTopNav from '../components/AuthTopNav.vue';
 import GoogleAuthButton from '../components/GoogleAuthButton.vue';
 import { socialLinks } from '../config/socialLinks';
@@ -11,6 +10,11 @@ import api, { extractApiError, unwrapResponse } from '../services/api.js';
 const router = useRouter();
 const route = useRoute();
 const session = useSessionStore();
+const googleClientId = String(import.meta.env.VITE_GOOGLE_CLIENT_ID || '').trim();
+const showGoogleAuth = computed(() => (
+  Boolean(googleClientId) &&
+  googleClientId !== 'your-google-client-id.apps.googleusercontent.com'
+));
 
 const signUpForm = reactive({
   full_name: '',
@@ -325,7 +329,7 @@ onMounted(() => {
                   {{ session.loadingRegister ? 'Creating account...' : 'Sign Up' }}
                 </button>
 
-                <div class="mt-5">
+                <div v-if="showGoogleAuth" class="mt-5">
                   <p class="app-auth-meta mb-3 text-center text-sm">Or continue with Google</p>
                   <GoogleAuthButton text="signup_with" @credential="submitGoogle" />
                 </div>
@@ -353,6 +357,5 @@ onMounted(() => {
         </div>
       </div>
     </div>
-    <AppFooter />
   </div>
 </template>

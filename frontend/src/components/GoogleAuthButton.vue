@@ -10,7 +10,10 @@ const props = defineProps({
 
 const emit = defineEmits(['credential', 'error']);
 
-const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+const rawGoogleClientId = String(import.meta.env.VITE_GOOGLE_CLIENT_ID || '').trim();
+const googleClientId = rawGoogleClientId && rawGoogleClientId !== 'your-google-client-id.apps.googleusercontent.com'
+  ? rawGoogleClientId
+  : '';
 const buttonHost = ref(null);
 let pollHandle = null;
 
@@ -73,8 +76,5 @@ onBeforeUnmount(() => {
 <template>
   <div class="text-center">
     <div v-if="googleClientId" ref="buttonHost" class="flex justify-center"></div>
-    <p v-else class="text-sm text-[#b9b4d1]">
-      Google sign-in is not configured yet.
-    </p>
   </div>
 </template>

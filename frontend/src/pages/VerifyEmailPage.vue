@@ -1,7 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import AppFooter from '../components/AppFooter.vue';
 import AuthTopNav from '../components/AuthTopNav.vue';
 import api, { extractApiError } from '../services/api';
 
@@ -135,6 +134,5 @@ onMounted(() => {
         </div>
       </div>
     </div>
-    <AppFooter />
   </div>
 </template>

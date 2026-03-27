@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
 import api, { extractApiError, unwrapResponse } from '../../services/api';
+import MobileDataCardList from '../../components/MobileDataCardList.vue';
 import { useUiToastStore } from '../../stores/uiToast';
 import { useSessionStore } from '../../stores/session';
 
@@ -25,7 +26,7 @@ const selectClass = computed(() => (isOrgAdmin.value ? 'org-admin-select' : 'rou
 const refreshButtonClass = computed(() => (isOrgAdmin.value ? 'org-admin-outline-btn' : 'rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700'));
 const primaryButtonClass = computed(() => (isOrgAdmin.value ? 'org-admin-btn disabled:opacity-70' : 'rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white'));
 const secondaryButtonClass = computed(() => (isOrgAdmin.value ? 'org-admin-outline-btn' : 'rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700'));
-const tableClass = computed(() => (isOrgAdmin.value ? 'org-admin-table min-w-full text-left text-sm' : 'min-w-full text-left text-sm'));
+const tableClass = computed(() => (isOrgAdmin.value ? 'org-admin-table org-admin-table-responsive min-w-full text-left text-sm' : 'app-table-responsive min-w-full text-left text-sm'));
 const tableHeadClass = computed(() => (isOrgAdmin.value ? 'text-white/60' : 'text-slate-500'));
 const tableRowClass = computed(() => (isOrgAdmin.value ? 'border-t border-white/10' : 'border-t border-slate-100'));
 const infoTextClass = computed(() => (isOrgAdmin.value ? 'text-sm text-white/70' : 'text-sm text-slate-500'));
@@ -168,6 +169,14 @@ const paginatedNotifications = computed(() => {
   const start = (currentPage.value - 1) * pageSize;
   return filteredNotifications.value.slice(start, start + pageSize);
 });
+const mobileCardFields = [
+  { key: 'id', label: 'ID' },
+  { key: 'type', label: 'Type' },
+  { key: 'message', label: 'Message' },
+  { key: 'user', label: 'User' },
+  { key: 'complaint', label: 'Complaint' },
+  { key: 'status', label: 'Status' }
+];
 const goToPage = (nextPage) => {
   page.value = Math.min(Math.max(1, nextPage), totalPages.value);
 };
@@ -244,7 +253,45 @@ onMounted(fetchNotifications);
       <p v-if="loading" :class="infoTextClass">Loading notifications...</p>
       <p v-else-if="filteredNotifications.length === 0" :class="infoTextClass">No notifications found.</p>
 
-      <div v-else class="-mx-1 overflow-x-auto pb-1">
+      <MobileDataCardList
+        v-else
+        :items="paginatedNotifications"
+        :fields="mobileCardFields"
+        key-field="id"
+      >
+        <template #field-id="{ item }">
+          <p class="font-medium text-[var(--app-title-color)]">#{{ item.id }}</p>
+        </template>
+        <template #field-type="{ item }">
+          <p class="font-medium text-[var(--app-title-color)]">{{ item.type }}</p>
+        </template>
+        <template #field-message="{ item }">
+          <p class="break-words font-medium text-[var(--app-title-color)]">{{ item.message }}</p>
+        </template>
+        <template #field-user="{ item }">
+          <p class="break-words font-medium text-[var(--app-title-color)]">{{ userNameById.get(Number(item.user_id)) || item.user_id || 'All users' }}</p>
+        </template>
+        <template #field-complaint="{ item }">
+          <p class="break-words font-medium text-[var(--app-title-color)]">{{ complaintTitleById.get(Number(item.complaint_id)) || item.complaint_id || 'N/A' }}</p>
+        </template>
+        <template #field-status="{ item }">
+          <p class="font-medium text-[var(--app-title-color)]">{{ Number(item.is_read) === 1 ? 'read' : 'unread' }}</p>
+        </template>
+        <template #actions="{ item }">
+          <div class="app-action-row flex flex-wrap gap-2">
+            <button
+              v-if="Number(item.is_read) === 0"
+              :class="successActionClass"
+              @click="markAsRead(item)"
+            >
+              Mark Read
+            </button>
+            <button :class="deleteButtonClass" @click="deleteNotification(item)">Delete</button>
+          </div>
+        </template>
+      </MobileDataCardList>
+
+      <div v-if="filteredNotifications.length > 0" class="hidden md:block app-table-shell overflow-x-auto pb-1">
         <table :class="tableClass">
           <thead :class="tableHeadClass">
             <tr>
@@ -259,13 +306,13 @@ onMounted(fetchNotifications);
           </thead>
           <tbody>
             <tr v-for="row in paginatedNotifications" :key="row.id" :class="tableRowClass">
-              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white' : ''">#{{ row.id }}</td>
-              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.type }}</td>
-              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.message }}</td>
-              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ userNameById.get(Number(row.user_id)) || row.user_id || 'All users' }}</td>
-              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ complaintTitleById.get(Number(row.complaint_id)) || row.complaint_id || 'N/A' }}</td>
-              <td class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ Number(row.is_read) === 1 ? 'read' : 'unread' }}</td>
-              <td class="py-2">
+              <td data-label="ID" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white' : ''">#{{ row.id }}</td>
+              <td data-label="Type" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.type }}</td>
+              <td data-label="Message" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.message }}</td>
+              <td data-label="User" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ userNameById.get(Number(row.user_id)) || row.user_id || 'All users' }}</td>
+              <td data-label="Complaint" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ complaintTitleById.get(Number(row.complaint_id)) || row.complaint_id || 'N/A' }}</td>
+              <td data-label="Status" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ Number(row.is_read) === 1 ? 'read' : 'unread' }}</td>
+              <td data-label="Actions" data-actions="true" class="py-2">
                 <div class="app-action-row flex flex-wrap gap-2">
                   <button
                     v-if="Number(row.is_read) === 0"

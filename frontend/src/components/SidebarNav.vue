@@ -37,6 +37,23 @@ const workspaceLabel = computed(() => {
   if (isOrganizationMemberUser.value) return 'Organization User';
   return 'Public User';
 });
+const userDisplayName = computed(() => session.currentUser?.full_name || 'User Account');
+const userEmail = computed(() => session.currentUser?.email || '');
+const userInitials = computed(() => {
+  if (!session.currentUser?.full_name) return 'U';
+  return session.currentUser.full_name
+    .split(' ')
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || '')
+    .join('');
+});
+const profileAvatar = computed(() => (
+  session.currentUser?.avatar_url ||
+  session.currentUser?.avatar ||
+  session.currentUser?.profile_image ||
+  session.currentUser?.photo_url ||
+  ''
+));
 
 const asideClass = computed(() => {
   if (props.mobile) {
@@ -110,10 +127,35 @@ const userLinks = computed(() => {
     <!-- SUPER ADMIN -->
     <template v-if="isSuperAdmin">
       <template v-if="mobile">
-        <div>
+        <div class="rounded-[22px] border border-[var(--app-line)] bg-white/88 p-4 shadow-[var(--app-shadow-xs)]">
           <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--app-primary)]">Civic Console</p>
           <p class="mt-2 text-[1.8rem] font-black tracking-tight text-[var(--app-title-color)]">Complaint MS</p>
           <p class="mt-1 text-sm text-[var(--app-nav-text-muted)]">{{ workspaceLabel }}</p>
+
+          <div class="mt-4 flex items-center gap-3 rounded-[18px] border border-[var(--app-line)] bg-[var(--app-surface-soft)] px-3 py-3">
+            <img
+              v-if="profileAvatar"
+              :src="profileAvatar"
+              alt="User avatar"
+              class="h-11 w-11 rounded-full border border-[var(--app-line)] object-cover"
+            >
+            <div
+              v-else
+              class="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--app-primary)] text-sm font-bold text-white"
+            >
+              {{ userInitials }}
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-semibold text-[var(--app-title-color)]">{{ userDisplayName }}</p>
+              <p class="truncate text-xs text-[var(--app-nav-text-muted)]">{{ userEmail || workspaceLabel }}</p>
+            </div>
+            <button
+              class="inline-flex min-h-[36px] items-center rounded-full border border-[var(--app-nav-border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--app-nav-text)] shadow-[var(--app-shadow-xs)] hover:bg-[var(--app-nav-hover)]"
+              @click="handleLogout"
+            >
+              Logout
+            </button>
+          </div>
         </div>
 
         <nav class="mt-6 space-y-1.5 pb-6">
@@ -129,13 +171,6 @@ const userLinks = computed(() => {
           </RouterLink>
         </nav>
 
-        <button
-          class="app-nav-link mt-auto flex min-h-[46px] w-full items-center gap-3 border border-[var(--app-nav-border)] bg-[var(--app-nav-surface-strong)] px-4 py-3 text-left hover:bg-[var(--app-nav-hover)]"
-          @click="handleLogout"
-        >
-          <font-awesome-icon :icon="['fas', 'right-from-bracket']" />
-          <span>Logout</span>
-        </button>
       </template>
 
       <template v-else>
@@ -171,10 +206,35 @@ const userLinks = computed(() => {
     <!-- ORG ADMIN -->
     <template v-else-if="isOrgAdmin">
       <template v-if="mobile">
-        <div>
+        <div class="rounded-[22px] border border-[var(--app-line)] bg-white/88 p-4 shadow-[var(--app-shadow-xs)]">
           <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--app-primary)]">Civic Console</p>
           <p class="mt-2 text-[1.8rem] font-black tracking-tight text-[var(--app-title-color)]">Complaint MS</p>
           <p class="mt-1 text-sm text-[var(--app-nav-text-muted)]">{{ workspaceLabel }}</p>
+
+          <div class="mt-4 flex items-center gap-3 rounded-[18px] border border-[var(--app-line)] bg-[var(--app-surface-soft)] px-3 py-3">
+            <img
+              v-if="profileAvatar"
+              :src="profileAvatar"
+              alt="User avatar"
+              class="h-11 w-11 rounded-full border border-[var(--app-line)] object-cover"
+            >
+            <div
+              v-else
+              class="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--app-primary)] text-sm font-bold text-white"
+            >
+              {{ userInitials }}
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-semibold text-[var(--app-title-color)]">{{ userDisplayName }}</p>
+              <p class="truncate text-xs text-[var(--app-nav-text-muted)]">{{ userEmail || workspaceLabel }}</p>
+            </div>
+            <button
+              class="inline-flex min-h-[36px] items-center rounded-full border border-[var(--app-nav-border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--app-nav-text)] shadow-[var(--app-shadow-xs)] hover:bg-[var(--app-nav-hover)]"
+              @click="handleLogout"
+            >
+              Logout
+            </button>
+          </div>
         </div>
 
         <nav class="mt-6 space-y-1.5 pb-6">
@@ -190,13 +250,6 @@ const userLinks = computed(() => {
           </RouterLink>
         </nav>
 
-        <button
-          class="app-nav-link mt-auto flex min-h-[46px] w-full items-center gap-3 border border-[var(--app-nav-border)] bg-[var(--app-nav-surface-strong)] px-4 py-3 text-left hover:bg-[var(--app-nav-hover)]"
-          @click="handleLogout"
-        >
-          <font-awesome-icon :icon="['fas', 'right-from-bracket']" />
-          <span>Logout</span>
-        </button>
       </template>
 
       <template v-else>
@@ -232,10 +285,35 @@ const userLinks = computed(() => {
     <!-- USER -->
     <template v-else>
       <template v-if="mobile">
-        <div>
+        <div class="rounded-[22px] border border-[var(--app-line)] bg-white/88 p-4 shadow-[var(--app-shadow-xs)]">
           <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--app-primary)]">Civic Console</p>
           <p class="mt-2 text-[1.8rem] font-black tracking-tight text-slate-900">Complaint MS</p>
           <p class="mt-1 text-sm text-slate-600">{{ workspaceLabel }}</p>
+
+          <div class="mt-4 flex items-center gap-3 rounded-[18px] border border-[var(--app-line)] bg-[var(--app-surface-soft)] px-3 py-3">
+            <img
+              v-if="profileAvatar"
+              :src="profileAvatar"
+              alt="User avatar"
+              class="h-11 w-11 rounded-full border border-[var(--app-line)] object-cover"
+            >
+            <div
+              v-else
+              class="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--app-primary)] text-sm font-bold text-white"
+            >
+              {{ userInitials }}
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-semibold text-[var(--app-title-color)]">{{ userDisplayName }}</p>
+              <p class="truncate text-xs text-[var(--app-nav-text-muted)]">{{ userEmail || workspaceLabel }}</p>
+            </div>
+            <button
+              class="inline-flex min-h-[36px] items-center rounded-full border border-[var(--app-nav-border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--app-nav-text)] shadow-[var(--app-shadow-xs)] hover:bg-[var(--app-nav-hover)]"
+              @click="handleLogout"
+            >
+              Logout
+            </button>
+          </div>
         </div>
 
         <nav class="mt-6 space-y-1.5 pb-6">
@@ -259,13 +337,6 @@ const userLinks = computed(() => {
           </RouterLink>
         </nav>
 
-        <button
-          class="app-nav-link mt-auto flex min-h-[46px] w-full items-center gap-3 border border-[var(--app-nav-border)] bg-[var(--app-nav-surface-strong)] px-4 py-3 text-left hover:bg-[var(--app-nav-hover)]"
-          @click="handleLogout"
-        >
-          <font-awesome-icon :icon="['fas', 'right-from-bracket']" />
-          <span>Logout</span>
-        </button>
       </template>
 
       <template v-else>

@@ -1,7 +1,6 @@
 <script setup>
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import AppFooter from '../components/AppFooter.vue';
 import AuthTopNav from '../components/AuthTopNav.vue';
 import { useSessionStore } from '../stores/session';
 
@@ -220,6 +219,5 @@ const submit = async () => {
         </div>
       </div>
     </div>
-    <AppFooter />
   </div>
 </template>

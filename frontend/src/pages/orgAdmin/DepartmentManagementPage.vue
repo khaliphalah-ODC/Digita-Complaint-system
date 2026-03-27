@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api, { extractApiError, unwrapResponse } from '../../services/api';
+import MobileDataCardList from '../../components/MobileDataCardList.vue';
 import PageHeader from '../../components/superAdmin/PageHeader.vue';
 import { useUiToastStore } from '../../stores/uiToast';
 import { useSessionStore } from '../../stores/session';
@@ -142,6 +143,12 @@ const paginatedDepartments = computed(() => {
   const start = (currentPage.value - 1) * pageSize;
   return filteredDepartments.value.slice(start, start + pageSize);
 });
+const mobileCardFields = [
+  { key: 'name', label: 'Name' },
+  { key: 'organization', label: 'Organization' },
+  { key: 'assessment', label: 'Assessment' },
+  { key: 'created', label: 'Created' }
+];
 
 const goToPage = (nextPage) => {
   page.value = Math.min(Math.max(1, nextPage), totalPages.value);
@@ -277,8 +284,34 @@ onMounted(async () => {
           <p v-if="loading" class="text-sm text-[var(--app-muted-color)]">Loading departments...</p>
           <p v-else-if="filteredDepartments.length === 0" class="app-empty-state">No departments match the current search.</p>
 
-          <div v-else class="app-table-shell overflow-x-auto">
-            <table class="app-table min-w-full">
+          <MobileDataCardList
+            v-else
+            :items="paginatedDepartments"
+            :fields="mobileCardFields"
+            key-field="id"
+          >
+            <template #field-name="{ item }">
+              <p class="break-words font-semibold text-[var(--app-title-color)]">{{ item.name }}</p>
+            </template>
+            <template #field-organization="{ item }">
+              <p class="break-words font-medium text-[var(--app-title-color)]">{{ organizationNameById.get(Number(item.organization_id)) || item.organization_id }}</p>
+            </template>
+            <template #field-assessment="{ item }">
+              <p class="font-medium text-[var(--app-title-color)]">{{ item.accessment_id ?? 'N/A' }}</p>
+            </template>
+            <template #field-created="{ item }">
+              <p class="break-words font-medium text-[var(--app-title-color)]">{{ item.created_at }}</p>
+            </template>
+            <template #actions="{ item }">
+              <div class="app-action-row flex flex-wrap gap-2">
+                <button class="app-btn-secondary min-h-[36px] px-3 py-1.5 text-xs" @click="startEdit(item)">Edit</button>
+                <button class="app-btn-danger min-h-[36px] px-3 py-1.5 text-xs" @click="deleteDepartment(item)">Delete</button>
+              </div>
+            </template>
+          </MobileDataCardList>
+
+          <div v-if="filteredDepartments.length > 0" class="hidden md:block app-table-shell overflow-x-auto">
+            <table class="app-table app-table-responsive min-w-full">
               <thead>
                 <tr>
                   <th>Name</th>
@@ -290,11 +323,11 @@ onMounted(async () => {
               </thead>
               <tbody>
                 <tr v-for="row in paginatedDepartments" :key="row.id">
-                  <td class="font-medium text-[var(--app-title-color)]">{{ row.name }}</td>
-                  <td>{{ organizationNameById.get(Number(row.organization_id)) || row.organization_id }}</td>
-                  <td>{{ row.accessment_id ?? 'N/A' }}</td>
-                  <td>{{ row.created_at }}</td>
-                  <td>
+                  <td data-label="Name" class="font-medium text-[var(--app-title-color)]">{{ row.name }}</td>
+                  <td data-label="Organization">{{ organizationNameById.get(Number(row.organization_id)) || row.organization_id }}</td>
+                  <td data-label="Assessment">{{ row.accessment_id ?? 'N/A' }}</td>
+                  <td data-label="Created">{{ row.created_at }}</td>
+                  <td data-label="Actions" data-actions="true">
                     <div class="app-action-row flex flex-wrap gap-2">
                       <button class="app-btn-secondary min-h-[36px] px-3 py-1.5 text-xs" @click="startEdit(row)">Edit</button>
                       <button class="app-btn-danger min-h-[36px] px-3 py-1.5 text-xs" @click="deleteDepartment(row)">Delete</button>

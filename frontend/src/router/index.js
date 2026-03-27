@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import MainLayout from '../layouts/MainLayout.vue';
+import PublicLayout from '../layouts/PublicLayout.vue';
+import AdminLayout from '../layouts/AdminLayout.vue';
 import HomePage from '../pages/HomePage.vue';
 import LoginPage from '../pages/LoginPage.vue';
 import ForgotPasswordPage from '../pages/ForgotPasswordPage.vue';
@@ -32,6 +33,8 @@ import OrgAdminTestimonialManagementPage from '../pages/orgAdmin/TestimonialMana
 import SharedAuditLogsPage from '../pages/admin/shared/AuditLogsPage.vue';
 import AboutView from '../pages/AboutView.vue';
 import FeaturesPage from '../pages/FeaturesView.vue';
+import ServicesPage from '../pages/ServicesPage.vue';
+import ContactPage from '../pages/ContactPage.vue';
 import TestimonialPage from '../pages/user/TestimonialPage.vue';
 
 const readAuthClaimsFromToken = () => {
@@ -56,64 +59,78 @@ const hasOrganizationContext = (claims = {}) => Boolean(claims?.organization_id)
 const routes = [
   {
     path: '/',
-    name: 'home',
-    component: HomePage
-  },
-  {
-    path: '/about',
-    name: 'about',
-    component: AboutView
-  },
-  {
-    path: '/features',
-    name: 'features',
-    component: FeaturesPage
-  },
-  {
-    path: '/signin',
-    name: 'signin',
-    component: LoginPage,
-    meta: { guestOnly: true }
-  },
-  {
-    path: '/login',
-    name: 'login',
-    component: LoginPage,
-    meta: { guestOnly: true }
-  },
-  {
-    path: '/signup',
-    name: 'signup',
-    component: SignUpPage,
-    meta: { guestOnly: true }
-  },
-  
-  {
-  path: '/verify-email',
-    name: 'verify-email',
-    component: VerifyEmailPage,
-    meta: { guestOnly: true }
-  },
-
-  {
-    path: '/forgot-password',
-    name: 'forgot-password',
-    component: ForgotPasswordPage,
-    meta: { guestOnly: true }
+    component: PublicLayout,
+    children: [
+      {
+        path: '',
+        name: 'home',
+        component: HomePage
+      },
+      {
+        path: 'about',
+        name: 'about',
+        component: AboutView
+      },
+      {
+        path: 'features',
+        name: 'features',
+        component: FeaturesPage
+      },
+      {
+        path: 'services',
+        name: 'services',
+        component: ServicesPage
+      },
+      {
+        path: 'contact',
+        name: 'contact',
+        component: ContactPage
+      },
+      {
+        path: 'signin',
+        name: 'signin',
+        component: LoginPage,
+        meta: { guestOnly: true }
+      },
+      {
+        path: 'login',
+        name: 'login',
+        component: LoginPage,
+        meta: { guestOnly: true }
+      },
+      {
+        path: 'signup',
+        name: 'signup',
+        component: SignUpPage,
+        meta: { guestOnly: true }
+      },
+      {
+        path: 'verify-email',
+        name: 'verify-email',
+        component: VerifyEmailPage,
+        meta: { guestOnly: true }
+      },
+      {
+        path: 'forgot-password',
+        name: 'forgot-password',
+        component: ForgotPasswordPage,
+        meta: { guestOnly: true }
+      }
+    ]
   },
   {
     path: '/',
-    component: MainLayout,
+    component: AdminLayout,
     children: [
       { path: 'submit-complaint', name: 'submit-complaint', component: SubmitComplaintPage, meta: { requiresAuth: true, requiresUserOnly: true } },
-      { path: 'track-complaint', name: 'track-complaint', component: TrackComplaintPage },
+      { path: 'track-complaint', name: 'track-complaint', component: TrackComplaintPage, meta: { requiresAuth: true, requiresUserOnly: true } },
       { path: 'complaints', name: 'complaints', component: SubmitComplaintPage, meta: { requiresAuth: true, requiresUserOnly: true } },
       { path: 'complaint', redirect: '/complaints' }
     ]
   },
   {
     path: '/',
-    component: MainLayout,
+    component: AdminLayout,
     meta: { requiresAuth: true },
     children: [
       { path: 'dashboard', redirect: '/admin/dashboard' },
@@ -218,11 +235,11 @@ router.beforeEach((to) => {
   }
 
   if ((to.meta.requiresAdmin || (isAdminRoute && !to.meta.requiresAdminFamily)) && !isSuperAdminRole(role)) {
-    return isOrgAdminRole(role) ? '/org-admin/dashboard' : '/track-complaint';
+    return isOrgAdminRole(role) ? '/org-admin/dashboard' : '/signin';
   }
 
   if (to.meta.requiresAdminFamily && !isAdminFamilyRole(role)) {
-    return '/track-complaint';
+    return '/signin';
   }
 
   if (to.meta.requiresOrgAdmin && !isOrgAdminRole(role)) {

@@ -22,6 +22,10 @@ const props = defineProps({
     type: String,
     default: 'Total'
   },
+  compact: {
+    type: Boolean,
+    default: false
+  },
   emptyMessage: {
     type: String,
     default: 'No meaningful data is available for this chart yet.'
@@ -87,19 +91,20 @@ const chartOptions = computed(() => ({
 
     <div
       v-if="normalizedSeries.length && hasMeaningfulData"
-      class="app-chart-stage grid gap-4 lg:grid-cols-[170px,1fr] lg:items-center"
+      class="app-chart-stage grid gap-4"
+      :class="props.compact ? 'lg:grid-cols-[150px,1fr] lg:items-center' : 'lg:grid-cols-[170px,1fr] lg:items-center'"
     >
-      <div class="relative mx-auto h-[150px] w-[150px]">
+      <div class="relative mx-auto" :class="props.compact ? 'h-[132px] w-[132px] sm:h-[144px] sm:w-[144px]' : 'h-[150px] w-[150px]'">
         <Doughnut :data="chartData" :options="chartOptions" />
         <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div class="text-center">
             <p class="text-[11px] font-medium text-[var(--app-muted-color)]">{{ centerLabel }}</p>
-            <p class="mt-1 text-xl font-semibold text-[var(--app-title-color)]">{{ total }}</p>
+            <p class="mt-1" :class="props.compact ? 'text-lg font-semibold text-[var(--app-title-color)]' : 'text-xl font-semibold text-[var(--app-title-color)]'">{{ total }}</p>
           </div>
         </div>
       </div>
 
-      <div class="grid gap-2">
+      <div class="grid gap-2" :class="props.compact ? 'sm:grid-cols-2 lg:grid-cols-1' : ''">
         <article
           v-for="segment in normalizedSeries"
           :key="`${segment.label}-row`"
