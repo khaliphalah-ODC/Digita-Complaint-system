@@ -2,6 +2,11 @@
 
 Production-ready backend service for **VoiceLink**. This API is built with **Node.js**, **Express.js**, and **SQLite**, and provides secure complaint intake, role-based access control, complaint lifecycle tracking, escalation handling, notifications, and multi-organization support.
 
+## Live Deployment
+
+- Public API base: `https://digital-complaint-system-api-production.up.railway.app`
+- Live frontend consuming this API: `https://voicelink-odc.netlify.app`
+
 ## Backend Overview
 
 The backend is responsible for:

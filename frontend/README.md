@@ -4,6 +4,11 @@ This is the frontend application for **VoiceLink**. It provides the public websi
 
 The app is built with **Vue 3**, **Vite**, **Pinia**, **Vue Router**, **Tailwind CSS v4**, and **Axios**, and is designed as a single-page application that talks to the VoiceLink backend REST API.
 
+## Live Deployment
+
+- Frontend demo: `https://voicelink-odc.netlify.app`
+- Backend API used by the frontend: `https://digital-complaint-system-api-production.up.railway.app`
+
 ## Overview
 
 The frontend serves four main UI contexts:

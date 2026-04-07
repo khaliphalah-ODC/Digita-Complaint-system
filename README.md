@@ -2,10 +2,20 @@
 
 A full-stack complaint intake, tracking, and case-management platform for multi-organization environments. VoiceLink focuses on internal complaint handling and tracking with role-based workflows for users, organization admins, and super admins.
 
+## Quick Access
+
+- Live Demo: [voicelink-odc.netlify.app](https://voicelink-odc.netlify.app)
+- Backend API: [digital-complaint-system-api-production.up.railway.app](https://digital-complaint-system-api-production.up.railway.app)
+
 This repository contains:
 
 - a **Vue 3 + Vite** frontend in [`frontend/`](./frontend)
 - a **Node.js + Express + SQLite** backend in [`backend/`](./backend)
+
+## Live Deployment
+
+- Frontend demo: `https://voicelink-odc.netlify.app`
+- Backend API: `https://digital-complaint-system-api-production.up.railway.app`
 
 Subproject documentation:
 
