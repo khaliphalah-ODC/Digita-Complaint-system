@@ -20,13 +20,13 @@ import AuthTopNav from '../components/AuthTopNav.vue';
       </div>
 
       <div class="relative z-20 mx-auto max-w-5xl px-6 py-20 text-center sm:py-28 lg:py-36">
-        <h1 class="hero-title text-5xl font-black leading-[0.95] tracking-tight text-white sm:text-6xl lg:text-8xl">
+        <h1 class="hero-title text-4xl font-black leading-[0.98] tracking-tight text-white sm:text-5xl lg:text-7xl xl:text-8xl">
           Submit Your
           <span class="block text-[#f97316]">Complaints.</span>
         </h1>
 
         <p class="mx-auto mt-6 max-w-2xl text-base leading-7 text-blue-100/80 sm:text-lg">
-           A digital civic platform that allows citizens, students, and customers to report issues directly — and track every step of their resolution in real time.
+           A structured internal complaint platform that helps organizations receive issues, route them clearly, and track progress with more accountability.
         </p>
       </div>
 
@@ -43,10 +43,10 @@ import AuthTopNav from '../components/AuthTopNav.vue';
     <div class="page-header pt-28 pb-12 px-6 sm:px-10 lg:px-16 bg-white border-b border-slate-100">
       <div class="mx-auto max-w-6xl">
         <p class="section-kicker">Platform Features</p>
-        <h1 class="page-title mt-2">Powerful Features Built<br/>for Real Accountability</h1>
-        <p class="mt-4 max-w-xl text-base leading-7 text-slate-500">
-          Everything you need to submit, track, and resolve complaints — designed to be simple for citizens and efficient for organizations.
-        </p>
+        <h1 class="page-title mt-2">Powerful Features Built <span class="hidden sm:inline"><br/></span>for Real Accountability</h1>
+          <p class="mt-4 max-w-xl text-base leading-7 text-slate-500">
+          Everything needed to submit, track, and resolve complaints internally, while keeping the workflow clear for both staff and administrators.
+          </p>
       </div>
     </div>
 
@@ -70,7 +70,7 @@ import AuthTopNav from '../components/AuthTopNav.vue';
               <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
             </div>
             <h3 class="f-title">Real-Time Complaint Tracking</h3>
-            <p class="f-desc">Use your unique tracking code to monitor every stage of your complaint — from submission to resolution — without needing to log in.</p>
+            <p class="f-desc">Use your unique tracking code to monitor every stage of your complaint from submission to resolution with clearer visibility.</p>
           </div>
 
           <div class="feature-card">
@@ -222,5 +222,31 @@ import AuthTopNav from '../components/AuthTopNav.vue';
   transition: all 0.2s;
 }
 .cta-btn-outline:hover { background: rgba(255,255,255,0.15); }
+
+@media (max-width: 767px) {
+  .feature-card {
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-section {
+    min-height: 420px;
+  }
+
+  .page-title {
+    font-size: clamp(1.7rem, 9vw, 2.2rem);
+    line-height: 1.08;
+  }
+
+  .f-title {
+    font-size: 0.98rem;
+  }
+
+  .f-desc {
+    font-size: 0.92rem;
+    line-height: 1.65;
+  }
+}
 
 </style>

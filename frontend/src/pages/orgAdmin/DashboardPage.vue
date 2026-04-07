@@ -1,12 +1,17 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
-import api, { extractApiError, unwrapResponse } from '../../services/api';
+import { authApi, complaintsApi, departmentsApi, escalationsApi, extractApiError, statusLogsApi } from '../../services/api';
 import AnalyticsBarChart from '../../components/superAdmin/AnalyticsBarChart.vue';
 import AnalyticsDonutChart from '../../components/superAdmin/AnalyticsDonutChart.vue';
 import AnalyticsLineChart from '../../components/superAdmin/AnalyticsLineChart.vue';
 import MobileDataCardList from '../../components/MobileDataCardList.vue';
 import PageHeader from '../../components/superAdmin/PageHeader.vue';
+import EmptyState from '../../components/ui/EmptyState.vue';
+import ErrorState from '../../components/ui/ErrorState.vue';
+import LoadingSpinner from '../../components/ui/LoadingSpinner.vue';
+import StatusBadge from '../../components/ui/StatusBadge.vue';
+import { createOrgAdminAnalytics } from '../../services/analytics.service.js';
 import { useSessionStore } from '../../stores/session';
 
 const session = useSessionStore();
@@ -19,11 +24,6 @@ const escalations = ref([]);
 const statusLogs = ref([]);
 const lastRefresh = ref(null);
 let pollTimer = null;
-
-const ensureSuccess = (payload, fallbackMessage) => {
-  if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
-  return payload.data;
-};
 
 const toTime = (value) => {
   if (!value) return 0;
@@ -49,19 +49,19 @@ const fetchDashboardData = async () => {
   error.value = '';
 
   try {
-    const [usersRes, complaintsRes, departmentsRes, escalationsRes, statusLogsRes] = await Promise.all([
-      api.get('/users'),
-      api.get('/complaint'),
-      api.get('/department'),
-      api.get('/escalations'),
-      api.get('/status-logs')
+    const [userRows, complaintRows, departmentRows, escalationRows, statusLogRows] = await Promise.all([
+      authApi.listUsers(),
+      complaintsApi.list(),
+      departmentsApi.list(),
+      escalationsApi.list(),
+      statusLogsApi.list()
     ]);
 
-    users.value = ensureSuccess(unwrapResponse(usersRes), 'Failed to fetch users') || [];
-    complaints.value = ensureSuccess(unwrapResponse(complaintsRes), 'Failed to fetch complaints') || [];
-    departments.value = ensureSuccess(unwrapResponse(departmentsRes), 'Failed to fetch departments') || [];
-    escalations.value = ensureSuccess(unwrapResponse(escalationsRes), 'Failed to fetch escalations') || [];
-    statusLogs.value = ensureSuccess(unwrapResponse(statusLogsRes), 'Failed to fetch status logs') || [];
+    users.value = userRows || [];
+    complaints.value = complaintRows || [];
+    departments.value = departmentRows || [];
+    escalations.value = escalationRows || [];
+    statusLogs.value = statusLogRows || [];
     lastRefresh.value = new Date();
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to load organization dashboard');
@@ -69,204 +69,25 @@ const fetchDashboardData = async () => {
     loading.value = false;
   }
 };
+const dashboardAnalytics = computed(() => createOrgAdminAnalytics({
+  complaints: complaints.value || [],
+  users: users.value || [],
+  departments: departments.value || [],
+  escalations: escalations.value || [],
+  statusLogs: statusLogs.value || []
+}));
 
-const complaintsSorted = computed(() =>
-  [...complaints.value].sort((a, b) => {
-    const aTime = toTime(a.updated_at || a.reviewed_at || a.created_at);
-    const bTime = toTime(b.updated_at || b.reviewed_at || b.created_at);
-    return bTime - aTime;
-  })
-);
-
-const activeUsers = computed(() =>
-  users.value.filter((row) => String(row.status || '').toLowerCase() === 'active')
-);
-
-const inactiveUsers = computed(() =>
-  users.value.filter((row) => String(row.status || '').toLowerCase() !== 'active')
-);
-
-const openComplaints = computed(() =>
-  complaints.value.filter((row) => ['submitted', 'in_review'].includes(String(row.status || '').toLowerCase()))
-);
-
-const inReviewComplaints = computed(() =>
-  complaints.value.filter((row) => String(row.status || '').toLowerCase() === 'in_review')
-);
-
-const resolvedThisWeek = computed(() => {
-  const weekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-  return complaints.value.filter((row) => {
-    const status = String(row.status || '').toLowerCase();
-    const resolvedAt = toTime(row.reviewed_at || row.updated_at || row.created_at);
-    return ['resolved', 'closed'].includes(status) && resolvedAt >= weekAgo;
-  }).length;
-});
-
-const newComplaintsThisWeek = computed(() => {
-  const weekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-  return complaints.value.filter((row) => toTime(row.created_at) >= weekAgo).length;
-});
-
-const overdueComplaints = computed(() =>
-  openComplaints.value.filter((row) => daysSince(row.updated_at || row.created_at) >= 4)
-);
-
-const unassignedDepartmentComplaints = computed(() =>
-  openComplaints.value.filter((row) => !row.department_id && !row.department_name)
-);
-
-const unansweredComplaints = computed(() =>
-  openComplaints.value.filter((row) => !String(row.admin_response || '').trim())
-);
-
-const activeEscalations = computed(() =>
-  escalations.value.filter((row) => ['pending', 'in_progress'].includes(String(row.status || '').toLowerCase()))
-);
-
-const summaryCards = computed(() => [
-  {
-    label: 'Open Complaints',
-    value: openComplaints.value.length,
-    detail: 'submitted or in review',
-    icon: '📂'
-  },
-  {
-    label: 'In Review',
-    value: inReviewComplaints.value.length,
-    detail: 'awaiting progress',
-    icon: '📝'
-  },
-  {
-    label: 'Resolved This Week',
-    value: resolvedThisWeek.value,
-    detail: 'closed or resolved',
-    icon: '✅'
-  },
-  {
-    label: 'New Complaints This Week',
-    value: newComplaintsThisWeek.value,
-    detail: 'fresh intake',
-    icon: '🆕'
-  },
-  {
-    label: 'Active Users',
-    value: activeUsers.value.length,
-    detail: 'organization staff',
-    icon: '👥'
-  }
-]);
-
-const attentionItems = computed(() => {
-  const items = [];
-
-  if (overdueComplaints.value.length) {
-    items.push({
-      title: `${overdueComplaints.value.length} complaints are overdue`,
-      detail: 'These cases have stayed open for at least 4 days without resolution.',
-      tone: 'danger'
-    });
-  }
-
-  if (activeEscalations.value.length) {
-    items.push({
-      title: `${activeEscalations.value.length} escalations are still active`,
-      detail: 'Escalated complaints need direct operational follow-up inside this organization.',
-      tone: 'warning'
-    });
-  }
-
-  if (unassignedDepartmentComplaints.value.length) {
-    items.push({
-      title: `${unassignedDepartmentComplaints.value.length} complaints need department assignment`,
-      detail: 'Routing these complaints will reduce response delays and improve workload clarity.',
-      tone: 'warning'
-    });
-  }
-
-  if (unansweredComplaints.value.length) {
-    items.push({
-      title: `${unansweredComplaints.value.length} complaints still need an admin response`,
-      detail: 'These cases appear open without a recorded official response.',
-      tone: 'danger'
-    });
-  }
-
-  if (!items.length) {
-    items.push({
-      title: 'No urgent complaint workflow blockers right now',
-      detail: 'Complaint intake, assignment, and response activity look stable inside this organization.',
-      tone: 'info'
-    });
-  }
-
-  return items.slice(0, 4);
-});
-
-const statusSeries = computed(() => {
-  const counts = {
-    submitted: 0,
-    in_review: 0,
-    resolved: 0,
-    closed: 0
-  };
-
-  for (const complaint of complaints.value) {
-    const status = String(complaint.status || 'submitted').toLowerCase();
-    if (Object.hasOwn(counts, status)) counts[status] += 1;
-  }
-
-  return [
-    { label: 'Submitted', value: counts.submitted, tone: '#f59e0b' },
-    { label: 'In Review', value: counts.in_review, tone: '#2563eb' },
-    { label: 'Resolved', value: counts.resolved, tone: '#16a34a' },
-    { label: 'Closed', value: counts.closed, tone: '#64748b' }
-  ];
-});
-
-const complaintTrendSeries = computed(() => {
-  const timeline = {};
-  const now = new Date();
-
-  for (let i = 6; i >= 0; i -= 1) {
-    const date = new Date(now);
-    date.setDate(now.getDate() - i);
-    const key = date.toISOString().slice(0, 10);
-    timeline[key] = {
-      label: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      value: 0
-    };
-  }
-
-  for (const complaint of complaints.value) {
-    const key = (complaint.created_at ? new Date(complaint.created_at) : new Date()).toISOString().slice(0, 10);
-    if (timeline[key]) timeline[key].value += 1;
-  }
-
-  return Object.values(timeline);
-});
-
-const departmentWorkloadSeries = computed(() => {
-  const counts = new Map();
-
-  for (const department of departments.value) {
-    counts.set(String(department.name || `Department #${department.id}`), 0);
-  }
-
-  for (const complaint of complaints.value) {
-    const label = complaint.department_name || 'Unassigned';
-    counts.set(label, Number(counts.get(label) || 0) + 1);
-  }
-
-  return [...counts.entries()]
-    .map(([label, value], index) => ({
-      label,
-      value,
-      tone: index === 0 ? '#183a63' : index === 1 ? '#335c8a' : index === 2 ? '#5b587f' : '#8a6d2f'
-    }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 6);
-});
+const complaintsSorted = computed(() => dashboardAnalytics.value.complaintsSorted);
+const activeUsers = computed(() => dashboardAnalytics.value.activeUsers);
+const inactiveUsers = computed(() => dashboardAnalytics.value.inactiveUsers);
+const openComplaints = computed(() => dashboardAnalytics.value.openComplaints);
+const inReviewComplaints = computed(() => dashboardAnalytics.value.inReviewComplaints);
+const activeEscalations = computed(() => dashboardAnalytics.value.activeEscalations);
+const summaryCards = computed(() => dashboardAnalytics.value.summaryCards);
+const attentionItems = computed(() => dashboardAnalytics.value.attentionItems);
+const statusSeries = computed(() => dashboardAnalytics.value.statusSeries);
+const complaintTrendSeries = computed(() => dashboardAnalytics.value.complaintTrendSeries);
+const departmentWorkloadSeries = computed(() => dashboardAnalytics.value.departmentWorkloadSeries);
 
 const recentActivity = computed(() => {
   const complaintItems = complaints.value.slice(0, 8).map((row) => ({
@@ -326,7 +147,8 @@ const quickActions = [
   { title: 'View All Complaints', detail: 'Open the full complaint queue and continue casework.', to: '/org-admin/complaints' },
   { title: 'Manage Users', detail: 'Create or update organization users and staff roles.', to: '/org-admin/users' },
   { title: 'Manage Departments', detail: 'Maintain department structure and assignment targets.', to: '/org-admin/departments' },
-  { title: 'Review Escalations', detail: 'Handle escalated issues inside this organization.', to: '/org-admin/escalations' }
+  { title: 'Review Escalations', detail: 'Handle escalated issues inside this organization.', to: '/org-admin/escalations' },
+  { title: 'Public Feedback Channel', detail: 'Configure the public QR feedback form and review incoming submissions.', to: '/org-admin/public-feedback' }
 ];
 
 const lastUpdatedLabel = computed(() => {
@@ -378,12 +200,7 @@ onUnmounted(() => {
           </template>
         </PageHeader>
 
-        <p
-          v-if="error"
-          class="rounded-[var(--app-radius-md)] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-        >
-          {{ error }}
-        </p>
+        <ErrorState v-if="error" title="Could not load organization dashboard" :description="error" />
 
         <section class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
           <article
@@ -514,9 +331,11 @@ onUnmounted(() => {
               </article>
             </div>
 
-            <div v-else class="app-empty-state">
-              No recent organization activity is available yet.
-            </div>
+            <EmptyState
+              v-else
+              title="No recent organization activity is available yet."
+              description="Complaint, escalation, and user activity will appear here as your team works."
+            />
           </section>
 
           <section class="app-section-card">
@@ -565,9 +384,12 @@ onUnmounted(() => {
               </article>
             </div>
 
-            <div v-else class="app-empty-state mt-4">
-              No recent staff activity is available yet.
-            </div>
+            <EmptyState
+              v-else
+              container-class="mt-4"
+              title="No recent staff activity is available yet."
+              description="New staff updates will show up here when team accounts are created or updated."
+            />
           </section>
         </section>
 
@@ -599,12 +421,10 @@ onUnmounted(() => {
               <p class="break-words font-medium text-[var(--app-title-color)]">{{ item.department_name || 'Unassigned' }}</p>
             </template>
             <template #field-priority="{ item }">
-              <p class="font-medium text-[var(--app-title-color)]">{{ item.priority || 'medium' }}</p>
+              <StatusBadge :value="item.priority || 'medium'" />
             </template>
             <template #field-status="{ item }">
-              <span :class="complaintStatusBadgeClass(item.status)">
-                {{ item.status || 'submitted' }}
-              </span>
+              <StatusBadge :value="item.status || 'submitted'" />
             </template>
             <template #field-updated="{ item }">
               <p class="font-medium text-[var(--app-title-color)]">{{ toShortDate(item.updated_at || item.reviewed_at || item.created_at) }}</p>
@@ -639,9 +459,7 @@ onUnmounted(() => {
                   <td data-label="Department">{{ row.department_name || 'Unassigned' }}</td>
                   <td data-label="Priority">{{ row.priority || 'medium' }}</td>
                   <td data-label="Status">
-                    <span :class="complaintStatusBadgeClass(row.status)">
-                      {{ row.status || 'submitted' }}
-                    </span>
+                    <StatusBadge :value="row.status || 'submitted'" />
                   </td>
                   <td data-label="Updated">{{ toShortDate(row.updated_at || row.reviewed_at || row.created_at) }}</td>
                   <td data-label="Actions" data-actions="true">
@@ -654,9 +472,11 @@ onUnmounted(() => {
             </table>
           </div>
 
-          <div v-else class="app-empty-state">
-            No complaints are available in this organization yet.
-          </div>
+          <EmptyState
+            v-else
+            title="No complaints are available in this organization yet."
+            description="Once complaints are submitted to this organization, they will appear here."
+          />
         </section>
       </div>
     </div>

@@ -38,18 +38,35 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 `;
 
 export const fetchEscalationsQuery = `SELECT * FROM escalations ORDER BY id DESC;`;
-export const fetchEscalationByIdQuery = `SELECT * FROM escalations WHERE id = ?;`;
+export const fetchEscalationsBaseQuery = `
+SELECT
+  e.*,
+  a.complaint_id,
+  c.title AS complaint_title
+FROM escalations e
+LEFT JOIN accessments a ON a.id = e.accessment_id
+LEFT JOIN complaint c ON c.id = a.complaint_id
+`;
+
+export const fetchEscalationByIdQuery = `
+${fetchEscalationsBaseQuery}
+WHERE e.id = ?;
+`;
 export const fetchEscalationsByOrganizationIdQuery = `
-SELECT * FROM escalations WHERE organization_id = ? ORDER BY id DESC;
+${fetchEscalationsBaseQuery}
+WHERE e.organization_id = ? ORDER BY e.id DESC;
 `;
 export const fetchEscalationsByAccessmentIdQuery = `
-SELECT * FROM escalations WHERE accessment_id = ? ORDER BY id DESC;
+${fetchEscalationsBaseQuery}
+WHERE e.accessment_id = ? ORDER BY e.id DESC;
 `;
 export const fetchEscalationsByStatusQuery = `
-SELECT * FROM escalations WHERE status = ? ORDER BY id DESC;
+${fetchEscalationsBaseQuery}
+WHERE e.status = ? ORDER BY e.id DESC;
 `;
 export const fetchEscalationsByOrganizationAndStatusQuery = `
-SELECT * FROM escalations WHERE organization_id = ? AND status = ? ORDER BY id DESC;
+${fetchEscalationsBaseQuery}
+WHERE e.organization_id = ? AND e.status = ? ORDER BY e.id DESC;
 `;
 
 export const updateEscalationQuery = `

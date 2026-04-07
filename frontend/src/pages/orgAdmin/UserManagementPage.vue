@@ -2,9 +2,14 @@
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import { faPenToSquare, faTrashCan } from '@fortawesome/free-solid-svg-icons';
-import api, { extractApiError, unwrapResponse } from '../../services/api';
+import { authApi, extractApiError } from '../../services/api';
 import MobileDataCardList from '../../components/MobileDataCardList.vue';
 import PageHeader from '../../components/superAdmin/PageHeader.vue';
+import DataTable from '../../components/ui/DataTable.vue';
+import EmptyState from '../../components/ui/EmptyState.vue';
+import FormField from '../../components/ui/FormField.vue';
+import LoadingSpinner from '../../components/ui/LoadingSpinner.vue';
+import StatusBadge from '../../components/ui/StatusBadge.vue';
 import { useUiToastStore } from '../../stores/uiToast';
 import { useSessionStore } from '../../stores/session';
 
@@ -54,11 +59,6 @@ const canManageRow = (row) => {
   return false;
 };
 
-const ensureSuccess = (payload, fallbackMessage) => {
-  if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
-  return payload.data;
-};
-
 const getUserFormError = (requestError, fallbackMessage) => {
   const payload = requestError?.response?.data || {};
   if (Number(requestError?.response?.status) === 409 && payload?.message) {
@@ -95,8 +95,7 @@ const fetchUsers = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await api.get('/users');
-    users.value = ensureSuccess(unwrapResponse(response), 'Failed to fetch users') || [];
+    users.value = await authApi.listUsers() || [];
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to fetch users');
   } finally {
@@ -141,10 +140,10 @@ const saveUser = async () => {
     };
 
     if (editingId.value) {
-      await api.put(`/users/${editingId.value}`, payload);
+      await authApi.updateUser(editingId.value, payload);
       uiToast.success('User updated successfully.');
     } else {
-      await api.post('/users', payload);
+      await authApi.createUser(payload);
       uiToast.success('User created successfully.');
     }
 
@@ -167,7 +166,7 @@ const assignExistingUser = async () => {
 
   assigningExisting.value = true;
   try {
-    await api.post('/users/assign-existing', {
+    await authApi.assignExistingUser({
       email: assignExistingForm.email.trim().toLowerCase()
     });
     uiToast.success('Existing user assigned to your organization.');
@@ -192,7 +191,7 @@ const deleteUser = async (row) => {
   if (!ok) return;
   error.value = '';
   try {
-    await api.delete(`/users/${row.id}`);
+    await authApi.deleteUser(row.id);
     uiToast.success('User deleted successfully.');
     await fetchUsers();
   } catch (requestError) {
@@ -206,7 +205,7 @@ const updateUserRoleQuick = async (row, nextRole) => {
   if (!nextRole || row.role === nextRole) return;
   error.value = '';
   try {
-    await api.patch(`/users/${row.id}/role`, { role: nextRole });
+    await authApi.updateUserRole(row.id, { role: nextRole });
     uiToast.success(`Role updated to ${nextRole}.`);
     await fetchUsers();
   } catch (requestError) {
@@ -240,6 +239,14 @@ const mobileCardFields = [
   { key: 'role', label: 'Role' },
   { key: 'status', label: 'Status' },
   { key: 'organization', label: 'Organization' }
+];
+const tableColumns = [
+  { key: 'name', label: 'Name' },
+  { key: 'email', label: 'Email' },
+  { key: 'role', label: 'Role' },
+  { key: 'status', label: 'Status' },
+  { key: 'organization', label: 'Organization' },
+  { key: 'actions', label: 'Actions' }
 ];
 
 const goToPage = (nextPage) => {
@@ -326,17 +333,20 @@ watch(assignableRoles, normalizeRoleFilters, { immediate: false });
             </div>
 
             <form class="grid grid-cols-1 gap-3 md:grid-cols-2" @submit.prevent="saveUser">
-              <input v-model="form.full_name" placeholder="Full name" class="app-input">
-              <input v-model="form.email" type="email" placeholder="Email" class="app-input">
-              <input v-model="form.password" type="password" placeholder="Password" class="app-input">
-              <input v-if="isSuperAdmin" v-model="form.organization_id" placeholder="Organization ID" class="app-input">
-              <select v-model="form.role" class="app-select">
-                <option v-for="role in assignableRoles" :key="role" :value="role">{{ role }}</option>
-              </select>
-              <select v-model="form.status" class="app-select">
-                <option value="active">active</option>
-                <option value="inactive">inactive</option>
-              </select>
+              <FormField v-model="form.full_name" label="Full Name" placeholder="Full name" />
+              <FormField v-model="form.email" label="Email" type="email" placeholder="Email" />
+              <FormField v-model="form.password" label="Password" type="password" placeholder="Password" />
+              <FormField v-if="isSuperAdmin" v-model="form.organization_id" label="Organization ID" placeholder="Organization ID" />
+              <FormField v-model="form.role" as="select" label="Role" :options="assignableRoles" />
+              <FormField
+                v-model="form.status"
+                as="select"
+                label="Status"
+                :options="[
+                  { label: 'active', value: 'active' },
+                  { label: 'inactive', value: 'inactive' }
+                ]"
+              />
               <div class="md:col-span-2 flex flex-col gap-2 sm:flex-row">
                 <button type="submit" :disabled="saving" class="app-btn-primary">
                   {{ saving ? 'Saving...' : editingId ? 'Update User' : 'Create User' }}
@@ -356,12 +366,12 @@ watch(assignableRoles, normalizeRoleFilters, { immediate: false });
             </div>
 
             <form class="grid grid-cols-1 gap-3 md:grid-cols-[1fr,auto]" @submit.prevent="assignExistingUser">
-              <input
+              <FormField
                 v-model="assignExistingForm.email"
+                label="Existing User Email"
                 type="email"
                 placeholder="Existing user email"
-                class="app-input"
-              >
+              />
               <button
                 type="submit"
                 :disabled="assigningExisting"
@@ -394,8 +404,12 @@ watch(assignableRoles, normalizeRoleFilters, { immediate: false });
             </div>
           </div>
 
-          <p v-if="loading" class="text-sm text-[var(--app-muted-color)]">Loading users...</p>
-          <p v-else-if="filteredUsers.length === 0" class="app-empty-state">No users match the current filters.</p>
+          <LoadingSpinner v-if="loading" label="Loading users..." />
+          <EmptyState
+            v-else-if="filteredUsers.length === 0"
+            title="No users match the current filters."
+            description="Try a broader name, role, or status filter."
+          />
 
           <MobileDataCardList
             v-else
@@ -421,7 +435,7 @@ watch(assignableRoles, normalizeRoleFilters, { immediate: false });
               <span v-else class="font-medium text-[var(--app-title-color)]">{{ item.role }}</span>
             </template>
             <template #field-status="{ item }">
-              <p class="font-medium text-[var(--app-title-color)]">{{ item.status }}</p>
+              <StatusBadge :value="item.status" />
             </template>
             <template #field-organization="{ item }">
               <p class="font-medium text-[var(--app-title-color)]">{{ item.organization_id ?? 'N/A' }}</p>
@@ -450,70 +464,58 @@ watch(assignableRoles, normalizeRoleFilters, { immediate: false });
             </template>
           </MobileDataCardList>
 
-          <div v-if="filteredUsers.length > 0" class="hidden md:block app-table-shell overflow-x-auto">
-            <table class="app-table app-table-responsive min-w-full">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                  <th>Organization</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="row in paginatedUsers" :key="row.id">
-                  <td data-label="Name" class="font-medium text-[var(--app-title-color)]">{{ row.full_name }}</td>
-                  <td data-label="Email">{{ row.email }}</td>
-                  <td data-label="Role">
-                    <select
-                      v-if="canManageRow(row)"
-                      class="app-select min-h-[36px] px-3 py-1 text-xs"
-                      :value="row.role"
-                      @change="updateUserRoleQuick(row, $event.target.value)"
-                    >
-                      <option v-for="role in assignableRoles" :key="role" :value="role">{{ role }}</option>
-                    </select>
-                    <span v-else>{{ row.role }}</span>
-                  </td>
-                  <td data-label="Status">{{ row.status }}</td>
-                  <td data-label="Organization">{{ row.organization_id ?? 'N/A' }}</td>
-                  <td data-label="Actions" data-actions="true">
-                    <div class="app-action-row flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        :disabled="!canManageRow(row)"
-                        class="app-btn-secondary min-h-[36px] px-3 py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-50"
-                        @click="startEdit(row)"
-                      >
-                        <font-awesome-icon :icon="faPenToSquare" class="text-sm" />
-                        <span>Edit</span>
-                      </button>
-                      <button
-                        type="button"
-                        :disabled="!canManageRow(row)"
-                        class="app-btn-danger min-h-[36px] px-3 py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-50"
-                        @click="deleteUser(row)"
-                      >
-                        <font-awesome-icon :icon="faTrashCan" class="text-sm" />
-                        <span>Delete</span>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="mt-3 flex flex-col gap-2 text-xs text-[var(--app-muted-color)] sm:flex-row sm:items-center sm:justify-between">
-            <p>Showing {{ paginatedUsers.length }} of {{ filteredUsers.length }} users</p>
-            <div class="flex items-center gap-2">
-              <button class="app-btn-secondary min-h-[34px] px-3 py-1 text-xs disabled:opacity-50" :disabled="page <= 1" @click="goToPage(page - 1)">Prev</button>
-              <span>Page {{ page }} / {{ totalPages }}</span>
-              <button class="app-btn-secondary min-h-[34px] px-3 py-1 text-xs disabled:opacity-50" :disabled="page >= totalPages" @click="goToPage(page + 1)">Next</button>
-            </div>
-          </div>
+          <DataTable
+            :columns="tableColumns"
+            :rows="paginatedUsers"
+            :page="page"
+            :total-pages="totalPages"
+            :total-items="filteredUsers.length"
+            :visible-count="paginatedUsers.length"
+            pagination-label="users"
+            @update:page="goToPage"
+          >
+            <template #cell-name="{ row }">
+              <span class="font-medium text-[var(--app-title-color)]">{{ row.full_name }}</span>
+            </template>
+            <template #cell-email="{ row }">{{ row.email }}</template>
+            <template #cell-role="{ row }">
+              <select
+                v-if="canManageRow(row)"
+                class="app-select min-h-[36px] px-3 py-1 text-xs"
+                :value="row.role"
+                @change="updateUserRoleQuick(row, $event.target.value)"
+              >
+                <option v-for="role in assignableRoles" :key="role" :value="role">{{ role }}</option>
+              </select>
+              <span v-else>{{ row.role }}</span>
+            </template>
+            <template #cell-status="{ row }">
+              <StatusBadge :value="row.status" />
+            </template>
+            <template #cell-organization="{ row }">{{ row.organization_id ?? 'N/A' }}</template>
+            <template #cell-actions="{ row }">
+              <div class="app-action-row flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  :disabled="!canManageRow(row)"
+                  class="app-btn-secondary min-h-[36px] px-3 py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-50"
+                  @click="startEdit(row)"
+                >
+                  <font-awesome-icon :icon="faPenToSquare" class="text-sm" />
+                  <span>Edit</span>
+                </button>
+                <button
+                  type="button"
+                  :disabled="!canManageRow(row)"
+                  class="app-btn-danger min-h-[36px] px-3 py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-50"
+                  @click="deleteUser(row)"
+                >
+                  <font-awesome-icon :icon="faTrashCan" class="text-sm" />
+                  <span>Delete</span>
+                </button>
+              </div>
+            </template>
+          </DataTable>
         </section>
       </div>
     </div>

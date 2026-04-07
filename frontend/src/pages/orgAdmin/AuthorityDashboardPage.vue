@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
-import api, { extractApiError, unwrapResponse } from '../../services/api';
+import { authApi, complaintsApi, extractApiError, joinCodesApi, organizationsApi } from '../../services/api';
 import { useSessionStore } from '../../stores/session';
 import { useUiToastStore } from '../../stores/uiToast';
 import MobileDataCardList from '../../components/MobileDataCardList.vue';
@@ -37,13 +37,6 @@ const form = reactive({
   status: 'active'
 });
 
-const ensureSuccess = (payload, fallbackMessage) => {
-  if (!payload?.success) {
-    throw new Error(payload?.message || fallbackMessage);
-  }
-  return payload.data;
-};
-
 const getUserCreateError = (requestError) => {
   const payload = requestError?.response?.data || {};
   if (Number(requestError?.response?.status) === 409 && payload?.message) {
@@ -56,8 +49,7 @@ const fetchUsers = async () => {
   loadingUsers.value = true;
   error.value = '';
   try {
-    const response = await api.get('/users');
-    users.value = ensureSuccess(unwrapResponse(response), 'Failed to fetch users') || [];
+    users.value = await authApi.listUsers() || [];
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to fetch users');
   } finally {
@@ -69,8 +61,7 @@ const fetchComplaints = async () => {
   loadingComplaints.value = true;
   error.value = '';
   try {
-    const response = await api.get('/complaint');
-    complaints.value = ensureSuccess(unwrapResponse(response), 'Failed to fetch complaints') || [];
+    complaints.value = await complaintsApi.list() || [];
     lastRefresh.value = new Date();
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to fetch complaints');
@@ -83,8 +74,7 @@ const fetchComplaints = async () => {
 const fetchPendingMembers = async () => {
   loadingPending.value = true;
   try {
-    const response = await api.get('/join/pending');
-    pendingMembers.value = ensureSuccess(unwrapResponse(response), 'Failed to fetch pending members') || [];
+    pendingMembers.value = await joinCodesApi.pending() || [];
   } catch (requestError) {
     console.error('Failed to fetch pending members:', extractApiError(requestError));
   } finally {
@@ -96,8 +86,7 @@ const fetchPendingMembers = async () => {
 const fetchJoinCode = async () => {
   loadingJoinCode.value = true;
   try {
-    const response = await api.get('/organization');
-    const orgs = ensureSuccess(unwrapResponse(response), 'Failed to fetch organization') || [];
+    const orgs = await organizationsApi.list() || [];
     const myOrg = Array.isArray(orgs) ? orgs[0] : orgs;
     if (myOrg) {
       joinCode.value = myOrg.join_code || '';
@@ -125,8 +114,7 @@ const copyJoinCode = async () => {
 // ── Regenerate join code ──────────────────────────────────
 const regenerateCode = async () => {
   try {
-    const response = await api.patch('/join/regenerate');
-    const data = ensureSuccess(unwrapResponse(response), 'Failed to regenerate code');
+    const data = await joinCodesApi.regenerate();
     joinCode.value = data?.join_code || '';
     joinCodeExpiry.value = data?.expires_at || '';
     uiToast.success('Join code regenerated successfully.');
@@ -138,7 +126,7 @@ const regenerateCode = async () => {
 // ── Approve a pending member ──────────────────────────────
 const approveMember = async (userId) => {
   try {
-    await api.patch(`/join/approve/${userId}`);
+    await joinCodesApi.approve(userId);
     uiToast.success('Member approved. They can now log in.');
     pendingMembers.value = pendingMembers.value.filter((m) => m.id !== userId);
     await fetchUsers();
@@ -150,7 +138,7 @@ const approveMember = async (userId) => {
 // ── Reject a pending member ───────────────────────────────
 const rejectMember = async (userId) => {
   try {
-    await api.delete(`/join/reject/${userId}`);
+    await joinCodesApi.reject(userId);
     uiToast.success('Member rejected and removed.');
     pendingMembers.value = pendingMembers.value.filter((m) => m.id !== userId);
   } catch (requestError) {
@@ -166,7 +154,7 @@ const createUser = async () => {
   }
   saving.value = true;
   try {
-    await api.post('/users', {
+    await authApi.createUser({
       full_name: form.full_name.trim(),
       email: form.email.trim().toLowerCase(),
       password: form.password,

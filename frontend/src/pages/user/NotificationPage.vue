@@ -1,6 +1,10 @@
 <script setup>
 import { onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
+import EmptyState from '../../components/ui/EmptyState.vue';
+import ErrorState from '../../components/ui/ErrorState.vue';
+import LoadingSpinner from '../../components/ui/LoadingSpinner.vue';
+import StatusBadge from '../../components/ui/StatusBadge.vue';
 import { useNotificationStore } from '../../stores/notifications.js';
 
 const notificationStore = useNotificationStore();
@@ -68,13 +72,13 @@ onMounted(() => {
         </button>
       </div>
 
-      <p v-if="loading" class="text-sm text-slate-500">Loading notifications...</p>
-      <p v-else-if="error" class="rounded-[14px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-        {{ error }}
-      </p>
-      <p v-else-if="notifications.length === 0" class="text-sm text-slate-500">
-        No notifications yet.
-      </p>
+      <LoadingSpinner v-if="loading" label="Loading notifications..." :centered="false" />
+      <ErrorState v-else-if="error" title="Could not load notifications" :description="error" />
+      <EmptyState
+        v-else-if="notifications.length === 0"
+        title="No notifications yet."
+        description="Complaint responses and support updates will appear here."
+      />
 
       <div v-else class="space-y-3">
         <article
@@ -83,23 +87,13 @@ onMounted(() => {
           class="rounded-[24px] border p-4"
           :class="Number(item.is_read) === 1
             ? 'border-slate-200 bg-slate-50'
-            : 'border-[var(--app-primary)]/15 bg-white shadow-[0_10px_24px_rgba(17,28,48,0.06)]'"
+            : 'border-[var(--app-primary)]/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,249,255,0.96))] shadow-[0_10px_24px_rgba(17,28,48,0.06)]'"
         >
           <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2">
-                <span
-                  class="app-badge"
-                  :class="Number(item.is_read) === 1
-                    ? 'app-badge-neutral'
-                    : 'bg-[var(--app-primary-mist)] text-[var(--app-primary-ink)]'"
-                >
-                  {{ Number(item.is_read) === 1 ? 'Read' : 'Unread' }}
-                </span>
-
-                <span class="app-badge app-badge-neutral">
-                  {{ item.type || 'notification' }}
-                </span>
+                <StatusBadge :value="Number(item.is_read) === 1 ? 'Read' : 'Unread'" :tone="Number(item.is_read) === 1 ? 'neutral' : 'warning'" />
+                <StatusBadge :value="item.type || 'notification'" tone="neutral" />
               </div>
 
               <p class="mt-3 text-sm font-semibold text-slate-900">

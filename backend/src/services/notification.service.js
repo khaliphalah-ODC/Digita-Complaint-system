@@ -3,6 +3,10 @@ import {
   createNotificationQuery,
   fetchNotificationByIdQuery
 } from '../model/notification.model.js';
+import {
+  selectOrganizationSettingsByOrganizationId,
+  selectUserSettingsByUserId
+} from '../model/settings.model.js';
 import { getPlatformSettingsSafe } from '../utils/platformSettings.js';
 
 export const NOTIFICATION_TYPES = {
@@ -15,7 +19,8 @@ export const NOTIFICATION_TYPES = {
   CHAT_MESSAGE: 'chat_message',
   ESCALATION_CREATED: 'escalation_created',
   ESCALATION_UPDATED: 'escalation_updated',
-  ESCALATION_ASSIGNED: 'escalation_assigned'
+  ESCALATION_ASSIGNED: 'escalation_assigned',
+  PUBLIC_FEEDBACK_SUBMITTED: 'public_feedback_submitted'
 };
 
 const isNotificationEnabledForType = (settings, type) => {
@@ -45,6 +50,58 @@ const isNotificationEnabledForType = (settings, type) => {
   }
 };
 
+const getQuery = (sql, params = []) =>
+  new Promise((resolve, reject) => {
+    complaintDB.get(sql, params, (err, row) => {
+      if (err) return reject(err);
+      return resolve(row || null);
+    });
+  });
+
+const isOrganizationNotificationEnabledForType = (settings, type) => {
+  if (!settings) {
+    return true;
+  }
+
+  switch (type) {
+    case NOTIFICATION_TYPES.COMPLAINT_CREATED:
+    case NOTIFICATION_TYPES.COMPLAINT_ASSIGNED:
+      return Number(settings.notify_on_new_complaints || 0) === 1;
+    case NOTIFICATION_TYPES.ESCALATION_CREATED:
+    case NOTIFICATION_TYPES.ESCALATION_UPDATED:
+    case NOTIFICATION_TYPES.ESCALATION_ASSIGNED:
+      return Number(settings.notify_on_escalations || 0) === 1;
+    case NOTIFICATION_TYPES.PUBLIC_FEEDBACK_SUBMITTED:
+      return Number(settings.notify_on_public_feedback || 0) === 1;
+    default:
+      return true;
+  }
+};
+
+const isUserNotificationEnabledForType = (settings, type) => {
+  if (!settings) {
+    return true;
+  }
+
+  switch (type) {
+    case NOTIFICATION_TYPES.COMPLAINT_CREATED:
+    case NOTIFICATION_TYPES.COMPLAINT_ASSIGNED:
+    case NOTIFICATION_TYPES.COMPLAINT_UPDATED:
+    case NOTIFICATION_TYPES.COMPLAINT_RESOLVED:
+    case NOTIFICATION_TYPES.COMPLAINT_CLOSED:
+    case NOTIFICATION_TYPES.COMPLAINT_RESPONSE:
+    case NOTIFICATION_TYPES.CHAT_MESSAGE:
+    case NOTIFICATION_TYPES.ESCALATION_CREATED:
+    case NOTIFICATION_TYPES.ESCALATION_UPDATED:
+    case NOTIFICATION_TYPES.ESCALATION_ASSIGNED:
+      return Number(settings.notify_status_updates || 0) === 1;
+    case NOTIFICATION_TYPES.PUBLIC_FEEDBACK_SUBMITTED:
+      return Number(settings.notify_public_feedback || 0) === 1;
+    default:
+      return true;
+  }
+};
+
 export const createSystemNotification = async ({
   organizationId = null,
   userId = null,
@@ -54,6 +111,19 @@ export const createSystemNotification = async ({
 }) => {
   const settings = await getPlatformSettingsSafe();
   if (!isNotificationEnabledForType(settings, type)) {
+    return null;
+  }
+
+  const [organizationSettings, userSettings] = await Promise.all([
+    organizationId ? getQuery(selectOrganizationSettingsByOrganizationId, [organizationId]).catch(() => null) : Promise.resolve(null),
+    userId ? getQuery(selectUserSettingsByUserId, [userId]).catch(() => null) : Promise.resolve(null)
+  ]);
+
+  if (!isOrganizationNotificationEnabledForType(organizationSettings, type)) {
+    return null;
+  }
+
+  if (!isUserNotificationEnabledForType(userSettings, type)) {
     return null;
   }
 

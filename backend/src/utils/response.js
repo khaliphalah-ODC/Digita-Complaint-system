@@ -8,6 +8,9 @@ const TECHNICAL_ERROR_PATTERNS = [
 
 const normalizeErrorDetail = (statusCode, error) => {
   if (!error) return null;
+  if (typeof error === 'object') {
+    return error;
+  }
   const detail = String(error);
 
   if (statusCode >= 500) {

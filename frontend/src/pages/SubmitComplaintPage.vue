@@ -3,7 +3,8 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSessionStore } from '../stores/session.js';
 import { useComplaintStore } from '../stores/complaint.js';
-import api, { extractApiError, unwrapResponse } from '../services/api.js';
+import { extractApiError, publicOrganizationsApi } from '../services/api.js';
+import { buildComplaintPayload } from '../services/complaint-submission.service.js';
 
 const router = useRouter();
 const session = useSessionStore();
@@ -40,7 +41,7 @@ const complaintAudienceDescription = computed(() => {
   if (isOrganizationMemberUser.value) {
     return 'Your complaint is treated as an organization-linked report and routes into your organization with an optional department selection.';
   }
-  return 'Your complaint is treated as a public complaint and must be routed to a specific organization, unless you explicitly send it to platform triage.';
+  return 'Your complaint must be routed to a specific organization, unless you explicitly send it to platform triage.';
 });
 const namedComplaintNeedsLogin = computed(() => isGuestUser.value && !form.is_anonymous);
 const organizationSelectionRequired = computed(
@@ -146,18 +147,10 @@ const handleUnknownOrganizationToggle = () => {
   }
 };
 
-const ensureSuccess = (payload, fallbackMessage) => {
-  if (!payload?.success) {
-    throw new Error(payload?.message || fallbackMessage);
-  }
-  return payload.data;
-};
-
 const fetchOrganizationOptions = async () => {
   loadingOrganizations.value = true;
   try {
-    const response = await api.get('/public/organizations', { skipAuth: true });
-    organizationOptions.value = ensureSuccess(unwrapResponse(response), 'Failed to fetch organizations') || [];
+    organizationOptions.value = await publicOrganizationsApi.list() || [];
   } catch (error) {
     organizationOptions.value = [];
     if (!formError.value) {
@@ -177,8 +170,7 @@ const fetchDepartmentOptions = async (organizationId) => {
 
   loadingDepartments.value = true;
   try {
-    const response = await api.get(`/public/organizations/${organizationId}/departments`, { skipAuth: true });
-    const rows = ensureSuccess(unwrapResponse(response), 'Failed to fetch departments') || [];
+    const rows = await publicOrganizationsApi.getDepartments(organizationId) || [];
     departmentOptions.value = rows;
 
     if (!rows.some((department) => String(department.id) === String(form.department_id))) {
@@ -213,19 +205,14 @@ const submitComplaint = async () => {
 
   submitting.value = true;
   try {
-    const created = await complaintStore.createComplaint({
-      title: form.title.trim(),
-      complaint: form.complaint.trim(),
-      category: form.category.trim() || null,
-      priority: form.priority,
-      is_anonymous: form.is_anonymous,
-      anonymous_label: form.is_anonymous ? (form.anonymous_label.trim() || 'Guest Citizen') : null,
-      organization_id: hasOrganization.value
-        ? Number(session.currentUser.organization_id)
-        : (form.unknown_organization ? null : Number(form.organization_id)),
-      department_id: form.department_id ? Number(form.department_id) : null,
-      unknown_organization: !hasOrganization.value && form.unknown_organization
+    const payload = buildComplaintPayload({
+      form,
+      sessionUser: session.currentUser || {},
+      hasOrganization: hasOrganization.value,
+      organizationSelectionRequired: organizationSelectionRequired.value,
+      namedComplaintNeedsLogin: namedComplaintNeedsLogin.value
     });
+    const created = await complaintStore.createComplaint(payload);
 
     lastSubmitted.value = created;
     resetForm();

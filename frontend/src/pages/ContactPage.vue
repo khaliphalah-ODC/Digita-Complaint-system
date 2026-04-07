@@ -2,7 +2,7 @@
 import { computed, reactive, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import AuthTopNav from '../components/AuthTopNav.vue';
-import api, { extractApiError } from '../services/api';
+import { emailApi, extractApiError } from '../services/api';
 
 const contactChannels = [
   {
@@ -39,12 +39,37 @@ const faqCards = [
   },
   {
     title: 'Can I use the platform as an organization?',
-    description: 'Yes. Complaint MS supports organization administrators, department-based routing, and reporting tools for institutional response teams.'
+    description: 'Yes. VoiceLink supports organization administrators, department-based routing, and reporting tools for institutional response teams.'
   },
   {
     title: 'Is this suitable for public service environments?',
     description: 'That is exactly the direction of the product. The design is focused on clearer accountability, better service communication, and structured complaint handling.'
   }
+];
+
+const contactSupportAreas = [
+  {
+    label: 'Account guidance',
+    copy: 'Get help with sign-in, onboarding, password recovery, and understanding how VoiceLink access works across roles.'
+  },
+  {
+    label: 'Organization support',
+    copy: 'Clarify how admins, departments, notifications, and complaint workflows fit into your organization setup.'
+  },
+  {
+    label: 'Workflow clarity',
+    copy: 'Ask questions about complaint tracking, status visibility, escalation expectations, and how follow-up is handled.'
+  },
+  {
+    label: 'Project coordination',
+    copy: 'Reach out for implementation support, team onboarding guidance, demos, or setup questions for institutional use.'
+  }
+];
+
+const contactSupportNotes = [
+  'Best for implementation questions, login friction, and workflow clarification.',
+  'Messages go to the configured project support inbox for review and follow-up.',
+  'For faster help, include your organization name and the feature or page involved.'
 ];
 
 const form = reactive({
@@ -99,15 +124,17 @@ const submitForm = async () => {
 
   sending.value = true;
   try {
-    const response = await api.post('/email/contact', {
+    const response = await emailApi.contact({
       full_name: form.full_name.trim(),
       email: form.email.trim().toLowerCase(),
       organization: form.organization.trim(),
       subject: form.subject.trim(),
       message: form.message.trim()
-    }, { skipAuth: true });
+    });
 
-    successMessage.value = response?.data?.message || 'Your message has been sent successfully.';
+    successMessage.value = response?.delivery_status === 'saved'
+      ? 'Your message has been received and saved for follow-up.'
+      : 'Your message has been sent successfully.';
     form.full_name = '';
     form.email = '';
     form.organization = '';
@@ -129,7 +156,7 @@ const submitForm = async () => {
       <div class="mx-auto grid max-w-6xl gap-8 px-6 pb-12 pt-8 sm:px-10 lg:grid-cols-[1.05fr_0.95fr] lg:px-16 lg:items-end lg:pb-16">
         <div>
           <p class="contact-kicker">Contact</p>
-          <h1 class="contact-title mt-4">Let’s make complaint support clearer, faster, and easier to understand.</h1>
+          <h1 class="contact-title mt-4">Let's make complaint support clearer, faster, and easier to understand.</h1>
           <p class="contact-copy mt-5 max-w-2xl text-base leading-7 text-blue-100/82 sm:text-lg">
             Reach out if you need help with the public site, account access, or understanding how the platform supports users and organizations.
           </p>
@@ -169,8 +196,8 @@ const submitForm = async () => {
           </div>
         </section>
 
-        <section class="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-          <div class="contact-panel">
+        <section class="contact-support-section grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
+          <div class="contact-panel contact-support-panel">
             <p class="contact-section-kicker">What We Help With</p>
             <h2 class="contact-section-title mt-3">Support that feels practical instead of overwhelming.</h2>
             <p class="contact-panel-copy mt-4">
@@ -178,14 +205,20 @@ const submitForm = async () => {
             </p>
 
             <div class="mt-8 grid gap-4 sm:grid-cols-2">
-              <div class="contact-mini-panel">
-                <p class="contact-mini-label">Public guidance</p>
-                <p class="contact-mini-copy">Understand how public pages, sign-in, and complaint submission are meant to work.</p>
+              <div v-for="item in contactSupportAreas" :key="item.label" class="contact-mini-panel">
+                <p class="contact-mini-label">{{ item.label }}</p>
+                <p class="contact-mini-copy">{{ item.copy }}</p>
               </div>
-              <div class="contact-mini-panel">
-                <p class="contact-mini-label">Organization support</p>
-                <p class="contact-mini-copy">Clarify how admins, departments, and organizational workflows fit into the platform.</p>
-              </div>
+            </div>
+
+            <div class="contact-support-note-panel mt-4">
+              <p class="contact-mini-label">Before you send a message</p>
+              <ul class="mt-3 space-y-3">
+                <li v-for="note in contactSupportNotes" :key="note" class="contact-note-row">
+                  <span class="contact-note-dot"></span>
+                  <span>{{ note }}</span>
+                </li>
+              </ul>
             </div>
           </div>
 
@@ -534,12 +567,44 @@ const submitForm = async () => {
     max-width: 100%;
   }
 
+  .contact-btn {
+    width: 100%;
+  }
+
   .contact-hero-panel,
   .contact-panel,
   .contact-mini-panel {
     border-radius: 1.2rem;
     padding: 1.15rem;
     box-shadow: 0 10px 22px rgba(12, 32, 61, 0.08);
+  }
+
+  .contact-panel-link {
+    word-break: break-word;
+  }
+}
+
+@media (max-width: 640px) {
+  .contact-title {
+    font-size: clamp(2rem, 10vw, 2.6rem);
+    line-height: 1.02;
+  }
+
+  .contact-section-title,
+  .contact-dark-title {
+    font-size: clamp(1.7rem, 9vw, 2.2rem);
+    line-height: 1.08;
+  }
+
+  .contact-copy,
+  .contact-panel-copy,
+  .contact-mini-copy {
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
+
+  .contact-live-chip {
+    width: 100%;
   }
 }
 </style>

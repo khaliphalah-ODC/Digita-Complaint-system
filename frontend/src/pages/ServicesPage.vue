@@ -5,15 +5,18 @@ import AuthTopNav from '../components/AuthTopNav.vue';
 const servicePillars = [
   {
     title: 'Complaint Intake',
-    description: 'Structured submission flows help people report issues clearly, route them faster, and keep essential context attached from the first step.'
+    description: 'Structured submission flows help people report issues clearly, route them faster, and keep essential context attached from the first step.',
+    icon: ['fas', 'file-lines']
   },
   {
     title: 'Case Visibility',
-    description: 'Every complaint moves through a visible timeline so users and administrators can see progress, ownership, and current status without confusion.'
+    description: 'Every complaint moves through a visible timeline so users and administrators can see progress, ownership, and current status without confusion.',
+    icon: ['fas', 'eye']
   },
   {
     title: 'Response Coordination',
-    description: 'Departments, organization admins, and platform administrators can work inside role-based spaces built to reduce delays and improve accountability.'
+    description: 'Departments, organization admins, and platform administrators can work inside role-based spaces built to reduce delays and improve accountability.',
+    icon: ['fas', 'sitemap']
   }
 ];
 
@@ -54,7 +57,7 @@ const serviceAudience = [
           <p class="services-kicker">Services</p>
           <h1 class="services-title mt-4">Digital complaint services built for faster response and stronger accountability.</h1>
           <p class="services-intro mt-4 max-w-3xl text-base leading-7 text-blue-100/82 sm:text-lg">
-            Complaint MS helps institutions receive, manage, and resolve complaints with clearer workflows, visible progress, and better user communication.
+            VoiceLink helps institutions receive, manage, and resolve complaints with clearer workflows, visible progress, and better user communication.
           </p>
 
           <div class="mt-5 flex flex-wrap gap-3">
@@ -92,7 +95,9 @@ const serviceAudience = [
 
           <div class="mt-8 grid gap-6 lg:grid-cols-3">
             <article v-for="item in servicePillars" :key="item.title" class="services-panel">
-              <div class="services-panel-icon"></div>
+              <div class="services-panel-icon">
+                <font-awesome-icon :icon="item.icon" />
+              </div>
               <h3 class="services-panel-title mt-5">{{ item.title }}</h3>
               <p class="services-panel-copy mt-3">{{ item.description }}</p>
             </article>
@@ -338,10 +343,15 @@ const serviceAudience = [
 }
 
 .services-panel-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 3rem;
   height: 3rem;
   border-radius: 1rem;
   background: linear-gradient(135deg, rgba(24, 58, 99, 0.12), rgba(249, 115, 22, 0.14));
+  color: #183a63;
+  font-size: 1rem;
 }
 
 .services-panel-title,
@@ -399,6 +409,10 @@ const serviceAudience = [
 }
 
 @media (max-width: 767px) {
+  .services-hero {
+    overflow-x: clip;
+  }
+
   .services-hero-card,
   .services-panel,
   .services-flow-panel,
@@ -411,6 +425,40 @@ const serviceAudience = [
 
   .services-title {
     max-width: 100%;
+  }
+
+  .services-btn {
+    width: 100%;
+  }
+
+  .services-cta {
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 640px) {
+  .services-title {
+    font-size: clamp(1.95rem, 10vw, 2.5rem);
+    line-height: 1.02;
+  }
+
+  .services-section-title,
+  .services-cta-title {
+    font-size: clamp(1.7rem, 9vw, 2.2rem);
+    line-height: 1.08;
+  }
+
+  .services-btn {
+    min-height: 3.05rem;
+    padding-inline: 1rem;
+  }
+
+  .services-check-row,
+  .services-section-copy,
+  .services-panel-copy,
+  .services-step-copy,
+  .services-audience-copy {
+    font-size: 0.95rem;
   }
 }
 </style>

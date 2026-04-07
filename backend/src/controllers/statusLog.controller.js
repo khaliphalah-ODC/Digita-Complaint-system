@@ -32,6 +32,7 @@ const runQuery = (sql, params = []) =>
   });
 
 const isOrgAdmin = (req) => req.user?.role === 'org_admin';
+const isSuperAdmin = (req) => req.user?.role === 'super_admin';
 
 export const CreateStatusLogsTable = () => {
   complaintDB.run(statusLogsQuery, async (err) => {
@@ -107,7 +108,13 @@ export const createStatusLog = (req, res) => {
 };
 
 export const getAllStatusLogs = (req, res) => {
-  if (denySuperAdminInternalAccess(req, res, 'Super admin cannot access status logs directly')) {
+  if (isSuperAdmin(req)) {
+    complaintDB.all(fetchAllStatusLogsQuery, [], (err, rows) => {
+      if (err) {
+        return sendError(res, 500, 'Failed to fetch status logs', err.message);
+      }
+      return sendSuccess(res, 200, 'Status logs retrieved successfully', rows);
+    });
     return;
   }
   if (!isOrgAdmin(req)) {
@@ -123,11 +130,8 @@ export const getAllStatusLogs = (req, res) => {
 };
 
 export const getStatusLogById = (req, res) => {
-  if (denySuperAdminInternalAccess(req, res, 'Super admin cannot access status logs directly')) {
-    return;
-  }
-  if (!isOrgAdmin(req)) {
-    return sendError(res, 403, 'Only org_admin can access status logs');
+  if (!isOrgAdmin(req) && !isSuperAdmin(req)) {
+    return sendError(res, 403, 'Only org_admin or super_admin can access status logs');
   }
 
   complaintDB.get(fetchStatusLogByIdQuery, [req.params.id], (err, row) => {
@@ -137,7 +141,7 @@ export const getStatusLogById = (req, res) => {
     if (!row) {
       return sendError(res, 404, 'Status log not found');
     }
-    if (String(row.organization_id) !== String(req.user.organization_id)) {
+    if (isOrgAdmin(req) && String(row.organization_id) !== String(req.user.organization_id)) {
       return sendError(res, 403, 'Access denied');
     }
     return sendSuccess(res, 200, 'Status log retrieved successfully', row);
@@ -145,11 +149,8 @@ export const getStatusLogById = (req, res) => {
 };
 
 export const getStatusLogsByAccessmentId = (req, res) => {
-  if (denySuperAdminInternalAccess(req, res, 'Super admin cannot access status logs directly')) {
-    return;
-  }
-  if (!isOrgAdmin(req)) {
-    return sendError(res, 403, 'Only org_admin can access status logs');
+  if (!isOrgAdmin(req) && !isSuperAdmin(req)) {
+    return sendError(res, 403, 'Only org_admin or super_admin can access status logs');
   }
 
   complaintDB.get(fetchAccessmentByIdQuery, [req.params.accessmentId], (accessmentErr, accessmentRow) => {
@@ -159,7 +160,7 @@ export const getStatusLogsByAccessmentId = (req, res) => {
     if (!accessmentRow) {
       return sendError(res, 404, 'Assessment not found');
     }
-    if (String(accessmentRow.organization_id) !== String(req.user.organization_id)) {
+    if (isOrgAdmin(req) && String(accessmentRow.organization_id) !== String(req.user.organization_id)) {
       return sendError(res, 403, 'Access denied');
     }
 

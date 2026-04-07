@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia';
 import { useRoute } from 'vue-router';
 import { useSessionStore } from '../stores/session';
 import { useNotificationStore } from '../stores/notifications.js';
+import sidebarLogo from '../asset/logo/CMS_Logo.png';
 
 const props = defineProps({
   mobile: {
@@ -54,6 +55,10 @@ const profileAvatar = computed(() => (
   session.currentUser?.photo_url ||
   ''
 ));
+const organizationLogo = computed(() => session.currentOrganizationLogo || '');
+const shouldShowOrganizationLogo = computed(
+  () => (isOrgAdmin.value || isOrganizationMemberUser.value) && Boolean(organizationLogo.value)
+);
 
 const asideClass = computed(() => {
   if (props.mobile) {
@@ -77,9 +82,14 @@ const navLinkClass = (target) => {
 
 const handleNavigate = () => emit('navigate');
 const handleLogout = () => emit('logout');
-const notificationCountForLink = (link) => (
-  link.to === '/notifications' && !isSuperAdmin.value && !isOrgAdmin.value ? unreadCount.value : 0
-);
+const notificationCountForLink = (link) => {
+  if (isSuperAdmin.value) {
+    return 0;
+  }
+
+  const notificationPath = isOrgAdmin.value ? '/org-admin/notifications' : '/notifications';
+  return link.to === notificationPath ? unreadCount.value : 0;
+};
 
 const superAdminLinks = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: ['fas', 'gauge-high'] },
@@ -101,7 +111,9 @@ const orgAdminLinks = [
   { to: '/org-admin/escalations', label: 'Escalations', icon: ['fas', 'triangle-exclamation'] },
   { to: '/org-admin/analytics', label: 'Analytics', icon: ['fas', 'chart-line'] },
   { to: '/org-admin/notifications', label: 'Notifications', icon: ['fas', 'bell'] },
-  { to: '/org-admin/status-logs', label: 'Activity Logs', icon: ['fas', 'circle-info'] }
+  { to: '/org-admin/public-feedback', label: 'Public Feedback', icon: ['fas', 'qrcode'] },
+  { to: '/org-admin/status-logs', label: 'Activity Logs', icon: ['fas', 'circle-info'] },
+  { to: '/org-admin/settings', label: 'Settings', icon: ['fas', 'gear'] }
 ];
 
 const userLinks = computed(() => {
@@ -111,7 +123,8 @@ const userLinks = computed(() => {
     { to: '/track-complaint', label: 'Track Complaint', icon: ['fas', 'eye'] },
     { to: '/notifications', label: 'Notifications', icon: ['fas', 'bell'] },
     { to: '/feedback', label: 'Feedback', icon: ['fas', 'comments'] },
-    { to: '/testimonial', label: 'Testimonials', icon: ['fas', 'file-circle-check'] }
+    { to: '/testimonial', label: 'Testimonials', icon: ['fas', 'file-circle-check'] },
+    { to: '/user/settings', label: 'Settings', icon: ['fas', 'gear'] }
   ];
 
   if (isOrganizationMemberUser.value) {
@@ -129,7 +142,7 @@ const userLinks = computed(() => {
       <template v-if="mobile">
         <div class="rounded-[22px] border border-[var(--app-line)] bg-white/88 p-4 shadow-[var(--app-shadow-xs)]">
           <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--app-primary)]">Civic Console</p>
-          <p class="mt-2 text-[1.8rem] font-black tracking-tight text-[var(--app-title-color)]">Complaint MS</p>
+          <p class="mt-2 text-[1.8rem] font-black tracking-tight text-[var(--app-title-color)]">VoiceLink</p>
           <p class="mt-1 text-sm text-[var(--app-nav-text-muted)]">{{ workspaceLabel }}</p>
 
           <div class="mt-4 flex items-center gap-3 rounded-[18px] border border-[var(--app-line)] bg-[var(--app-surface-soft)] px-3 py-3">
@@ -175,9 +188,7 @@ const userLinks = computed(() => {
 
       <template v-else>
         <div class="flex items-center justify-center pb-4">
-          <div class="app-nav-sidebar-logo flex h-[3.15rem] w-[3.15rem] items-center justify-center text-center text-sm font-bold leading-tight">
-            MS
-          </div>
+          <img :src="sidebarLogo" alt="VoiceLink logo" class="app-nav-sidebar-logo h-[3.15rem] w-[3.15rem] object-contain p-1.5">
         </div>
 
         <nav class="mt-4 flex flex-1 flex-col items-center gap-2.5">
@@ -208,8 +219,23 @@ const userLinks = computed(() => {
       <template v-if="mobile">
         <div class="rounded-[22px] border border-[var(--app-line)] bg-white/88 p-4 shadow-[var(--app-shadow-xs)]">
           <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--app-primary)]">Civic Console</p>
-          <p class="mt-2 text-[1.8rem] font-black tracking-tight text-[var(--app-title-color)]">Complaint MS</p>
+          <p class="mt-2 text-[1.8rem] font-black tracking-tight text-[var(--app-title-color)]">VoiceLink</p>
           <p class="mt-1 text-sm text-[var(--app-nav-text-muted)]">{{ workspaceLabel }}</p>
+
+          <div
+            v-if="shouldShowOrganizationLogo"
+            class="mt-4 flex items-center gap-3 rounded-[18px] border border-[var(--app-line)] bg-white px-3 py-3"
+          >
+            <img
+              :src="organizationLogo"
+              alt="Organization logo"
+              class="h-11 w-11 rounded-2xl border border-[var(--app-line)] bg-white object-contain p-1.5"
+            >
+            <div class="min-w-0">
+              <p class="truncate text-xs font-semibold uppercase tracking-[0.18em] text-[var(--app-primary)]">Organization</p>
+              <p class="truncate text-sm font-semibold text-[var(--app-title-color)]">{{ session.currentOrganizationName || 'Assigned organization' }}</p>
+            </div>
+          </div>
 
           <div class="mt-4 flex items-center gap-3 rounded-[18px] border border-[var(--app-line)] bg-[var(--app-surface-soft)] px-3 py-3">
             <img
@@ -254,9 +280,11 @@ const userLinks = computed(() => {
 
       <template v-else>
         <div class="flex items-center justify-center pb-4">
-          <div class="app-nav-sidebar-logo flex h-[3.15rem] w-[3.15rem] items-center justify-center text-center text-sm font-bold leading-tight">
-            OG
-          </div>
+          <img
+            :src="shouldShowOrganizationLogo ? organizationLogo : sidebarLogo"
+            :alt="shouldShowOrganizationLogo ? 'Organization logo' : 'VoiceLink logo'"
+            class="app-nav-sidebar-logo h-[3.15rem] w-[3.15rem] rounded-2xl object-contain bg-white p-1.5"
+          >
         </div>
 
         <nav class="mt-4 flex flex-1 flex-col items-center gap-2.5 overflow-y-auto">
@@ -287,8 +315,23 @@ const userLinks = computed(() => {
       <template v-if="mobile">
         <div class="rounded-[22px] border border-[var(--app-line)] bg-white/88 p-4 shadow-[var(--app-shadow-xs)]">
           <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--app-primary)]">Civic Console</p>
-          <p class="mt-2 text-[1.8rem] font-black tracking-tight text-slate-900">Complaint MS</p>
+          <p class="mt-2 text-[1.8rem] font-black tracking-tight text-slate-900">VoiceLink</p>
           <p class="mt-1 text-sm text-slate-600">{{ workspaceLabel }}</p>
+
+          <div
+            v-if="shouldShowOrganizationLogo"
+            class="mt-4 flex items-center gap-3 rounded-[18px] border border-[var(--app-line)] bg-white px-3 py-3"
+          >
+            <img
+              :src="organizationLogo"
+              alt="Organization logo"
+              class="h-11 w-11 rounded-2xl border border-[var(--app-line)] bg-white object-contain p-1.5"
+            >
+            <div class="min-w-0">
+              <p class="truncate text-xs font-semibold uppercase tracking-[0.18em] text-[var(--app-primary)]">Organization</p>
+              <p class="truncate text-sm font-semibold text-[var(--app-title-color)]">{{ session.currentOrganizationName || 'Assigned organization' }}</p>
+            </div>
+          </div>
 
           <div class="mt-4 flex items-center gap-3 rounded-[18px] border border-[var(--app-line)] bg-[var(--app-surface-soft)] px-3 py-3">
             <img
@@ -341,9 +384,11 @@ const userLinks = computed(() => {
 
       <template v-else>
         <div class="flex items-center justify-center pb-4">
-          <div class="app-nav-sidebar-logo flex h-[3.15rem] w-[3.15rem] items-center justify-center text-center text-sm font-bold leading-tight">
-            US
-          </div>
+          <img
+            :src="shouldShowOrganizationLogo ? organizationLogo : sidebarLogo"
+            :alt="shouldShowOrganizationLogo ? 'Organization logo' : 'VoiceLink logo'"
+            class="app-nav-sidebar-logo h-[3.15rem] w-[3.15rem] rounded-2xl object-contain bg-white p-1.5"
+          >
         </div>
 
         <nav class="mt-4 flex flex-1 flex-col items-center gap-2.5">

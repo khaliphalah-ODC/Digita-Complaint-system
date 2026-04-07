@@ -188,6 +188,28 @@ export const getAllNotifications = (req, res) => {
   });
 };
 
+export const getNotificationById = (req, res) => {
+  if (denySuperAdminInternalAccess(req, res, 'Super admin cannot access notifications directly')) {
+    return;
+  }
+
+  complaintDB.get(fetchNotificationByIdQuery, [req.params.id], (err, row) => {
+    if (err) {
+      return sendError(res, 500, 'Failed to fetch notification', err.message);
+    }
+    if (!row) {
+      return sendError(res, 404, 'Notification not found');
+    }
+    if (req.user?.role === 'org_admin' && String(row.organization_id) !== String(req.user.organization_id)) {
+      return sendError(res, 403, 'Access denied');
+    }
+    if (req.user?.role === 'user' && Number(row.user_id) !== Number(req.user.id)) {
+      return sendError(res, 403, 'Access denied');
+    }
+    return sendSuccess(res, 200, 'Notification retrieved successfully', row);
+  });
+};
+
 export const markNotificationAsRead = (req, res) => {
   if (denySuperAdminInternalAccess(req, res, 'Super admin cannot access notifications directly')) {
     return;

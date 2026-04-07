@@ -4,62 +4,27 @@ import AnalyticsBarChart from '../../components/superAdmin/AnalyticsBarChart.vue
 import AnalyticsDonutChart from '../../components/superAdmin/AnalyticsDonutChart.vue';
 import AnalyticsLineChart from '../../components/superAdmin/AnalyticsLineChart.vue';
 import PageHeader from '../../components/superAdmin/PageHeader.vue';
-import api, { extractApiError, unwrapResponse } from '../../services/api';
+import EmptyState from '../../components/ui/EmptyState.vue';
+import ErrorState from '../../components/ui/ErrorState.vue';
+import LoadingSpinner from '../../components/ui/LoadingSpinner.vue';
+import { extractApiError, organizationsApi, publicFeedbackApi } from '../../services/api';
+import { createPublicFeedbackAnalyticsSummary, createReportsAnalytics } from '../../services/analytics.service.js';
 
 const loading = ref(false);
 const error = ref('');
-const complaintStatusCounts = ref({
-  submitted: 0,
-  in_review: 0,
-  resolved: 0,
-  closed: 0
-});
-const complaintsByOrganization = ref([]);
-const complaintMonthlyTrend = ref([]);
-const assessmentMonthlyTrend = ref([]);
-const escalationStatusCounts = ref({
-  pending: 0,
-  in_progress: 0,
-  resolved: 0,
-  rejected: 0
-});
-const feedbackSummary = ref({
-  total: 0,
-  average: 0,
-  byRating: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-});
-
-const ensureSuccess = (payload, fallbackMessage) => {
-  if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
-  return payload.data;
-};
+const reportAnalytics = ref(createReportsAnalytics());
+const publicFeedbackAnalytics = ref(createPublicFeedbackAnalyticsSummary());
 
 const fetchReports = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await api.get('/organization/global-stats');
-    const stats = ensureSuccess(unwrapResponse(response), 'Failed to load report data');
-    complaintStatusCounts.value = {
-      submitted: Number(stats.submittedComplaints || 0),
-      in_review: Number(stats.inReviewComplaints || 0),
-      resolved: Number(stats.resolvedComplaints || 0),
-      closed: Number(stats.closedComplaints || 0)
-    };
-    complaintsByOrganization.value = (stats.complaintsByOrganization || []).map((row) => ({
-      label: row.name || 'Unnamed',
-      value: Number(row.complaints || 0)
-    }));
-    complaintMonthlyTrend.value = (stats.complaintMonthlyTrend || []).map((row) => ({
-      label: row.month || '',
-      value: Number(row.value || 0)
-    }));
-    assessmentMonthlyTrend.value = (stats.assessmentMonthlyTrend || []).map((row) => ({
-      label: row.month || '',
-      value: Number(row.value || 0)
-    }));
-    escalationStatusCounts.value = stats.escalationStatusCounts || escalationStatusCounts.value;
-    feedbackSummary.value = stats.feedbackSummary || feedbackSummary.value;
+    const [stats, publicFeedbackStats] = await Promise.all([
+      organizationsApi.getGlobalStats(),
+      publicFeedbackApi.getSystemAnalytics()
+    ]);
+    reportAnalytics.value = createReportsAnalytics(stats);
+    publicFeedbackAnalytics.value = createPublicFeedbackAnalyticsSummary(publicFeedbackStats);
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to load report data');
   } finally {
@@ -67,139 +32,29 @@ const fetchReports = async () => {
   }
 };
 
-const escalationBars = computed(() => {
-  const counts = escalationStatusCounts.value || {};
-  return [
-    { label: 'Pending', value: Number(counts.pending || 0), tone: '#d97706' },
-    { label: 'In Progress', value: Number(counts.in_progress || 0), tone: '#2563eb' },
-    { label: 'Resolved', value: Number(counts.resolved || 0), tone: '#0f766e' },
-    { label: 'Rejected', value: Number(counts.rejected || 0), tone: '#64748b' }
-  ];
-});
-
-const feedbackBars = computed(() => {
-  const byRating = feedbackSummary.value?.byRating || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-  return Object.entries(byRating).map(([rating, count], index) => ({
-    label: `${rating} Star`,
-    value: Number(count || 0),
-    tone: ['#1d4ed8', '#2563eb', '#0f766e', '#d97706', '#7c3aed'][index % 5]
-  }));
-});
-
-const complaintStatusSeries = computed(() => {
-  const counts = complaintStatusCounts.value || {};
-  return [
-    { label: 'Submitted', value: Number(counts.submitted || 0), tone: '#1d4ed8' },
-    { label: 'In Review', value: Number(counts.in_review || 0), tone: '#0f766e' },
-    { label: 'Resolved', value: Number(counts.resolved || 0), tone: '#d97706' },
-    { label: 'Closed', value: Number(counts.closed || 0), tone: '#0f172a' }
-  ];
-});
-
-const totalComplaints = computed(() => complaintStatusSeries.value.reduce((sum, item) => sum + item.value, 0));
-const openComplaints = computed(() => Number(complaintStatusCounts.value.submitted || 0) + Number(complaintStatusCounts.value.in_review || 0));
-const openEscalations = computed(() => Number(escalationStatusCounts.value.pending || 0) + Number(escalationStatusCounts.value.in_progress || 0));
+const escalationBars = computed(() => reportAnalytics.value.escalationBars);
+const feedbackBars = computed(() => reportAnalytics.value.feedbackBars);
+const complaintStatusSeries = computed(() => reportAnalytics.value.complaintStatusSeries);
+const analyticsSummary = computed(() => reportAnalytics.value.analyticsSummary);
+const topComplaintOrganization = computed(() => reportAnalytics.value.topComplaintOrganization);
+const attentionItems = computed(() => reportAnalytics.value.attentionItems);
+const escalationSummaryCards = computed(() => reportAnalytics.value.escalationSummaryCards);
+const escalationAttentionItems = computed(() => reportAnalytics.value.escalationAttentionItems);
+const complaintMonthlyTrend = computed(() => reportAnalytics.value.normalizedStats.complaintMonthlyTrend || []);
+const assessmentMonthlyTrend = computed(() => reportAnalytics.value.normalizedStats.assessmentMonthlyTrend || []);
+const complaintsByOrganization = computed(() => reportAnalytics.value.normalizedStats.complaintsByOrganization || []);
 const complaintResolutionRate = computed(() => {
-  return totalComplaints.value > 0
-    ? Math.round(((Number(complaintStatusCounts.value.resolved || 0) + Number(complaintStatusCounts.value.closed || 0)) / totalComplaints.value) * 100)
-    : 0;
+  const total = Number(analyticsSummary.value.totalComplaints || 0);
+  if (!total) return 0;
+  const resolved = complaintStatusSeries.value
+    .filter((item) => ['Resolved', 'Closed'].includes(item.label))
+    .reduce((sum, item) => sum + Number(item.value || 0), 0);
+  return Math.round((resolved / total) * 100);
 });
-
-const analyticsSummary = computed(() => ({
-  totalComplaints: totalComplaints.value,
-  openComplaints: openComplaints.value,
-  totalEscalations: escalationBars.value.reduce((sum, item) => sum + item.value, 0),
-  averageFeedback: Number(feedbackSummary.value.average || 0).toFixed(2)
-}));
-
-const topComplaintOrganization = computed(() => complaintsByOrganization.value[0] || null);
-
-const attentionItems = computed(() => {
-  const items = [];
-
-  if (openEscalations.value > 0) {
-    items.push({
-      title: 'Escalations are still open',
-      detail: `${openEscalations.value} escalations remain pending or in progress and should be reviewed before the queue grows further.`,
-      tone: 'border-amber-200 bg-amber-50 text-amber-900'
-    });
-  }
-
-  if (openComplaints.value > 0 && complaintResolutionRate.value < 60) {
-    items.push({
-      title: 'Complaint resolution rate is still low',
-      detail: `${complaintResolutionRate.value}% of complaints are resolved or closed based on the current reporting feed.`,
-      tone: 'border-red-200 bg-red-50 text-red-900'
-    });
-  }
-
-  if (topComplaintOrganization.value?.value >= Math.max(5, Math.ceil(totalComplaints.value * 0.2))) {
-    items.push({
-      title: 'Complaint volume is concentrated',
-      detail: `${topComplaintOrganization.value.label} currently carries the highest complaint load with ${topComplaintOrganization.value.value} complaints.`,
-      tone: 'border-blue-200 bg-blue-50 text-blue-900'
-    });
-  }
-
-  if (Number(feedbackSummary.value.average || 0) > 0 && Number(feedbackSummary.value.average || 0) < 3.5) {
-    items.push({
-      title: 'Feedback trend needs follow-up',
-      detail: `Average feedback is ${Number(feedbackSummary.value.average || 0).toFixed(2)}/5, which may indicate delays or poor resolution quality.`,
-      tone: 'border-red-200 bg-red-50 text-red-900'
-    });
-  }
-
-  if (!items.length) {
-    items.push({
-      title: 'No immediate report-level alerts',
-      detail: 'Current complaint, escalation, and feedback data does not show a major platform-level warning.',
-      tone: 'border-emerald-200 bg-emerald-50 text-emerald-900'
-    });
-  }
-
-  return items;
-});
-
-const escalationSummaryCards = computed(() => [
-  {
-    label: 'Open escalations',
-    value: openEscalations.value,
-    detail: 'Pending and in-progress escalation work'
-  },
-  {
-    label: 'Pending',
-    value: Number(escalationStatusCounts.value.pending || 0),
-    detail: 'Cases still waiting to be handled'
-  },
-  {
-    label: 'Resolved',
-    value: Number(escalationStatusCounts.value.resolved || 0),
-    detail: 'Escalations completed in the current feed'
-  },
-  {
-    label: 'Rejected',
-    value: Number(escalationStatusCounts.value.rejected || 0),
-    detail: 'Escalations closed without approval'
-  }
-]);
-
-const escalationAttentionItems = computed(() => {
-  const items = [];
-
-  if (Number(escalationStatusCounts.value.pending || 0) > 0) {
-    items.push(`${Number(escalationStatusCounts.value.pending || 0)} escalations are waiting to be picked up.`);
-  }
-
-  if (Number(escalationStatusCounts.value.in_progress || 0) > Number(escalationStatusCounts.value.resolved || 0)) {
-    items.push('In-progress escalations currently outnumber resolved escalations.');
-  }
-
-  if (!openEscalations.value) {
-    items.push('No open escalations are currently reported.');
-  }
-
-  return items;
-});
+const feedbackSummary = computed(() => reportAnalytics.value.normalizedStats.feedbackSummary || { total: 0, average: 0, byRating: {} });
+const publicFeedbackSummaryCards = computed(() => publicFeedbackAnalytics.value.summaryCards || []);
+const publicFeedbackOrganizationSeries = computed(() => publicFeedbackAnalytics.value.organizationSeries || []);
+const publicFeedbackMonthlyTrend = computed(() => publicFeedbackAnalytics.value.monthlyTrend || []);
 
 onMounted(fetchReports);
 </script>
@@ -242,10 +97,15 @@ onMounted(fetchReports);
       </article>
     </section>
 
-    <p v-if="loading" class="text-sm text-slate-500">Loading reports...</p>
-    <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
+    <LoadingSpinner v-if="loading" label="Loading reports..." />
+    <ErrorState v-else-if="error" title="Could not load reports" :description="error" />
+    <EmptyState
+      v-else-if="analyticsSummary.totalComplaints === 0 && analyticsSummary.totalEscalations === 0"
+      title="No report data is available yet."
+      description="Platform reporting cards and charts will populate once analytics data is available."
+    />
 
-    <section class="space-y-6">
+    <section v-else class="space-y-6">
       <section class="app-section-card">
         <div class="mb-4">
           <h2 class="text-lg font-semibold text-slate-900">Attention Needed</h2>
@@ -267,9 +127,9 @@ onMounted(fetchReports);
 
         <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
           <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p class="text-sm font-medium text-slate-500">In review</p>
-            <p class="mt-2 text-3xl font-semibold text-slate-900">{{ complaintStatusCounts.in_review }}</p>
-            <p class="mt-2 text-sm text-slate-600">Complaints currently active in review.</p>
+            <p class="text-sm font-medium text-slate-500">Open complaints</p>
+            <p class="mt-2 text-3xl font-semibold text-slate-900">{{ analyticsSummary.openComplaints }}</p>
+            <p class="mt-2 text-sm text-slate-600">Submitted and in-review complaints currently active in the workflow.</p>
           </article>
           <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <p class="text-sm font-medium text-slate-500">Resolution rate</p>
@@ -365,6 +225,37 @@ onMounted(fetchReports);
             center-label="Ratings"
             compact
             empty-message="Feedback volume is too low to support a useful rating chart right now."
+          />
+        </div>
+      </section>
+
+      <section>
+        <div class="mb-4">
+          <h2 class="text-lg font-semibold text-slate-900">Public Feedback Channels</h2>
+          <p class="mt-1 text-sm text-slate-600">System-wide visibility into organization QR-accessible public feedback channels.</p>
+        </div>
+        <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+          <article v-for="item in publicFeedbackSummaryCards" :key="item.label" class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p class="text-sm font-medium text-slate-500">{{ item.label }}</p>
+            <p class="mt-2 text-3xl font-semibold text-slate-900">{{ item.value }}</p>
+            <p class="mt-2 text-sm text-slate-600">{{ item.detail }}</p>
+          </article>
+        </div>
+        <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <AnalyticsBarChart
+            title="Public Feedback by Organization"
+            subtitle="Organizations with the highest public feedback activity."
+            :series="publicFeedbackOrganizationSeries"
+            compact
+            empty-message="No public feedback submissions are available yet."
+          />
+          <AnalyticsLineChart
+            title="Public Feedback Monthly Trend"
+            subtitle="Recent monthly submission volume across public organization feedback channels."
+            :series="publicFeedbackMonthlyTrend"
+            line-color="#183a63"
+            compact
+            empty-message="Public feedback trend data is not available yet."
           />
         </div>
       </section>

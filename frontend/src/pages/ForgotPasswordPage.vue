@@ -88,11 +88,11 @@ const submit = async () => {
         <aside class="app-auth-aside relative flex min-h-[360px] flex-col justify-between px-8 py-8 text-white sm:min-h-[560px] sm:w-[44%] sm:px-10 sm:py-10">
           <div class="absolute left-1/2 top-1/4 h-20 w-20 -translate-x-1/2 rounded-full bg-white/8 blur-lg"></div>
           <div>
-            <p class="text-base font-semibold text-white/72">Complaint MS</p>
+            <p class="text-base font-semibold text-white/72">VoiceLink</p>
           </div>
 
           <div class="relative text-center">
-            <h1 class="text-5xl font-black tracking-tight">Reset It.</h1>
+            <h1 class="text-4xl font-black tracking-tight sm:text-5xl">Reset It.</h1>
             <p class="mt-8 text-lg leading-8 text-white/80">
               Set a fresh password.
               <br>
@@ -112,7 +112,7 @@ const submit = async () => {
         </aside>
 
         <form class="app-auth-form px-7 py-8 sm:w-[56%] sm:px-10 sm:py-10 lg:px-12 lg:py-12" @submit.prevent="submit">
-          <div class="mx-auto max-w-[360px]">
+          <div class="mx-auto w-full max-w-md">
             <p class="app-auth-title text-[28px] font-black uppercase tracking-[0.04em]">Forgot Password</p>
 
             <div class="mt-10 space-y-5">

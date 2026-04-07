@@ -63,6 +63,7 @@ const buildResetCodePayload = (code, expiresAt) => {
   const payload = { expires_at: expiresAt };
   if (previewPasswordResetCodeEnabled && code) {
     payload.reset_code_preview = code;
+    payload.reset_token_preview = code;
   }
   return payload;
 };
@@ -479,12 +480,14 @@ export const requestPasswordReset = (req, res) => {
           return sendError(res, 500, 'Failed to generate password reset code', insertErr.message);
         }
 
-        void sendPasswordResetEmail({
-          email: userRow.email,
-          fullName: userRow.full_name,
-          code: rawCode,
-          expiresAt,
-        });
+        if (!previewPasswordResetCodeEnabled) {
+          void sendPasswordResetEmail({
+            email: userRow.email,
+            fullName: userRow.full_name,
+            code: rawCode,
+            expiresAt,
+          });
+        }
 
         if (previewPasswordResetCodeEnabled) {
           console.log(`Password reset code for ${email}: ${rawCode}`);
@@ -533,7 +536,7 @@ export const resetPasswordWithCode = (req, res) => {
       if (!userRow || String(userRow.email).toLowerCase() !== email) {
         return sendError(res, 403, 'Invalid reset details');
       }
-      if (!Number(userRow.email_verified)) {
+      if (!Number(userRow.email_verified) && !previewPasswordResetCodeEnabled) {
         return sendError(res, 403, 'Email must be verified before resetting password');
       }
 
@@ -974,7 +977,7 @@ export const loginUser = (req, res) => {
 
     const settings = await getPlatformSettings();
     const requireEmailVerification = Number(settings?.require_email_verification ?? 1) === 1;
-    if (requireEmailVerification && !Number(userRow.email_verified)) {
+    if (requireEmailVerification && !Number(userRow.email_verified) && !previewPasswordResetCodeEnabled) {
       return sendError(res, 403, 'Please verify your email before logging in');
     }
 

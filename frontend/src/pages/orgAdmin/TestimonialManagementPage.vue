@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import api, { extractApiError, unwrapResponse } from '../../services/api';
+import { extractApiError, testimonialsApi } from '../../services/api';
 import { useSessionStore } from '../../stores/session.js';
 
 const session = useSessionStore();
@@ -9,17 +9,11 @@ const actingId = ref(null);
 const error = ref('');
 const testimonials = ref([]);
 
-const ensureSuccess = (payload, fallbackMessage) => {
-  if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
-  return payload.data;
-};
-
 const fetchTestimonials = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await api.get('/testimonials');
-    testimonials.value = ensureSuccess(unwrapResponse(response), 'Failed to fetch testimonials') || [];
+    testimonials.value = await testimonialsApi.list() || [];
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to fetch testimonials');
   } finally {
@@ -31,7 +25,7 @@ const approve = async (id) => {
   actingId.value = id;
   error.value = '';
   try {
-    await api.patch(`/testimonials/${id}/approve`);
+    await testimonialsApi.approve(id);
     await fetchTestimonials();
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to approve testimonial');
@@ -44,7 +38,7 @@ const reject = async (id) => {
   actingId.value = id;
   error.value = '';
   try {
-    await api.patch(`/testimonials/${id}/reject`);
+    await testimonialsApi.reject(id);
     await fetchTestimonials();
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to reject testimonial');
@@ -60,7 +54,7 @@ const remove = async (id) => {
   actingId.value = id;
   error.value = '';
   try {
-    await api.delete(`/testimonials/${id}`);
+    await testimonialsApi.remove(id);
     await fetchTestimonials();
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to delete testimonial');

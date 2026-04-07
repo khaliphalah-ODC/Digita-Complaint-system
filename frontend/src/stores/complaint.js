@@ -1,26 +1,18 @@
 import { defineStore } from "pinia";
 import {ref} from 'vue'
-import api, {extractApiError, unwrapResponse} from '../services/api.js'
+import { complaintsApi, extractApiError } from '../services/api.js'
 
 export const useComplaintStore = defineStore ('complaint', () => {
     const complaints = ref([]);
     const loading = ref(false);
     const error = ref('');
 
-    const ensureSuccess = (payload, fallbackMessage = 'Request') => {
-        if(!payload?.success) {
-            throw new Error(payload?.message || fallbackMessage);
-        }
-        return payload.data
-    };
-    
     const fetchComplaints = async () => {
         loading.value = true;
         error.value = '';
 
         try {
-            const response = await api.get('/complaint')//get api/complaint
-            complaints.value = ensureSuccess(unwrapResponse(response),'Failed to fetch complaint');
+            complaints.value = await complaintsApi.list();
 
         } catch (error) {
             error.value = extractApiError(error, 'Failed to fetch complaints');
@@ -34,8 +26,7 @@ export const useComplaintStore = defineStore ('complaint', () => {
         error.value = '';
 
         try {
-            const response = await api.post('/complaint', payload);//Post /api/complaint
-            const created = ensureSuccess(unwrapResponse(response), 'Failed to create complaint');
+            const created = await complaintsApi.create(payload);
             complaints.value.unshift(created)
             return created
         } catch (error) {
@@ -52,8 +43,7 @@ export const useComplaintStore = defineStore ('complaint', () => {
         error.value = '';
 
         try {
-            const response = await api.put(`/complaint/${id}`, payload)//PUT /api/complaint
-            const updated = ensureSuccess(unwrapResponse(response), 'Failed to update complaing');
+            const updated = await complaintsApi.update(id, payload);
             complaints.value = complaints.value.map((c) => (c.id === updated.id ? updated : c));
             return updated
         } catch (error) {
@@ -70,8 +60,7 @@ export const useComplaintStore = defineStore ('complaint', () => {
         error.value = '';
 
         try {
-            const response = await api.delete(`/complaint/${id}`)// Delete /api/complaint
-           ensureSuccess(unwrapResponse(response), 'Failed to delete complaint');
+           await complaintsApi.remove(id);
            complaints.value = complaints.value.filter((c) => c.id !== id);
 
         } catch (error) {

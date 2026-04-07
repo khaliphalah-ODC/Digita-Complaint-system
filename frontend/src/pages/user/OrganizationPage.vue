@@ -1,6 +1,10 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
-import api, { extractApiError, unwrapResponse } from '../../services/api';
+import { extractApiError, organizationsApi } from '../../services/api';
+import EmptyState from '../../components/ui/EmptyState.vue';
+import ErrorState from '../../components/ui/ErrorState.vue';
+import LoadingSpinner from '../../components/ui/LoadingSpinner.vue';
+import StatusBadge from '../../components/ui/StatusBadge.vue';
 import { useSessionStore } from '../../stores/session.js';
 
 const session = useSessionStore();
@@ -14,17 +18,11 @@ const joinCodeDownloading = ref(false);
 const joinCodeCopying = ref(false);
 const joinLinkCopying = ref(false);
 
-const ensureSuccess = (payload, fallbackMessage) => {
-  if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
-  return payload.data;
-};
-
 const fetchOrganizations = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await api.get('/organization');
-    organizations.value = ensureSuccess(unwrapResponse(response), 'Failed to fetch organization') || [];
+    organizations.value = await organizationsApi.list() || [];
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to fetch organization');
   } finally {
@@ -45,8 +43,7 @@ const fetchJoinCode = async (organizationId) => {
   joinCodeLoading.value = true;
   joinCodeError.value = '';
   try {
-    const response = await api.get(`/organization/${organizationId}/join-code`);
-    joinCode.value = ensureSuccess(unwrapResponse(response), 'Failed to fetch join code');
+    joinCode.value = await organizationsApi.getJoinCode(organizationId);
   } catch (requestError) {
     joinCodeError.value = extractApiError(requestError, 'Failed to fetch join code');
   } finally {
@@ -59,9 +56,7 @@ const regenerateJoinCode = async () => {
   joinCodeLoading.value = true;
   joinCodeError.value = '';
   try {
-    const response = await api.post(`/organization/${myOrganization.value.organization_id}/join-code/regenerate`);
-    const payload = ensureSuccess(unwrapResponse(response), 'Failed to regenerate join code');
-    joinCode.value = payload?.join_code || null;
+    joinCode.value = await organizationsApi.regenerateJoinCode(myOrganization.value.organization_id);
   } catch (requestError) {
     joinCodeError.value = extractApiError(requestError, 'Failed to regenerate join code');
   } finally {
@@ -147,15 +142,23 @@ watch(
       </button>
     </header>
 
-    <p v-if="error" class="rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{{ error }}</p>
-    <p v-if="loading" class="app-section-card text-sm text-slate-500">Loading organization...</p>
+    <ErrorState
+      v-if="error"
+      title="Unable to load organization"
+      :description="error"
+    />
+    <LoadingSpinner
+      v-if="loading"
+      label="Loading organization..."
+      wrapper-class="app-section-card"
+    />
 
-    <section v-if="!loading && !hasOrganization" :class="panelClass">
-      <h2 class="text-xl font-semibold text-[var(--app-primary-ink)]">Organization Unavailable</h2>
-      <p class="mt-2 text-[0.98rem] text-[var(--app-muted-color)]">
-        Organization creation is managed from the super-admin workspace. This page is read-only for regular users.
-      </p>
-    </section>
+    <EmptyState
+      v-if="!loading && !hasOrganization"
+      :container-class="panelClass"
+      title="Organization unavailable"
+      description="Organization creation is managed from the super-admin workspace. This page is read-only for regular users."
+    />
 
     <section v-else-if="!loading && hasOrganization" :class="panelClass">
       <h2 class="text-xl font-semibold text-[var(--app-primary-ink)]">Organization Detail</h2>
@@ -185,15 +188,9 @@ watch(
       </div>
 
       <div class="app-action-row mt-4 flex flex-wrap gap-2">
-        <span class="app-badge app-badge-neutral">
-          ID: {{ myOrganization.organization_id }}
-        </span>
-        <span class="app-badge app-badge-neutral">
-          Status: {{ myOrganization.status || 'active' }}
-        </span>
-        <span class="app-badge app-badge-neutral">
-          Complaints: {{ myOrganization.complaints_count ?? 0 }}
-        </span>
+        <StatusBadge :value="`ID: ${myOrganization.organization_id}`" tone="neutral" />
+        <StatusBadge :value="myOrganization.status || 'active'" />
+        <StatusBadge :value="`Complaints: ${myOrganization.complaints_count ?? 0}`" tone="neutral" />
       </div>
 
       <section v-if="isOrgAdmin" class="mt-6 app-section-card">
@@ -208,9 +205,12 @@ watch(
           </button>
         </div>
 
-        <p v-if="joinCodeError" class="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {{ joinCodeError }}
-        </p>
+        <ErrorState
+          v-if="joinCodeError"
+          class="mt-3"
+          title="Unable to load join code"
+          :description="joinCodeError"
+        />
 
         <div class="mt-4 grid gap-4 md:grid-cols-[1.1fr,0.9fr]">
           <div class="app-card p-4">

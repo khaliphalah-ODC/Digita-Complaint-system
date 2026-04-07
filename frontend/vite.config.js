@@ -11,6 +11,11 @@ export default defineConfig({
     vueDevTools(),
     tailwindcss(),
   ],
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './src/test/setup.js'
+  },
   server: {
     proxy: {
       '/api': {

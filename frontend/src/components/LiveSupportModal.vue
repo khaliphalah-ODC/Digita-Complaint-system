@@ -1,6 +1,6 @@
 <script setup>
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
-import api, { extractApiError, unwrapResponse } from '../services/api.js';
+import { complaintMessagesApi, extractApiError } from '../services/api.js';
 
 const props = defineProps({
   visible: {
@@ -40,11 +40,6 @@ const editDraft = ref('');
 const messageViewport = ref(null);
 let refreshTimer = null;
 const authRequiredMessage = 'Sign in is required to access complaint chat.';
-
-const ensureSuccess = (payload, fallbackMessage) => {
-  if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
-  return payload.data;
-};
 
 const isAuthenticated = computed(() => Boolean(localStorage.getItem('token')));
 const requiresSignIn = computed(() => props.requiresAuth && !isAuthenticated.value);
@@ -128,8 +123,7 @@ const loadMessages = async () => {
   syncing.value = !firstLoad;
   error.value = '';
   try {
-    const response = await api.get(`/complaint-messages/${props.complaintId}`);
-    messages.value = ensureSuccess(unwrapResponse(response), 'Failed to fetch chat messages') || [];
+    messages.value = await complaintMessagesApi.list(props.complaintId) || [];
     await scrollToLatest(firstLoad ? 'auto' : 'smooth');
   } catch (requestError) {
     error.value = normalizeChatError(requestError, 'Failed to fetch chat messages');
@@ -145,8 +139,7 @@ const sendMessage = async () => {
   sending.value = true;
   error.value = '';
   try {
-    const response = await api.post(`/complaint-messages/${props.complaintId}`, { message: text });
-    const created = ensureSuccess(unwrapResponse(response), 'Failed to send message');
+    const created = await complaintMessagesApi.create(props.complaintId, { message: text });
     messages.value.push(created);
     input.value = '';
     await scrollToLatest();
@@ -178,8 +171,7 @@ const saveEdit = async (message) => {
   if (!props.complaintId || !message?.id || !text || requiresSignIn.value) return;
   error.value = '';
   try {
-    const response = await api.put(`/complaint-messages/${props.complaintId}/${message.id}`, { message: text });
-    const updated = ensureSuccess(unwrapResponse(response), 'Failed to update message');
+    const updated = await complaintMessagesApi.update(props.complaintId, message.id, { message: text });
     messages.value = messages.value.map((item) => (item.id === updated.id ? updated : item));
     cancelEdit();
     await scrollToLatest('auto');
@@ -197,7 +189,7 @@ const deleteMessage = async (message) => {
   actionMenuId.value = null;
   error.value = '';
   try {
-    await api.delete(`/complaint-messages/${props.complaintId}/${message.id}`);
+    await complaintMessagesApi.remove(props.complaintId, message.id);
     messages.value = messages.value.filter((item) => item.id !== message.id);
     if (editingId.value === message.id) {
       cancelEdit();

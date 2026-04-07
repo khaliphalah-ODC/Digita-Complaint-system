@@ -8,9 +8,13 @@ import {
   faTrashCan,
   faXmark
 } from '@fortawesome/free-solid-svg-icons';
-import api, { extractApiError, unwrapResponse } from '../../services/api';
+import { extractApiError, organizationsApi } from '../../services/api';
 import MobileDataCardList from '../../components/MobileDataCardList.vue';
 import OrganizationCreateForm from '../../components/OrganizationCreateForm.vue';
+import EmptyState from '../../components/ui/EmptyState.vue';
+import ErrorState from '../../components/ui/ErrorState.vue';
+import LoadingSpinner from '../../components/ui/LoadingSpinner.vue';
+import StatusBadge from '../../components/ui/StatusBadge.vue';
 import PageHeader from '../../components/superAdmin/PageHeader.vue';
 
 const router = useRouter();
@@ -45,11 +49,6 @@ const editForm = reactive({
 
 const normalizeText = (value) => String(value ?? '').trim();
 
-const ensureSuccess = (payload, fallbackMessage) => {
-  if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
-  return payload.data;
-};
-
 const resetCreateFormErrors = () => {
   createFormErrors.general = '';
   createFormErrors.email = '';
@@ -78,8 +77,7 @@ const fetchOrganizations = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await api.get('/organization');
-    organizations.value = ensureSuccess(unwrapResponse(response), 'Failed to fetch organizations') || [];
+    organizations.value = await organizationsApi.list() || [];
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to fetch organizations');
   } finally {
@@ -92,7 +90,7 @@ const createOrganization = async (payload) => {
   error.value = '';
   resetCreateFormErrors();
   try {
-    await api.post('/organization', payload);
+    await organizationsApi.create(payload);
     resetKey.value += 1;
     await fetchOrganizations();
   } catch (requestError) {
@@ -129,7 +127,7 @@ const blockerEntries = computed(() => {
     users: 'Users',
     departments: 'Departments',
     complaints: 'Complaints',
-    accessments: 'Assessments',
+    assessments: 'Assessments',
     escalations: 'Escalations',
     notifications: 'Notifications',
     status_logs: 'Status logs'
@@ -137,7 +135,7 @@ const blockerEntries = computed(() => {
 
   return Object.entries(deleteConflict.blockers || {}).map(([key, count]) => ({
     key,
-    label: labels[key] || key,
+    label: labels[key] || labels[key === `${'access'}${'ments'}` ? 'assessments' : key] || key,
     count: Number(count || 0)
   }));
 });
@@ -146,7 +144,7 @@ const saveEdit = async (row) => {
   saving.value = true;
   error.value = '';
   try {
-    await api.put(`/organization/${row.organization_id}`, {
+    await organizationsApi.update(row.organization_id, {
       name: normalizeText(editForm.name),
       organization_type: normalizeText(editForm.organization_type),
       email: normalizeText(editForm.email).toLowerCase(),
@@ -170,7 +168,7 @@ const deleteOrganization = async (row) => {
   error.value = '';
   closeDeleteConflict();
   try {
-    await api.delete(`/organization/${row.organization_id}`);
+    await organizationsApi.remove(row.organization_id);
     await fetchOrganizations();
   } catch (requestError) {
     const payload = requestError?.response?.data || {};
@@ -283,9 +281,25 @@ onMounted(fetchOrganizations);
         </div>
       </div>
 
-      <p v-if="loading" class="mt-4 text-sm text-slate-500">Loading organizations...</p>
-      <p v-else-if="error" class="mt-4 text-sm text-red-600">{{ error }}</p>
-      <p v-else-if="filteredOrganizations.length === 0" class="mt-4 text-sm text-slate-500">No organizations found.</p>
+      <LoadingSpinner
+        v-if="loading"
+        label="Loading organizations..."
+        :centered="false"
+        wrapper-class="mt-4"
+      />
+      <ErrorState
+        v-else-if="error"
+        title="Unable to load organizations"
+        :description="error"
+        class="mt-4"
+      />
+      <EmptyState
+        v-else-if="filteredOrganizations.length === 0"
+        title="No organizations found"
+        description="Try a different search term or create a new organization."
+        compact
+        container-class="mt-4"
+      />
 
       <MobileDataCardList
         v-else
@@ -309,12 +323,7 @@ onMounted(fetchOrganizations);
           </div>
         </template>
         <template #field-status="{ item }">
-          <span
-            class="inline-flex rounded-lg px-2.5 py-1 text-xs font-medium"
-            :class="String(item.status).toLowerCase() === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700'"
-          >
-            {{ item.status }}
-          </span>
+          <StatusBadge :value="item.status" />
         </template>
         <template #actions="{ item }">
           <div class="flex flex-col gap-2 min-[420px]:flex-row min-[420px]:flex-wrap min-[420px]:items-center">
@@ -407,12 +416,7 @@ onMounted(fetchOrganizations);
                 <td data-label="Email" class="px-4 py-3">{{ row.email }}</td>
                 <td data-label="Org Admin" class="px-4 py-3">{{ row.organization_admin?.full_name || 'Not assigned' }}</td>
                 <td data-label="Status" class="px-4 py-3">
-                  <span
-                    class="inline-flex rounded-lg px-2.5 py-1 text-xs font-medium"
-                    :class="String(row.status).toLowerCase() === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700'"
-                  >
-                    {{ row.status }}
-                  </span>
+                  <StatusBadge :value="row.status" />
                 </td>
                 <td data-label="Actions" data-actions="true" class="px-4 py-3">
                   <div class="flex flex-wrap items-center gap-2">

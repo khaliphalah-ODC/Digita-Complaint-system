@@ -5,7 +5,7 @@ import AuthTopNav from '../components/AuthTopNav.vue';
 import GoogleAuthButton from '../components/GoogleAuthButton.vue';
 import { socialLinks } from '../config/socialLinks';
 import { useSessionStore } from '../stores/session';
-import api, { extractApiError, unwrapResponse } from '../services/api.js';
+import { extractApiError, publicOrganizationsApi } from '../services/api.js';
 
 const router = useRouter();
 const route = useRoute();
@@ -31,13 +31,6 @@ const joinResolved = ref(false);
 const joinedOrganization = ref(null);
 const departmentOptions = ref([]);
 
-const ensureSuccess = (payload, fallbackMessage) => {
-  if (!payload?.success) {
-    throw new Error(payload?.message || fallbackMessage);
-  }
-  return payload.data;
-};
-
 const normalizedJoinCode = computed(() => String(signUpForm.join_code || '').trim().toUpperCase());
 const hasJoinCode = computed(() => Boolean(normalizedJoinCode.value));
 
@@ -54,8 +47,7 @@ const resolveJoinCode = async (codeOverride = '') => {
 
   loadingJoinContext.value = true;
   try {
-    const response = await api.get(`/public/organizations/join/${encodeURIComponent(code)}`, { skipAuth: true });
-    const data = ensureSuccess(unwrapResponse(response), 'Failed to validate join code');
+    const data = await publicOrganizationsApi.getJoinDetails(code);
     joinedOrganization.value = data?.organization || null;
     departmentOptions.value = data?.departments || [];
     joinResolved.value = true;
@@ -162,11 +154,11 @@ onMounted(() => {
             <aside class="app-auth-aside relative flex min-h-[320px] flex-col justify-between px-7 py-7 text-white sm:min-h-[520px] sm:w-[44%] sm:px-9 sm:py-9">
               <div class="absolute left-1/2 top-1/4 h-20 w-20 -translate-x-1/2 rounded-full bg-white/8 blur-lg"></div>
               <div>
-                <p class="text-base font-semibold text-white/72">Complaint MS</p>
+                <p class="text-base font-semibold text-white/72">VoiceLink</p>
               </div>
 
               <div class="relative text-center">
-                <h1 class="text-5xl font-black tracking-tight">Join Us!</h1>
+                <h1 class="text-4xl font-black tracking-tight sm:text-5xl">Join Us!</h1>
                 <p class="mt-8 text-lg leading-8 text-white/80">
                   Create your account.
                   <br>
@@ -186,7 +178,7 @@ onMounted(() => {
             </aside>
 
             <form class="app-auth-form px-6 py-7 sm:w-[56%] sm:px-9 sm:py-9 lg:px-10 lg:py-10" @submit.prevent="submit">
-              <div class="mx-auto max-w-[320px]">
+              <div class="mx-auto w-full max-w-md">
                 <div class="mb-6 flex rounded-full border border-[var(--app-line)] bg-white/90 p-1 text-sm font-semibold text-slate-600 shadow-sm sm:hidden">
                   <RouterLink
                     to="/signin"

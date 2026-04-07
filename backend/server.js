@@ -4,6 +4,7 @@ import cors from 'cors';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import './src/model/connect.js';
+import complaintDB from './src/model/connect.js';
 
 
 // Import routes and controllers
@@ -21,6 +22,8 @@ import complaintMessageRoutes from './src/routes/complaintMessage.route.js';
 import testimonialRoutes from './src/routes/testimonial.route.js';
 import platformSettingsRoutes from './src/routes/platformSettings.route.js';
 import auditRoutes from './src/routes/audit.route.js';
+import publicFeedbackRoutes from './src/routes/publicFeedback.route.js';
+import settingsRoutes from './src/routes/settings.route.js';
 import verifyToken from './src/middleware/verifyToken.js';
 import { getPublicOrganizationJoinDetails, getPublicOrganizationOptions } from './src/controllers/organization.controller.js';
 import { getPublicDepartmentsByOrganization } from './src/controllers/department.controller.js';
@@ -45,6 +48,9 @@ import { CreateNotificationsTable } from './src/controllers/notification.control
 import { CreateComplaintMessagesTable } from './src/controllers/complaintMessage.controller.js';
 import { CreateTestimonialsTable } from './src/controllers/testimonial.controller.js';
 import { CreatePlatformSettingsTable } from './src/controllers/platformSettings.controller.js';
+import { CreatePublicFeedbackTables } from './src/controllers/publicFeedback.controller.js';
+import { CreateSettingsTables } from './src/controllers/settings.controller.js';
+import { ContactSubmissionTable } from './src/model/contactSubmission.model.js';
 import { seedSuperAdmin } from './src/utils/seed/superAdmin.seed.js';
 
 //app
@@ -87,6 +93,9 @@ app.use('/api/complaint-messages', verifyToken, complaintMessageRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/platform-settings', verifyToken, platformSettingsRoutes);
 app.use('/api/audit-logs', verifyToken, auditRoutes);
+app.use('/api/public/feedback', publicFeedbackRoutes);
+app.use('/api/public-feedback', publicFeedbackRoutes);
+app.use('/api/settings', verifyToken, settingsRoutes);
 
 // Compatibility aliases kept during route standardization.
 app.use('/api/accessments', verifyToken, assessmentRoutes);
@@ -126,6 +135,9 @@ export const initializeDatabase = () => {
   CreateAuditLogsTable();
   CreateTestimonialsTable();
   CreatePlatformSettingsTable();
+  CreatePublicFeedbackTables();
+  CreateSettingsTables();
+  complaintDB.run(ContactSubmissionTable);
   
 };
 

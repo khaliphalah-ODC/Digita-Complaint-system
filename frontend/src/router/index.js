@@ -1,60 +1,47 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import PublicLayout from '../layouts/PublicLayout.vue';
 import AdminLayout from '../layouts/AdminLayout.vue';
-import HomePage from '../pages/HomePage.vue';
-import LoginPage from '../pages/LoginPage.vue';
-import ForgotPasswordPage from '../pages/ForgotPasswordPage.vue';
-import ChangePasswordPage from '../pages/ChangePasswordPage.vue';
-import SubmitComplaintPage from '../pages/SubmitComplaintPage.vue';
-import TrackComplaintPage from '../pages/TrackComplaintPage.vue';
-import UserDashboardPage from '../pages/user/DashboardPage.vue';
-import UserNotificationPage from '../pages/user/NotificationPage.vue';
-import OrgAdminDashboardPage from '../pages/orgAdmin/DashboardPage.vue';
-import OrgAdminAnalyticsPage from '../pages/orgAdmin/AnalyticsPage.vue';
-import SignUpPage from '../pages/SignUpPage.vue';
-import VerifyEmailPage from '../pages/VerifyEmailPage.vue';
+import { readAuthClaimsFromToken, resolveAuthNavigation } from './auth.js';
 
-import SuperAdminDashboardPage from '../pages/superAdmin/DashboardPage.vue';
-import SuperAdminReportsPage from '../pages/superAdmin/ReportsPage.vue';
-import SuperAdminSettingsPage from '../pages/superAdmin/SettingsPage.vue';
-import SuperAdminTriageQueuePage from '../pages/superAdmin/TriageQueuePage.vue';
-import OrganizationPage from '../pages/user/OrganizationPage.vue';
-import SuperAdminOrganizationManagementPage from '../pages/superAdmin/OrganizationManagementPage.vue';
-import SuperAdminOrganizationDetailPage from '../pages/superAdmin/OrganizationDetailPage.vue';
-import FeedbackPage from '../pages/user/FeedbackPage.vue';
-import OrgAdminUserManagementPage from '../pages/orgAdmin/UserManagementPage.vue';
-import OrgAdminComplaintsPage from '../pages/orgAdmin/ComplaintsPage.vue';
-import OrgAdminComplaintDetailPage from '../pages/orgAdmin/ComplaintDetailPage.vue';
-import OrgAdminDepartmentManagementPage from '../pages/orgAdmin/DepartmentManagementPage.vue';
-import OrgAdminAssessmentManagementPage from '../pages/orgAdmin/AssessmentManagementPage.vue';
-import OrgAdminEscalationManagementPage from '../pages/orgAdmin/EscalationManagementPage.vue';
-import OrgAdminNotificationManagementPage from '../pages/orgAdmin/NotificationManagementPage.vue';
-import OrgAdminTestimonialManagementPage from '../pages/orgAdmin/TestimonialManagementPage.vue';
-import SharedAuditLogsPage from '../pages/admin/shared/AuditLogsPage.vue';
-import AboutView from '../pages/AboutView.vue';
-import FeaturesPage from '../pages/FeaturesView.vue';
-import ServicesPage from '../pages/ServicesPage.vue';
-import ContactPage from '../pages/ContactPage.vue';
-import TestimonialPage from '../pages/user/TestimonialPage.vue';
-
-const readAuthClaimsFromToken = () => {
-  const token = localStorage.getItem('token');
-  if (!token) return {};
-  const parts = token.split('.');
-  if (parts.length !== 3) return {};
-  try {
-    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-    const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
-    return JSON.parse(atob(padded)) || {};
-  } catch (_error) {
-    return {};
-  }
-};
-
-const isSuperAdminRole = (role) => role === 'super_admin';
-const isOrgAdminRole = (role) => role === 'org_admin';
-const isAdminFamilyRole = (role) => isSuperAdminRole(role) || isOrgAdminRole(role);
-const hasOrganizationContext = (claims = {}) => Boolean(claims?.organization_id) && !isSuperAdminRole(claims?.role || '');
+const HomePage = () => import('../pages/HomePage.vue');
+const LoginPage = () => import('../pages/LoginPage.vue');
+const ForgotPasswordPage = () => import('../pages/ForgotPasswordPage.vue');
+const ChangePasswordPage = () => import('../pages/ChangePasswordPage.vue');
+const SubmitComplaintPage = () => import('../pages/SubmitComplaintPage.vue');
+const TrackComplaintPage = () => import('../pages/TrackComplaintPage.vue');
+const UserDashboardPage = () => import('../pages/user/DashboardPage.vue');
+const UserNotificationPage = () => import('../pages/user/NotificationPage.vue');
+const OrgAdminDashboardPage = () => import('../pages/orgAdmin/DashboardPage.vue');
+const OrgAdminAnalyticsPage = () => import('../pages/orgAdmin/AnalyticsPage.vue');
+const SignUpPage = () => import('../pages/SignUpPage.vue');
+const VerifyEmailPage = () => import('../pages/VerifyEmailPage.vue');
+const SuperAdminDashboardPage = () => import('../pages/superAdmin/DashboardPage.vue');
+const SuperAdminReportsPage = () => import('../pages/superAdmin/ReportsPage.vue');
+const SuperAdminSettingsPage = () => import('../pages/superAdmin/SettingsPage.vue');
+const SuperAdminTriageQueuePage = () => import('../pages/superAdmin/TriageQueuePage.vue');
+const OrganizationPage = () => import('../pages/user/OrganizationPage.vue');
+const SuperAdminOrganizationManagementPage = () => import('../pages/superAdmin/OrganizationManagementPage.vue');
+const SuperAdminOrganizationDetailPage = () => import('../pages/superAdmin/OrganizationDetailPage.vue');
+const FeedbackPage = () => import('../pages/user/FeedbackPage.vue');
+const OrgAdminUserManagementPage = () => import('../pages/orgAdmin/UserManagementPage.vue');
+const OrgAdminComplaintsPage = () => import('../pages/orgAdmin/ComplaintsPage.vue');
+const OrgAdminComplaintDetailPage = () => import('../pages/orgAdmin/ComplaintDetailPage.vue');
+const OrgAdminDepartmentManagementPage = () => import('../pages/orgAdmin/DepartmentManagementPage.vue');
+const OrgAdminAssessmentManagementPage = () => import('../pages/orgAdmin/AssessmentManagementPage.vue');
+const OrgAdminEscalationManagementPage = () => import('../pages/orgAdmin/EscalationManagementPage.vue');
+const OrgAdminNotificationManagementPage = () => import('../pages/orgAdmin/NotificationManagementPage.vue');
+const OrgAdminTestimonialManagementPage = () => import('../pages/orgAdmin/TestimonialManagementPage.vue');
+const SharedAuditLogsPage = () => import('../pages/admin/shared/AuditLogsPage.vue');
+const AboutView = () => import('../pages/AboutView.vue');
+const FeaturesPage = () => import('../pages/FeaturesView.vue');
+const ServicesPage = () => import('../pages/ServicesPage.vue');
+const ContactPage = () => import('../pages/ContactPage.vue');
+const TestimonialPage = () => import('../pages/user/TestimonialPage.vue');
+const PublicOrganizationFeedbackPage = () => import('../pages/PublicOrganizationFeedbackPage.vue');
+const OrgAdminPublicFeedbackManagementPage = () => import('../pages/orgAdmin/PublicFeedbackManagementPage.vue');
+const OrgAdminPublicFeedbackSubmissionDetailPage = () => import('../pages/orgAdmin/PublicFeedbackSubmissionDetailPage.vue');
+const OrgAdminSettingsPage = () => import('../pages/orgAdmin/SettingsPage.vue');
+const UserSettingsPage = () => import('../pages/user/SettingsPage.vue');
 
 const routes = [
   {
@@ -85,6 +72,11 @@ const routes = [
         path: 'contact',
         name: 'contact',
         component: ContactPage
+      },
+      {
+        path: 'public-feedback/:slug',
+        name: 'public-feedback',
+        component: PublicOrganizationFeedbackPage
       },
       {
         path: 'signin',
@@ -146,7 +138,6 @@ const routes = [
       { path: 'admin/triage', name: 'admin-triage', component: SuperAdminTriageQueuePage, meta: { requiresAdmin: true } },
       { path: 'admin/organizations/:id', name: 'admin-organization-detail', component: SuperAdminOrganizationDetailPage, meta: { requiresAdmin: true } },
       { path: 'admin/departments', redirect: '/admin/dashboard' },
-      { path: 'admin/accessments', redirect: '/admin/dashboard' },
       { path: 'admin/assessments', redirect: '/admin/dashboard' },
       { path: 'admin/escalations', redirect: '/admin/dashboard' },
       { path: 'admin/reports', name: 'admin-reports', component: SuperAdminReportsPage, meta: { requiresAdmin: true } },
@@ -162,24 +153,26 @@ const routes = [
       { path: 'org-admin/complaints/:id', name: 'org-admin-complaint-detail', component: OrgAdminComplaintDetailPage, meta: { requiresOrgAdmin: true } },
       { path: 'org-admin/analytics', name: 'org-admin-analytics', component: OrgAdminAnalyticsPage, meta: { requiresOrgAdmin: true } },
       { path: 'org-admin/departments', name: 'org-admin-departments', component: OrgAdminDepartmentManagementPage, meta: { requiresOrgAdmin: true } },
-      { path: 'org-admin/accessments', redirect: '/org-admin/assessments' },
       { path: 'org-admin/assessments', name: 'org-admin-assessments', component: OrgAdminAssessmentManagementPage, meta: { requiresOrgAdmin: true } },
       { path: 'org-admin/escalations', name: 'org-admin-escalations', component: OrgAdminEscalationManagementPage, meta: { requiresOrgAdmin: true } },
       { path: 'org-admin/testimonials', redirect: '/admin/testimonials' },
       { path: 'org-admin/notifications', name: 'org-admin-notifications', component: OrgAdminNotificationManagementPage, meta: { requiresOrgAdmin: true } },
+      { path: 'org-admin/public-feedback', name: 'org-admin-public-feedback', component: OrgAdminPublicFeedbackManagementPage, meta: { requiresOrgAdmin: true } },
+      { path: 'org-admin/public-feedback/submissions/:id', name: 'org-admin-public-feedback-submission-detail', component: OrgAdminPublicFeedbackSubmissionDetailPage, meta: { requiresOrgAdmin: true } },
+      { path: 'org-admin/settings', name: 'org-admin-settings', component: OrgAdminSettingsPage, meta: { requiresOrgAdmin: true } },
       { path: 'org-admin/status-logs', name: 'org-admin-status-logs', component: SharedAuditLogsPage, meta: { requiresOrgAdmin: true } },
       { path: 'org-admin/organization', name: 'org-admin-organization', component: OrganizationPage, meta: { requiresOrgAdmin: true } },
       { path: 'users', redirect: '/org-admin/users' },
       { path: 'organizations', name: 'organizations', component: OrganizationPage, meta: { requiresOrganizationContext: true } },
       { path: 'organization', redirect: '/org-admin/organization' },
       { path: 'departments', redirect: '/org-admin/departments' },
-      { path: 'accessments', redirect: '/org-admin/assessments' },
       { path: 'assessments', redirect: '/org-admin/assessments' },
       { path: 'escalations', redirect: '/org-admin/escalations' },
       { path: 'status-logs', redirect: '/org-admin/status-logs' },
       { path: 'feedback', name: 'feedback', component: FeedbackPage, meta: { requiresUserOnly: true } },
       { path: 'testimonial', name: 'testimonial', component: TestimonialPage, meta: { requiresUserOnly: true } },
       { path: 'notifications', name: 'notifications', component: UserNotificationPage, meta: { requiresUserOnly: true } },
+      { path: 'user/settings', name: 'user-settings', component: UserSettingsPage, meta: { requiresUserOnly: true } },
     ]
   }
 ];
@@ -192,99 +185,7 @@ const router = createRouter({
 router.beforeEach((to) => {
   const token = localStorage.getItem('token');
   const claims = readAuthClaimsFromToken();
-  const role = claims?.role || '';
-  const mustChangePassword = Number(claims?.must_change_password || 0) === 1;
-  const isAdminRoute = to.path.startsWith('/admin');
-  const restrictedSuperAdminPaths = new Set([
-    '/admin/complaints',
-    '/admin/departments',
-    '/admin/accessments',
-    '/admin/assessments',
-    '/admin/escalations',
-    '/admin/notifications',
-    '/departments',
-    '/accessments',
-    '/assessments',
-    '/escalations',
-    '/status-logs',
-    '/feedback'
-  ]);
-
-  if (to.meta.requiresAuth && !token) {
-    return '/signin';
-  }
-
-  if (token && mustChangePassword && !to.meta.allowPasswordResetRequired) {
-    return '/change-password';
-  }
-
-  if (to.path === '/change-password') {
-    if (!token) return '/signin';
-    if (!mustChangePassword) {
-      if (isSuperAdminRole(role)) return '/admin/dashboard';
-      if (isOrgAdminRole(role)) return '/org-admin/dashboard';
-      return '/user/dashboard';
-    }
-  }
-
-  if (to.path === '/dashboard' && token) {
-    if (mustChangePassword) return '/change-password';
-    if (isSuperAdminRole(role)) return '/admin/dashboard';
-    if (isOrgAdminRole(role)) return '/org-admin/dashboard';
-    return '/user/dashboard';
-  }
-
-  if ((to.meta.requiresAdmin || (isAdminRoute && !to.meta.requiresAdminFamily)) && !isSuperAdminRole(role)) {
-    return isOrgAdminRole(role) ? '/org-admin/dashboard' : '/signin';
-  }
-
-  if (to.meta.requiresAdminFamily && !isAdminFamilyRole(role)) {
-    return '/signin';
-  }
-
-  if (to.meta.requiresOrgAdmin && !isOrgAdminRole(role)) {
-    return isSuperAdminRole(role) ? '/admin/dashboard' : '/user/dashboard';
-  }
-
-  if (to.meta.requiresOrganizationContext && !hasOrganizationContext(claims)) {
-    if (isSuperAdminRole(role)) return '/admin/dashboard';
-    if (isOrgAdminRole(role)) return '/org-admin/dashboard';
-    return '/user/dashboard';
-  }
-
-  if (to.meta.requiresUserOnly && isAdminFamilyRole(role)) {
-    return isSuperAdminRole(role) ? '/admin/dashboard' : '/org-admin/dashboard';
-  }
-
-  if (to.meta.blockAdminFamily && isAdminFamilyRole(role)) {
-    return isSuperAdminRole(role) ? '/admin/dashboard' : '/org-admin/dashboard';
-  }
-
-  if (
-    isSuperAdminRole(role) &&
-    (to.path.startsWith('/org-admin') ||
-      to.path === '/team-dashboard' ||
-      to.path === '/authority-dashboard')
-  ) {
-    return '/admin/dashboard';
-  }
-
-  if (isSuperAdminRole(role) && restrictedSuperAdminPaths.has(to.path)) {
-    return '/admin/dashboard';
-  }
-
-  if (isOrgAdminRole(role) && (to.path === '/admin/dashboard' || to.path === '/admin/organizations')) {
-    return '/org-admin/dashboard';
-  }
-
-  if (to.meta.guestOnly && token) {
-    if (mustChangePassword) return '/change-password';
-    if (isSuperAdminRole(role)) return '/admin/dashboard';
-    if (isOrgAdminRole(role)) return '/org-admin/dashboard';
-    return '/user/dashboard';
-  }
-
-  return true;
+  return resolveAuthNavigation(to, { token, claims });
 });
 
 export default router;

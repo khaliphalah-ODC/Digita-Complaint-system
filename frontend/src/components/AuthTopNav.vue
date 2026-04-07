@@ -2,6 +2,7 @@
 import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { useSessionStore } from '../stores/session';
+import publicLogo from '../asset/logo/CMS_Logo.png';
 
 const props = defineProps({
   fixed: {
@@ -15,6 +16,12 @@ const session = useSessionStore();
 
 const mobileMenuOpen = ref(false);
 const scrolled = ref(false);
+const getViewportWidth = () => {
+  if (typeof window === 'undefined') return 1280;
+  return Math.round(window.visualViewport?.width || window.innerWidth || 1280);
+};
+
+const viewportWidth = ref(getViewportWidth());
 
 const publicItems = [
   { label: 'Home', to: '/' },
@@ -25,6 +32,7 @@ const publicItems = [
 ];
 
 const isLoggedIn = computed(() => session.isLoggedIn);
+const isCompactNav = computed(() => viewportWidth.value <= 1024);
 
 const dashboardRoute = computed(() => {
   if (session.currentUser?.role === 'super_admin') return '/admin/dashboard';
@@ -40,11 +48,31 @@ const handleScroll = () => {
   scrolled.value = window.scrollY > 10;
 };
 
-onMounted(() => window.addEventListener('scroll', handleScroll));
-onUnmounted(() => window.removeEventListener('scroll', handleScroll));
+const handleResize = () => {
+  viewportWidth.value = getViewportWidth();
+};
+
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll);
+  window.addEventListener('resize', handleResize);
+  window.visualViewport?.addEventListener('resize', handleResize);
+  handleResize();
+});
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll);
+  window.removeEventListener('resize', handleResize);
+  window.visualViewport?.removeEventListener('resize', handleResize);
+});
 
 watch(() => route.fullPath, () => {
   mobileMenuOpen.value = false;
+});
+
+watch(isCompactNav, (compact) => {
+  if (!compact) {
+    mobileMenuOpen.value = false;
+  }
 });
 </script>
 
@@ -52,14 +80,14 @@ watch(() => route.fullPath, () => {
   <header :class="[wrapperClass, 'public-nav', scrolled ? 'public-nav-scrolled' : '']">
     <div class="public-nav__container">
       <RouterLink to="/" class="public-nav__logo">
-        <div class="public-nav__logo-box">CT</div>
+        <img :src="publicLogo" alt="VoiceLink logo" class="public-nav__brand-image">
         <div class="public-nav__logo-text">
-          <div class="public-nav__title">ComplaintTrack</div>
-          <div class="public-nav__sub">Institutional System</div>
+          <div class="public-nav__title">VoiceLink</div>
+          <div class="public-nav__sub"><span class="text-orange-500">Speak Up, </span>We're Listening</div>
         </div>
       </RouterLink>
 
-      <nav class="public-nav__links" aria-label="Public navigation">
+      <nav v-if="!isCompactNav" class="public-nav__links" aria-label="Public navigation">
         <RouterLink
           v-for="item in publicItems"
           :key="item.to"
@@ -71,7 +99,7 @@ watch(() => route.fullPath, () => {
         </RouterLink>
       </nav>
 
-      <div class="public-nav__actions">
+      <div v-if="!isCompactNav" class="public-nav__actions">
         <template v-if="!isLoggedIn">
           <RouterLink to="/signin" class="public-nav__btn public-nav__btn-ghost">Login</RouterLink>
           <RouterLink to="/signup" class="public-nav__btn public-nav__btn-primary">Sign Up</RouterLink>
@@ -86,16 +114,16 @@ watch(() => route.fullPath, () => {
         </RouterLink>
       </div>
 
-      <button class="public-nav__menu-btn" type="button" @click="mobileMenuOpen = !mobileMenuOpen">
+      <button v-if="isCompactNav" class="public-nav__menu-btn" type="button" @click="mobileMenuOpen = !mobileMenuOpen">
         <font-awesome-icon :icon="['fas', mobileMenuOpen ? 'xmark' : 'bars']" />
       </button>
     </div>
 
-    <div v-if="mobileMenuOpen" class="public-nav__mobile">
-      <div class="public-nav__mobile-head">
-        <p class="public-nav__mobile-kicker">Navigation</p>
-        <p class="public-nav__mobile-title">Public Workspace</p>
-      </div>
+      <div v-if="isCompactNav && mobileMenuOpen" class="public-nav__mobile">
+        <div class="public-nav__mobile-head">
+          <p class="public-nav__mobile-kicker">Navigation</p>
+          <p class="public-nav__mobile-title"> VoiceLink </p>
+        </div>
 
       <RouterLink
         v-for="item in publicItems"
@@ -140,7 +168,7 @@ watch(() => route.fullPath, () => {
 }
 
 .public-nav__container {
-  max-width: 1200px;
+  width: min(100%, 1200px);
   margin: auto;
   padding: 14px 20px;
   display: flex;
@@ -152,25 +180,20 @@ watch(() => route.fullPath, () => {
 .public-nav__logo {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: 0.75rem;
   color: white;
   text-decoration: none;
   min-width: 0;
+  flex-shrink: 0;
 }
 
-.public-nav__logo-box {
-  width: 2.55rem;
-  height: 2.55rem;
-  border-radius: 0.9rem;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(226, 238, 251, 0.94));
-  color: #0b2e4a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  flex-shrink: 0;
-  box-shadow: 0 10px 18px rgba(5, 18, 38, 0.16);
+.public-nav__brand-image {
+  display: block;
+  height: 3rem;
+  width: auto;
+  max-width: 3rem;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 18px rgba(5, 18, 38, 0.16));
 }
 
 .public-nav__logo-text {
@@ -181,6 +204,8 @@ watch(() => route.fullPath, () => {
   font-size: 1rem;
   font-weight: 800;
   letter-spacing: -0.02em;
+  color: #fff;
+  line-height: 1.1;
 }
 
 .public-nav__sub {
@@ -189,6 +214,7 @@ watch(() => route.fullPath, () => {
   color: rgba(207, 227, 255, 0.74);
   letter-spacing: 0.16em;
   text-transform: uppercase;
+  line-height: 1.3;
 }
 
 .public-nav__links {
@@ -381,12 +407,53 @@ watch(() => route.fullPath, () => {
     font-size: 1.1rem;
   }
 
+  .public-nav__brand-image {
+    height: 2.6rem;
+    max-width: 2.6rem;
+  }
+
+  .public-nav__logo {
+    gap: 0.55rem;
+    flex: 1;
+  }
+
+  .public-nav__logo-text {
+    overflow: hidden;
+  }
+
   .public-nav__title {
-    font-size: 0.98rem;
+    font-size: 0.92rem;
   }
 
   .public-nav__sub {
-    font-size: 0.58rem;
+    font-size: 0.56rem;
+    letter-spacing: 0.12em;
+  }
+}
+
+@media (max-width: 480px) {
+  .public-nav__container {
+    padding: 0.85rem 0.9rem;
+    gap: 0.45rem;
+  }
+
+  .public-nav__brand-image {
+    height: 2.05rem;
+    max-width: 2.05rem;
+  }
+
+  .public-nav__title {
+    font-size: 0.9rem;
+  }
+
+  .public-nav__sub {
+    display: none;
+  }
+
+  .public-nav__menu-btn {
+    min-height: 2.6rem;
+    min-width: 2.6rem;
+    border-radius: 0.8rem;
   }
 }
 </style>

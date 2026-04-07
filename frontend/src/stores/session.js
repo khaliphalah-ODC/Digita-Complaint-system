@@ -1,14 +1,46 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
-import api, { extractApiError, unwrapResponse } from '../services/api';
+import {
+  API_BASE_URL,
+  authApi,
+  extractApiError,
+  organizationsApi,
+  transformAnalytics,
+  request
+} from '../services/api';
 
-const API_ROOT = import.meta.env.VITE_API_BASE_URL || '/api';
-const USERS_API_BASE = import.meta.env.VITE_API_URL || '/users';
+const API_ROOT = API_BASE_URL;
+const emptyDashboardStats = () => ({
+  totalOrganizations: 0,
+  activeOrganizations: 0,
+  suspendedOrganizations: 0,
+  unassignedAnonymousComplaints: 0,
+  totalComplaints: 0,
+  submittedComplaints: 0,
+  inReviewComplaints: 0,
+  resolvedComplaints: 0,
+  closedComplaints: 0,
+  complaintsByOrganization: [],
+  escalationStatusCounts: {
+    pending: 0,
+    in_progress: 0,
+    resolved: 0,
+    rejected: 0
+  },
+  feedbackSummary: {
+    total: 0,
+    average: 0,
+    byRating: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+  },
+  complaintMonthlyTrend: [],
+  assessmentMonthlyTrend: []
+});
 
 export const useSessionStore = defineStore('session', () => {
   const token = ref(localStorage.getItem('token') || '');
   const currentUser = ref(null);
   const currentOrganizationName = ref('');
+  const currentOrganizationLogo = ref('');
   const errorMessage = ref('');
   const pendingVerificationEmail = ref('');
   const loadingLogin = ref(false);
@@ -26,31 +58,7 @@ export const useSessionStore = defineStore('session', () => {
     password: ''
   });
 
-  const dashboardStats = ref({
-    totalOrganizations: 0,
-    activeOrganizations: 0,
-    suspendedOrganizations: 0,
-    unassignedAnonymousComplaints: 0,
-    totalComplaints: 0,
-    submittedComplaints: 0,
-    inReviewComplaints: 0,
-    resolvedComplaints: 0,
-    closedComplaints: 0,
-    complaintsByOrganization: [],
-    escalationStatusCounts: {
-      pending: 0,
-      in_progress: 0,
-      resolved: 0,
-      rejected: 0
-    },
-    feedbackSummary: {
-      total: 0,
-      average: 0,
-      byRating: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-    },
-    complaintMonthlyTrend: [],
-    assessmentMonthlyTrend: []
-  });
+  const dashboardStats = ref(emptyDashboardStats());
 
   const decodeTokenPayload = (rawToken) => {
     if (!rawToken) return null;
@@ -70,6 +78,7 @@ export const useSessionStore = defineStore('session', () => {
     token.value = data?.token || '';
     currentUser.value = data?.user || null;
     currentOrganizationName.value = '';
+    currentOrganizationLogo.value = '';
 
     if (token.value) {
       localStorage.setItem('token', token.value);
@@ -103,23 +112,14 @@ export const useSessionStore = defineStore('session', () => {
     }
   };
 
-  const ensureSuccess = (payload, fallbackMessage) => {
-    if (!payload?.success) {
-      throw new Error(payload?.message || fallbackMessage);
-    }
-    return payload.data;
-  };
-
   const apiRequest = async (path, options = {}, requiresAuth = true) => {
-    const response = await api.request({
+    return request({
       url: path,
       method: options.method || 'GET',
       data: options.data ?? toRequestData(options.body),
       headers: options.headers || {},
       skipAuth: !requiresAuth
-    });
-
-    return ensureSuccess(unwrapResponse(response), 'Request failed');
+    }, 'Request failed');
   };
 
   const getReadableError = (error, fallbackMessage) => {
@@ -130,27 +130,29 @@ export const useSessionStore = defineStore('session', () => {
     if (!token.value) return;
 
     try {
-      const response = await api.get(`${USERS_API_BASE}/me`);
-      currentUser.value = ensureSuccess(unwrapResponse(response), 'Failed to load profile');
+      currentUser.value = await authApi.me();
 
       if (currentUser.value?.organization_id) {
         try {
-          const orgResponse = await api.get('/organization');
-          const organizations = ensureSuccess(unwrapResponse(orgResponse), 'Failed to load organization');
+          const organizations = await organizationsApi.list();
           const activeOrganization = (organizations || []).find(
             (row) => Number(row.organization_id) === Number(currentUser.value?.organization_id)
           );
           currentOrganizationName.value = activeOrganization?.name || '';
+          currentOrganizationLogo.value = activeOrganization?.logo || '';
         } catch (_orgError) {
           currentOrganizationName.value = '';
+          currentOrganizationLogo.value = '';
         }
       } else {
         currentOrganizationName.value = '';
+        currentOrganizationLogo.value = '';
       }
     } catch (_error) {
       token.value = '';
       currentUser.value = null;
       currentOrganizationName.value = '';
+      currentOrganizationLogo.value = '';
       localStorage.removeItem('token');
     }
   };
@@ -164,8 +166,7 @@ export const useSessionStore = defineStore('session', () => {
         email: String(loginForm.value.email || '').trim().toLowerCase(),
         password: String(loginForm.value.password || '').trim()
       };
-      const response = await api.post(`${USERS_API_BASE}/login`, payload, { skipAuth: true });
-      const data = ensureSuccess(unwrapResponse(response), 'Login failed');
+      const data = await authApi.login(payload);
 
       applyAuthPayload(data);
       pendingVerificationEmail.value = '';
@@ -189,11 +190,11 @@ export const useSessionStore = defineStore('session', () => {
         ...payload,
         email: String(payload?.email || '').trim().toLowerCase()
       };
-      const response = await api.post(`${USERS_API_BASE}/register`, normalizedPayload, { skipAuth: true });
-      const data = ensureSuccess(unwrapResponse(response), 'Sign up failed');
+      const data = await authApi.register(normalizedPayload);
       token.value = '';
       currentUser.value = null;
       currentOrganizationName.value = '';
+      currentOrganizationLogo.value = '';
       localStorage.removeItem('token');
       pendingVerificationEmail.value = normalizedPayload.email;
       return data;
@@ -215,11 +216,11 @@ export const useSessionStore = defineStore('session', () => {
         email: String(payload?.email || '').trim().toLowerCase(),
         join_code: String(payload?.join_code || '').trim().toUpperCase()
       };
-      const response = await api.post(`${USERS_API_BASE}/register-with-code`, normalizedPayload, { skipAuth: true });
-      const data = ensureSuccess(unwrapResponse(response), 'Sign up failed');
+      const data = await authApi.registerWithJoinCode(normalizedPayload);
       token.value = '';
       currentUser.value = null;
       currentOrganizationName.value = '';
+      currentOrganizationLogo.value = '';
       localStorage.removeItem('token');
       pendingVerificationEmail.value = normalizedPayload.email;
       return data;
@@ -235,11 +236,12 @@ export const useSessionStore = defineStore('session', () => {
     if (!token.value) return;
 
     try {
-      await api.post(`${USERS_API_BASE}/logout`);
+      await authApi.logout();
     } finally {
       token.value = '';
       currentUser.value = null;
       currentOrganizationName.value = '';
+      currentOrganizationLogo.value = '';
       pendingVerificationEmail.value = '';
       localStorage.removeItem('token');
     }
@@ -250,8 +252,7 @@ export const useSessionStore = defineStore('session', () => {
     loadingPasswordChange.value = true;
 
     try {
-      const response = await api.post(`${USERS_API_BASE}/change-password`, payload);
-      const data = ensureSuccess(unwrapResponse(response), 'Password change failed');
+      const data = await authApi.changePassword(payload);
       applyAuthPayload(data);
       return data;
     } catch (error) {
@@ -267,8 +268,7 @@ export const useSessionStore = defineStore('session', () => {
     loadingEmailChange.value = true;
 
     try {
-      const response = await api.post(`${USERS_API_BASE}/change-email`, payload);
-      const data = ensureSuccess(unwrapResponse(response), 'Email change failed');
+      const data = await authApi.changeEmail(payload);
       currentUser.value = data?.user || currentUser.value;
       if (payload?.new_email) {
         pendingVerificationEmail.value = String(payload.new_email || '').trim().toLowerCase();
@@ -287,8 +287,7 @@ export const useSessionStore = defineStore('session', () => {
     loadingRequestResetCode.value = true;
 
     try {
-      const response = await api.post(`${USERS_API_BASE}/forgot-password/request`, payload, { skipAuth: true });
-      return ensureSuccess(unwrapResponse(response), 'Failed to request password reset code');
+      return await authApi.requestPasswordResetCode(payload);
     } catch (error) {
       errorMessage.value = getReadableError(error, 'Failed to request password reset code');
       throw error;
@@ -302,8 +301,7 @@ export const useSessionStore = defineStore('session', () => {
     loadingForgotPassword.value = true;
 
     try {
-      const response = await api.post(`${USERS_API_BASE}/forgot-password`, payload, { skipAuth: true });
-      const data = ensureSuccess(unwrapResponse(response), 'Password reset failed');
+      const data = await authApi.resetPassword(payload);
       applyAuthPayload(data);
       return data;
     } catch (error) {
@@ -322,8 +320,7 @@ export const useSessionStore = defineStore('session', () => {
     loadingGoogleLogin.value = true;
 
     try {
-      const response = await api.post(`${USERS_API_BASE}/google-login`, { credential }, { skipAuth: true });
-      const data = ensureSuccess(unwrapResponse(response), 'Google login failed');
+      const data = await authApi.googleLogin(credential);
       applyAuthPayload(data);
       pendingVerificationEmail.value = '';
       return data;
@@ -343,78 +340,22 @@ export const useSessionStore = defineStore('session', () => {
       const activeRole = currentUser.value?.role || decodeTokenPayload(token.value)?.role || '';
 
       if (activeRole !== 'super_admin') {
-        dashboardStats.value = {
-          totalOrganizations: 0,
-          activeOrganizations: 0,
-          suspendedOrganizations: 0,
-          unassignedAnonymousComplaints: 0,
-          totalComplaints: 0,
-          submittedComplaints: 0,
-          inReviewComplaints: 0,
-          resolvedComplaints: 0,
-          closedComplaints: 0,
-          complaintsByOrganization: [],
-          escalationStatusCounts: {
-            pending: 0,
-            in_progress: 0,
-            resolved: 0,
-            rejected: 0
-          },
-          feedbackSummary: {
-            total: 0,
-            average: 0,
-            byRating: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-          },
-          complaintMonthlyTrend: [],
-          assessmentMonthlyTrend: []
-        };
+        dashboardStats.value = emptyDashboardStats();
         return;
       }
 
-      const [orgRes, statsRes] = await Promise.all([
-        api.get('/organization'),
-        api.get('/organization/global-stats')
+      const [organizations, stats] = await Promise.all([
+        organizationsApi.list(),
+        organizationsApi.getGlobalStats()
       ]);
 
-      const organizations = ensureSuccess(unwrapResponse(orgRes), 'Failed to fetch organizations');
-      const stats = ensureSuccess(unwrapResponse(statsRes), 'Failed to load platform aggregate statistics');
-
       const orgRows = organizations || [];
-
       dashboardStats.value = {
-        totalOrganizations: Number(stats.totalOrganizations || orgRows.length || 0),
-        activeOrganizations: Number(stats.activeOrganizations || 0),
-        suspendedOrganizations: Number(stats.suspendedOrganizations || 0),
-        unassignedAnonymousComplaints: Number(stats.unassignedAnonymousComplaints || 0),
-        totalComplaints: Number(stats.totalComplaints || 0),
-        submittedComplaints: Number(stats.submittedComplaints || 0),
-        inReviewComplaints: Number(stats.inReviewComplaints || 0),
-        resolvedComplaints: Number(stats.resolvedComplaints || 0),
-        closedComplaints: Number(stats.closedComplaints || 0),
-        complaintsByOrganization: (stats.complaintsByOrganization || []).map((row) => ({
-          organization_id: row.organization_id,
-          label: row.name || 'Unnamed',
-          value: Number(row.complaints || 0)
-        })),
-        escalationStatusCounts: stats.escalationStatusCounts || {
-          pending: 0,
-          in_progress: 0,
-          resolved: 0,
-          rejected: 0
-        },
-        feedbackSummary: stats.feedbackSummary || {
-          total: 0,
-          average: 0,
-          byRating: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-        },
-        complaintMonthlyTrend: (stats.complaintMonthlyTrend || []).map((row) => ({
-          label: row.month || '',
-          value: Number(row.value || 0)
-        })),
-        assessmentMonthlyTrend: (stats.assessmentMonthlyTrend || []).map((row) => ({
-          label: row.month || '',
-          value: Number(row.value || 0)
-        }))
+        ...emptyDashboardStats(),
+        ...transformAnalytics({
+          ...stats,
+          totalOrganizations: Number(stats.totalOrganizations || orgRows.length || 0)
+        })
       };
     } catch (error) {
       dashboardError.value = getReadableError(error, 'Failed to load dashboard');
@@ -428,6 +369,7 @@ export const useSessionStore = defineStore('session', () => {
     token,
     currentUser,
     currentOrganizationName,
+    currentOrganizationLogo,
     errorMessage,
     pendingVerificationEmail,
     loadingLogin,

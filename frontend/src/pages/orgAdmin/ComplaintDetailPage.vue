@@ -1,9 +1,12 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import api, { extractApiError, unwrapResponse } from '../../services/api.js';
+import { authApi, complaintsApi, extractApiError } from '../../services/api.js';
 import AdminComplaintReviewForm from '../../components/AdminComplaintReviewForm.vue';
 import LiveSupportModal from '../../components/LiveSupportModal.vue';
+import ErrorState from '../../components/ui/ErrorState.vue';
+import LoadingSpinner from '../../components/ui/LoadingSpinner.vue';
+import StatusBadge from '../../components/ui/StatusBadge.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -12,26 +15,36 @@ const loading = ref(false);
 const saving = ref(false);
 const error = ref('');
 const complaint = ref(null);
+const assignableUsers = ref([]);
 const showChat = ref(false);
 const isOrgAdminRoute = computed(() => route.path.startsWith('/org-admin/'));
 const complaintsListRoute = computed(() => (isOrgAdminRoute.value ? '/org-admin/complaints' : '/admin/complaints'));
 const liveChatRole = computed(() => (isOrgAdminRoute.value ? 'org_admin' : 'super_admin'));
 
-const ensureSuccess = (payload, fallbackMessage) => {
-  if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
-  return payload.data;
-};
-
 const fetchComplaint = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await api.get(`/complaint/${route.params.id}`);
-    complaint.value = ensureSuccess(unwrapResponse(response), 'Failed to fetch complaint');
+    complaint.value = await complaintsApi.getById(route.params.id);
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to fetch complaint');
   } finally {
     loading.value = false;
+  }
+};
+
+const fetchAssignableUsers = async () => {
+  try {
+    const users = await authApi.listUsers();
+    assignableUsers.value = Array.isArray(users)
+      ? users.filter((user) => {
+          const role = String(user.role || '').toLowerCase();
+          const status = String(user.status || '').toLowerCase();
+          return ['org_admin', 'user'].includes(role) && status === 'active';
+        })
+      : [];
+  } catch (requestError) {
+    error.value = extractApiError(requestError, 'Failed to load assignment options');
   }
 };
 
@@ -40,7 +53,7 @@ const saveReview = async (payload) => {
   saving.value = true;
   error.value = '';
   try {
-    await api.put(`/complaint/${complaint.value.id}`, payload);
+    await complaintsApi.update(complaint.value.id, payload);
     await fetchComplaint();
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to update complaint');
@@ -49,7 +62,9 @@ const saveReview = async (payload) => {
   }
 };
 
-onMounted(fetchComplaint);
+onMounted(async () => {
+  await Promise.all([fetchComplaint(), fetchAssignableUsers()]);
+});
 </script>
 
 <template>
@@ -72,8 +87,16 @@ onMounted(fetchComplaint);
       </div>
     </header>
 
-    <p v-if="loading" class="app-section-card text-sm text-slate-500">Loading complaint...</p>
-    <p v-else-if="error" class="rounded-[20px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ error }}</p>
+    <LoadingSpinner
+      v-if="loading"
+      label="Loading complaint..."
+      wrapper-class="app-section-card"
+    />
+    <ErrorState
+      v-else-if="error"
+      title="Unable to load complaint"
+      :description="error"
+    />
 
     <template v-else-if="complaint">
       <section class="app-shell-panel rounded-[30px] p-6">
@@ -83,8 +106,8 @@ onMounted(fetchComplaint);
             <p class="mt-1 text-sm text-slate-500">Tracking: {{ complaint.tracking_code || 'N/A' }}</p>
           </div>
           <div class="app-action-row flex flex-wrap gap-2">
-            <span class="app-badge app-badge-neutral">{{ complaint.priority || 'medium' }}</span>
-            <span class="app-badge app-badge-warning">{{ complaint.status || 'submitted' }}</span>
+            <StatusBadge :value="complaint.priority || 'medium'" />
+            <StatusBadge :value="complaint.status || 'submitted'" />
           </div>
         </div>
 
@@ -106,6 +129,10 @@ onMounted(fetchComplaint);
             <p class="mt-2 font-medium text-slate-900">{{ complaint.department_name || 'Not specified' }}</p>
           </div>
           <div class="rounded-[18px] border border-[var(--app-line)] bg-white px-4 py-3">
+            <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Assigned To</p>
+            <p class="mt-2 font-medium text-slate-900">{{ complaint.assigned_name || 'Pending assignment' }}</p>
+          </div>
+          <div class="rounded-[18px] border border-[var(--app-line)] bg-white px-4 py-3">
             <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Category</p>
             <p class="mt-2 font-medium text-slate-900">{{ complaint.category || 'N/A' }}</p>
           </div>
@@ -120,7 +147,13 @@ onMounted(fetchComplaint);
         </article>
       </section>
 
-      <AdminComplaintReviewForm :complaint="complaint" :saving="saving" @save="saveReview" @open-chat="showChat = true" />
+      <AdminComplaintReviewForm
+        :complaint="complaint"
+        :assignable-users="assignableUsers"
+        :saving="saving"
+        @save="saveReview"
+        @open-chat="showChat = true"
+      />
     </template>
 
     <LiveSupportModal

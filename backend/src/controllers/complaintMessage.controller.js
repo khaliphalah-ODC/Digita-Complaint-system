@@ -108,7 +108,7 @@ export const createComplaintMessage = (req, res) => {
     return sendError(res, 400, 'message is required');
   }
 
-  return ensureChatAccess(req, res, complaintId, () => {
+  return ensureChatAccess(req, res, complaintId, (complaintRow) => {
     complaintDB.run(
       createComplaintMessageQuery,
       [complaintId, req.user.id, req.user.role === 'org_admin' ? 'admin' : 'user', text],

@@ -1,9 +1,13 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink } from 'vue-router';
-import api, { extractApiError, unwrapResponse } from '../../services/api';
+import { assessmentsApi, departmentsApi, extractApiError, organizationsApi } from '../../services/api';
 import MobileDataCardList from '../../components/MobileDataCardList.vue';
 import PageHeader from '../../components/superAdmin/PageHeader.vue';
+import DataTable from '../../components/ui/DataTable.vue';
+import EmptyState from '../../components/ui/EmptyState.vue';
+import FormField from '../../components/ui/FormField.vue';
+import LoadingSpinner from '../../components/ui/LoadingSpinner.vue';
 import { useUiToastStore } from '../../stores/uiToast';
 import { useSessionStore } from '../../stores/session';
 
@@ -25,34 +29,28 @@ const form = reactive({
   organization_id: '',
   name: '',
   description: '',
-  accessment_id: ''
+  assessment_id: ''
 });
-
-const ensureSuccess = (payload, fallbackMessage) => {
-  if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
-  return payload.data;
-};
 
 const resetForm = () => {
   editingId.value = null;
   form.organization_id = isOrgAdmin.value ? String(session.currentUser?.organization_id || '') : '';
   form.name = '';
   form.description = '';
-  form.accessment_id = '';
+  form.assessment_id = '';
 };
 
 const fetchDependencies = async () => {
-  const [orgRes, assessmentRes] = await Promise.all([api.get('/organization'), api.get('/assessments')]);
-  organizations.value = ensureSuccess(unwrapResponse(orgRes), 'Failed to fetch organizations') || [];
-  assessments.value = ensureSuccess(unwrapResponse(assessmentRes), 'Failed to fetch assessments') || [];
+  const [orgRows, assessmentRows] = await Promise.all([organizationsApi.list(), assessmentsApi.list()]);
+  organizations.value = orgRows || [];
+  assessments.value = assessmentRows || [];
 };
 
 const fetchDepartments = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await api.get('/department');
-    departments.value = ensureSuccess(unwrapResponse(response), 'Failed to fetch departments') || [];
+    departments.value = await departmentsApi.list() || [];
     await fetchDependencies();
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to fetch departments');
@@ -66,7 +64,7 @@ const startEdit = (row) => {
   form.organization_id = String(row.organization_id ?? '');
   form.name = row.name || '';
   form.description = row.description || '';
-  form.accessment_id = String(row.accessment_id ?? '');
+  form.assessment_id = String(row.assessment_id ?? '');
 };
 
 const saveDepartment = async () => {
@@ -82,14 +80,14 @@ const saveDepartment = async () => {
       organization_id: Number(form.organization_id),
       name: form.name.trim(),
       description: form.description.trim() || null,
-      accessment_id: form.accessment_id ? Number(form.accessment_id) : null
+      assessment_id: form.assessment_id ? Number(form.assessment_id) : null
     };
 
     if (editingId.value) {
-      await api.put(`/department/${editingId.value}`, payload);
+      await departmentsApi.update(editingId.value, payload);
       uiToast.success('Department updated successfully.');
     } else {
-      await api.post('/department', payload);
+      await departmentsApi.create(payload);
       uiToast.success('Department created successfully.');
     }
 
@@ -108,7 +106,7 @@ const deleteDepartment = async (row) => {
   if (!ok) return;
   error.value = '';
   try {
-    await api.delete(`/department/${row.id}`);
+    await departmentsApi.remove(row.id);
     uiToast.success('Department deleted successfully.');
     await fetchDepartments();
   } catch (requestError) {
@@ -149,13 +147,20 @@ const mobileCardFields = [
   { key: 'assessment', label: 'Assessment' },
   { key: 'created', label: 'Created' }
 ];
+const tableColumns = [
+  { key: 'name', label: 'Name' },
+  { key: 'organization', label: 'Organization' },
+  { key: 'assessment', label: 'Assessment' },
+  { key: 'created', label: 'Created' },
+  { key: 'actions', label: 'Actions' }
+];
 
 const goToPage = (nextPage) => {
   page.value = Math.min(Math.max(1, nextPage), totalPages.value);
 };
 
 const linkedAssessments = computed(() =>
-  departments.value.filter((row) => row.accessment_id)
+  departments.value.filter((row) => row.assessment_id)
 );
 
 const summaryCards = computed(() => [
@@ -223,23 +228,34 @@ onMounted(async () => {
             </div>
 
             <form class="grid grid-cols-1 gap-3 md:grid-cols-2" @submit.prevent="saveDepartment">
-              <select v-if="!isOrgAdmin" v-model="form.organization_id" class="app-select">
-                <option value="">Select organization</option>
-                <option v-for="row in organizations" :key="row.organization_id" :value="String(row.organization_id)">
-                  {{ row.name }} (#{{ row.organization_id }})
-                </option>
-              </select>
+              <FormField v-if="!isOrgAdmin" v-model="form.organization_id" as="select" label="Organization">
+                <template #options>
+                  <option value="">Select organization</option>
+                  <option v-for="row in organizations" :key="row.organization_id" :value="String(row.organization_id)">
+                    {{ row.name }} (#{{ row.organization_id }})
+                  </option>
+                </template>
+              </FormField>
               <div v-else class="flex items-center rounded-[var(--app-radius-md)] border border-[var(--app-line)] bg-[var(--app-surface-soft)] px-3 py-3 text-sm text-[var(--app-muted-color)]">
                 Organization ID: {{ session.currentUser?.organization_id || 'N/A' }}
               </div>
-              <input v-model="form.name" placeholder="Department name" class="app-input">
-              <textarea v-model="form.description" placeholder="Description (optional)" class="app-textarea md:col-span-2" rows="2" />
-              <select v-model="form.accessment_id" class="app-select">
-                <option value="">Link assessment (optional)</option>
-                <option v-for="row in assessments" :key="row.id" :value="String(row.id)">
-                  #{{ row.id }} - {{ row.complaint_title || row.findings?.slice(0, 40) || 'Assessment' }}
-                </option>
-              </select>
+              <FormField v-model="form.name" label="Department Name" placeholder="Department name" />
+              <FormField
+                v-model="form.description"
+                as="textarea"
+                label="Description"
+                placeholder="Description (optional)"
+                wrapper-class="md:col-span-2"
+                :rows="2"
+              />
+              <FormField v-model="form.assessment_id" as="select" label="Assessment">
+                <template #options>
+                  <option value="">Link assessment (optional)</option>
+                  <option v-for="row in assessments" :key="row.id" :value="String(row.id)">
+                    #{{ row.id }} - {{ row.complaint_title || row.findings?.slice(0, 40) || 'Assessment' }}
+                  </option>
+                </template>
+              </FormField>
               <div class="flex flex-col gap-2 sm:flex-row">
                 <button :disabled="saving" type="submit" class="app-btn-primary">
                   {{ saving ? 'Saving...' : editingId ? 'Update Department' : 'Create Department' }}
@@ -281,8 +297,12 @@ onMounted(async () => {
             <input v-model="search" placeholder="Search departments..." class="app-input lg:max-w-sm">
           </div>
 
-          <p v-if="loading" class="text-sm text-[var(--app-muted-color)]">Loading departments...</p>
-          <p v-else-if="filteredDepartments.length === 0" class="app-empty-state">No departments match the current search.</p>
+          <LoadingSpinner v-if="loading" label="Loading departments..." />
+          <EmptyState
+            v-else-if="filteredDepartments.length === 0"
+            title="No departments match the current search."
+            description="Try a broader keyword or create a new department."
+          />
 
           <MobileDataCardList
             v-else
@@ -297,7 +317,7 @@ onMounted(async () => {
               <p class="break-words font-medium text-[var(--app-title-color)]">{{ organizationNameById.get(Number(item.organization_id)) || item.organization_id }}</p>
             </template>
             <template #field-assessment="{ item }">
-              <p class="font-medium text-[var(--app-title-color)]">{{ item.accessment_id ?? 'N/A' }}</p>
+              <p class="font-medium text-[var(--app-title-color)]">{{ item.assessment_id ?? 'N/A' }}</p>
             </template>
             <template #field-created="{ item }">
               <p class="break-words font-medium text-[var(--app-title-color)]">{{ item.created_at }}</p>
@@ -310,42 +330,29 @@ onMounted(async () => {
             </template>
           </MobileDataCardList>
 
-          <div v-if="filteredDepartments.length > 0" class="hidden md:block app-table-shell overflow-x-auto">
-            <table class="app-table app-table-responsive min-w-full">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Organization</th>
-                  <th>Assessment</th>
-                  <th>Created</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="row in paginatedDepartments" :key="row.id">
-                  <td data-label="Name" class="font-medium text-[var(--app-title-color)]">{{ row.name }}</td>
-                  <td data-label="Organization">{{ organizationNameById.get(Number(row.organization_id)) || row.organization_id }}</td>
-                  <td data-label="Assessment">{{ row.accessment_id ?? 'N/A' }}</td>
-                  <td data-label="Created">{{ row.created_at }}</td>
-                  <td data-label="Actions" data-actions="true">
-                    <div class="app-action-row flex flex-wrap gap-2">
-                      <button class="app-btn-secondary min-h-[36px] px-3 py-1.5 text-xs" @click="startEdit(row)">Edit</button>
-                      <button class="app-btn-danger min-h-[36px] px-3 py-1.5 text-xs" @click="deleteDepartment(row)">Delete</button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div v-if="filteredDepartments.length > 0" class="mt-3 flex flex-col gap-2 text-xs text-[var(--app-muted-color)] sm:flex-row sm:items-center sm:justify-between">
-            <p>Showing {{ paginatedDepartments.length }} of {{ filteredDepartments.length }} departments</p>
-            <div class="flex items-center gap-2">
-              <button class="app-btn-secondary min-h-[34px] px-3 py-1 text-xs disabled:opacity-50" :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">Prev</button>
-              <span>Page {{ currentPage }} / {{ totalPages }}</span>
-              <button class="app-btn-secondary min-h-[34px] px-3 py-1 text-xs disabled:opacity-50" :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">Next</button>
-            </div>
-          </div>
+          <DataTable
+            :columns="tableColumns"
+            :rows="paginatedDepartments"
+            :page="currentPage"
+            :total-pages="totalPages"
+            :total-items="filteredDepartments.length"
+            :visible-count="paginatedDepartments.length"
+            pagination-label="departments"
+            @update:page="goToPage"
+          >
+            <template #cell-name="{ row }">
+              <span class="font-medium text-[var(--app-title-color)]">{{ row.name }}</span>
+            </template>
+            <template #cell-organization="{ row }">{{ organizationNameById.get(Number(row.organization_id)) || row.organization_id }}</template>
+            <template #cell-assessment="{ row }">{{ row.assessment_id ?? 'N/A' }}</template>
+            <template #cell-created="{ row }">{{ row.created_at }}</template>
+            <template #cell-actions="{ row }">
+              <div class="app-action-row flex flex-wrap gap-2">
+                <button class="app-btn-secondary min-h-[36px] px-3 py-1.5 text-xs" @click="startEdit(row)">Edit</button>
+                <button class="app-btn-danger min-h-[36px] px-3 py-1.5 text-xs" @click="deleteDepartment(row)">Delete</button>
+              </div>
+            </template>
+          </DataTable>
         </section>
       </div>
     </div>

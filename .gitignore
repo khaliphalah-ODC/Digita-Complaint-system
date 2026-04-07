@@ -3,3 +3,4 @@ backend/node_modules/
 *.env
 *.log
 complaints.db
+codex/

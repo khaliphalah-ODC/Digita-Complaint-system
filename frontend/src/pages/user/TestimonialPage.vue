@@ -3,7 +3,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSessionStore } from '../../stores/session.js';
 import AuthTopNav from '../../components/AuthTopNav.vue';
-import api, { extractApiError } from '../../services/api.js';
+import { extractApiError, testimonialsApi } from '../../services/api.js';
 
 const router = useRouter();
 const session = useSessionStore();
@@ -57,7 +57,7 @@ const submit = async () => {
 
   submitting.value = true;
   try {
-    await api.post('/testimonials', {
+    await testimonialsApi.create({
       display_name: form.value.is_anonymous ? 'Anonymous' : form.value.display_name,
       role_label: form.value.role_label || 'System User',
       message: form.value.message.trim(),
@@ -156,7 +156,7 @@ onBeforeUnmount(() => {
           v-model="form.message"
           class="field-textarea"
           rows="4"
-          placeholder="Tell others what it was like using ComplaintTrack. What did you find most useful? How did it help you?"
+          placeholder="Tell others what it was like using VoiceLink. What did you find most useful? How did it help you?"
           maxlength="500"
         ></textarea>
         <p class="char-count">{{ form.message.length }} / 500</p>

@@ -2,7 +2,11 @@
 import { computed, onMounted, ref } from 'vue';
 import MobileDataCardList from '../../../components/MobileDataCardList.vue';
 import PageHeader from '../../../components/superAdmin/PageHeader.vue';
-import api, { extractApiError, unwrapResponse } from '../../../services/api';
+import DataTable from '../../../components/ui/DataTable.vue';
+import EmptyState from '../../../components/ui/EmptyState.vue';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner.vue';
+import StatusBadge from '../../../components/ui/StatusBadge.vue';
+import { extractApiError, statusLogsApi } from '../../../services/api';
 
 const loading = ref(false);
 const error = ref('');
@@ -11,17 +15,11 @@ const search = ref('');
 const page = ref(1);
 const pageSize = 12;
 
-const ensureSuccess = (payload, fallbackMessage) => {
-  if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
-  return payload.data;
-};
-
 const fetchLogs = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await api.get('/status-logs');
-    logs.value = ensureSuccess(unwrapResponse(response), 'Failed to fetch audit logs') || [];
+    logs.value = await statusLogsApi.list() || [];
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to fetch audit logs');
   } finally {
@@ -34,7 +32,7 @@ const filteredLogs = computed(() => {
   if (!keyword) return logs.value;
   return logs.value.filter((row) => {
     return (
-      String(row.accessment_id || '').toLowerCase().includes(keyword) ||
+      String(row.assessment_id || '').toLowerCase().includes(keyword) ||
       String(row.changed_by || '').toLowerCase().includes(keyword) ||
       String(row.old_status || '').toLowerCase().includes(keyword) ||
       String(row.new_status || '').toLowerCase().includes(keyword) ||
@@ -57,17 +55,25 @@ const auditLogCardFields = [
   { key: 'notes', label: 'Notes' },
   { key: 'createdAt', label: 'Created At' }
 ];
+const tableColumns = [
+  { key: 'assessment', label: 'Assessment' },
+  { key: 'changedBy', label: 'Changed By' },
+  { key: 'oldStatus', label: 'Old Status' },
+  { key: 'newStatus', label: 'New Status' },
+  { key: 'notes', label: 'Notes' },
+  { key: 'createdAt', label: 'Created At' }
+];
 
 const goToPage = (nextPage) => {
   page.value = Math.min(Math.max(1, nextPage), totalPages.value);
 };
 
 const auditSummary = computed(() => {
-  const uniqueAccessments = new Set(logs.value.map((row) => row.accessment_id).filter(Boolean)).size;
+  const uniqueAssessments = new Set(logs.value.map((row) => row.assessment_id).filter(Boolean)).size;
   const latestEvent = logs.value[0]?.created_at || 'No events yet';
   return {
     total: logs.value.length,
-    uniqueAccessments,
+    uniqueAssessments,
     latestEvent,
     visible: paginatedLogs.value.length
   };
@@ -98,7 +104,7 @@ onMounted(fetchLogs);
       </article>
       <article class="app-section-card">
         <p class="text-xs uppercase tracking-wide text-[var(--app-muted-color)]">Assessed Records</p>
-        <p class="mt-2 text-3xl font-black text-[var(--app-primary)]">{{ auditSummary.uniqueAccessments }}</p>
+        <p class="mt-2 text-3xl font-black text-[var(--app-primary)]">{{ auditSummary.uniqueAssessments }}</p>
         <p class="text-sm text-[var(--app-muted-color)]">Unique assessment records represented in the current log list.</p>
       </article>
       <article class="app-section-card">
@@ -119,9 +125,13 @@ onMounted(fetchLogs);
         <input v-model="search" placeholder="Search by assessment, status, notes..." class="app-input md:max-w-sm">
       </div>
 
-      <p v-if="loading" class="text-sm text-[var(--app-muted-color)]">Loading logs...</p>
+      <LoadingSpinner v-if="loading" label="Loading logs..." />
       <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
-      <p v-else-if="filteredLogs.length === 0" class="text-sm text-[var(--app-muted-color)]">No audit logs found.</p>
+      <EmptyState
+        v-else-if="filteredLogs.length === 0"
+        title="No audit logs found."
+        description="Status-change history will appear here once records are updated."
+      />
 
       <MobileDataCardList
         v-else
@@ -130,16 +140,16 @@ onMounted(fetchLogs);
         key-field="id"
       >
         <template #field-assessment="{ item }">
-          <p class="font-medium text-[var(--app-title-color)]">#{{ item.accessment_id }}</p>
+          <p class="font-medium text-[var(--app-title-color)]">#{{ item.assessment_id }}</p>
         </template>
         <template #field-changedBy="{ item }">
           <p class="break-words font-medium text-[var(--app-title-color)]">{{ item.changed_by }}</p>
         </template>
         <template #field-oldStatus="{ item }">
-          <p class="font-medium text-[var(--app-title-color)]">{{ item.old_status || 'N/A' }}</p>
+          <StatusBadge :value="item.old_status || 'N/A'" :tone="item.old_status ? '' : 'neutral'" />
         </template>
         <template #field-newStatus="{ item }">
-          <p class="font-medium text-[var(--app-title-color)]">{{ item.new_status }}</p>
+          <StatusBadge :value="item.new_status" />
         </template>
         <template #field-notes="{ item }">
           <p class="break-words font-medium text-[var(--app-title-color)]">{{ item.notes || 'N/A' }}</p>
@@ -149,39 +159,28 @@ onMounted(fetchLogs);
         </template>
       </MobileDataCardList>
 
-      <div v-if="filteredLogs.length > 0" class="hidden md:block app-table-shell overflow-x-auto">
-        <table class="app-table app-table-responsive min-w-full text-left text-sm">
-          <thead>
-            <tr>
-              <th>Assessment</th>
-              <th>Changed By</th>
-              <th>Old Status</th>
-              <th>New Status</th>
-              <th>Notes</th>
-              <th>Created At</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in paginatedLogs" :key="row.id">
-              <td data-label="Assessment">#{{ row.accessment_id }}</td>
-              <td data-label="Changed By">{{ row.changed_by }}</td>
-              <td data-label="Old Status">{{ row.old_status || 'N/A' }}</td>
-              <td data-label="New Status">{{ row.new_status }}</td>
-              <td data-label="Notes">{{ row.notes || 'N/A' }}</td>
-              <td data-label="Created At">{{ row.created_at }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="mt-3 flex items-center justify-between text-xs text-[var(--app-muted-color)]">
-        <p>Showing {{ paginatedLogs.length }} of {{ filteredLogs.length }} logs</p>
-        <div class="flex items-center gap-2">
-          <button class="app-btn-secondary min-h-[36px] px-3 py-1.5 text-xs disabled:opacity-50" :disabled="page <= 1" @click="goToPage(page - 1)">Prev</button>
-          <span>Page {{ page }} / {{ totalPages }}</span>
-          <button class="app-btn-secondary min-h-[36px] px-3 py-1.5 text-xs disabled:opacity-50" :disabled="page >= totalPages" @click="goToPage(page + 1)">Next</button>
-        </div>
-      </div>
+      <DataTable
+        :columns="tableColumns"
+        :rows="paginatedLogs"
+        :page="page"
+        :total-pages="totalPages"
+        :total-items="filteredLogs.length"
+        :visible-count="paginatedLogs.length"
+        pagination-label="logs"
+        table-class="app-table app-table-responsive min-w-full text-left text-sm"
+        @update:page="goToPage"
+      >
+        <template #cell-assessment="{ row }">#{{ row.assessment_id }}</template>
+        <template #cell-changedBy="{ row }">{{ row.changed_by }}</template>
+        <template #cell-oldStatus="{ row }">
+          <StatusBadge :value="row.old_status || 'N/A'" :tone="row.old_status ? '' : 'neutral'" />
+        </template>
+        <template #cell-newStatus="{ row }">
+          <StatusBadge :value="row.new_status" />
+        </template>
+        <template #cell-notes="{ row }">{{ row.notes || 'N/A' }}</template>
+        <template #cell-createdAt="{ row }">{{ row.created_at }}</template>
+      </DataTable>
     </section>
   </section>
 </template>

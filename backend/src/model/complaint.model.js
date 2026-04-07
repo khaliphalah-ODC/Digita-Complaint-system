@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS complaint (
   user_id INTEGER,
   organization_id INTEGER,
   department_id INTEGER,
+  assigned_to INTEGER,
   is_anonymous INTEGER NOT NULL DEFAULT 0 CHECK(is_anonymous IN (0, 1)),
   anonymous_label TEXT,
   title TEXT NOT NULL,
@@ -20,7 +21,8 @@ CREATE TABLE IF NOT EXISTS complaint (
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id),
   FOREIGN KEY (organization_id) REFERENCES organization(organization_id),
-  FOREIGN KEY (department_id) REFERENCES department(id)
+  FOREIGN KEY (department_id) REFERENCES department(id),
+  FOREIGN KEY (assigned_to) REFERENCES users(id)
 
 );
 `;
@@ -57,13 +59,16 @@ SELECT
   o.email AS organization_email,
   o.phone AS organization_phone,
   o.address AS organization_address,
-  reviewer.full_name AS reviewer_name
+  reviewer.full_name AS reviewer_name,
+  assignee.full_name AS assigned_name,
+  assignee.email AS assigned_email
 FROM complaint c
 LEFT JOIN users u ON u.id = c.user_id
 LEFT JOIN organization o ON o.organization_id = u.organization_id
 LEFT JOIN organization anonymous_org ON anonymous_org.organization_id = c.organization_id
 LEFT JOIN department d ON d.id = c.department_id
 LEFT JOIN users reviewer ON reviewer.id = c.reviewed_by
+LEFT JOIN users assignee ON assignee.id = c.assigned_to
 ORDER BY c.id DESC;
 `;
 
@@ -81,13 +86,16 @@ SELECT
   o.email AS organization_email,
   o.phone AS organization_phone,
   o.address AS organization_address,
-  reviewer.full_name AS reviewer_name
+  reviewer.full_name AS reviewer_name,
+  assignee.full_name AS assigned_name,
+  assignee.email AS assigned_email
 FROM complaint c
 LEFT JOIN users u ON u.id = c.user_id
 LEFT JOIN organization o ON o.organization_id = u.organization_id
 LEFT JOIN organization anonymous_org ON anonymous_org.organization_id = c.organization_id
 LEFT JOIN department d ON d.id = c.department_id
 LEFT JOIN users reviewer ON reviewer.id = c.reviewed_by
+LEFT JOIN users assignee ON assignee.id = c.assigned_to
 WHERE c.id = ?;
 `;
 
@@ -105,13 +113,16 @@ SELECT
   o.email AS organization_email,
   o.phone AS organization_phone,
   o.address AS organization_address,
-  reviewer.full_name AS reviewer_name
+  reviewer.full_name AS reviewer_name,
+  assignee.full_name AS assigned_name,
+  assignee.email AS assigned_email
 FROM complaint c
 LEFT JOIN users u ON u.id = c.user_id
 LEFT JOIN organization o ON o.organization_id = u.organization_id
 LEFT JOIN organization anonymous_org ON anonymous_org.organization_id = c.organization_id
 LEFT JOIN department d ON d.id = c.department_id
 LEFT JOIN users reviewer ON reviewer.id = c.reviewed_by
+LEFT JOIN users assignee ON assignee.id = c.assigned_to
 WHERE c.user_id = ?
 ORDER BY c.id DESC;
 `;
@@ -130,13 +141,16 @@ SELECT
   o.email AS organization_email,
   o.phone AS organization_phone,
   o.address AS organization_address,
-  reviewer.full_name AS reviewer_name
+  reviewer.full_name AS reviewer_name,
+  assignee.full_name AS assigned_name,
+  assignee.email AS assigned_email
 FROM complaint c
 LEFT JOIN users u ON u.id = c.user_id
 LEFT JOIN organization o ON o.organization_id = u.organization_id
 LEFT JOIN organization anonymous_org ON anonymous_org.organization_id = c.organization_id
 LEFT JOIN department d ON d.id = c.department_id
 LEFT JOIN users reviewer ON reviewer.id = c.reviewed_by
+LEFT JOIN users assignee ON assignee.id = c.assigned_to
 WHERE c.organization_id = ?
 ORDER BY c.id DESC;
 `;
@@ -155,13 +169,16 @@ SELECT
   o.email AS organization_email,
   o.phone AS organization_phone,
   o.address AS organization_address,
-  reviewer.full_name AS reviewer_name
+  reviewer.full_name AS reviewer_name,
+  assignee.full_name AS assigned_name,
+  assignee.email AS assigned_email
 FROM complaint c
 LEFT JOIN users u ON u.id = c.user_id
 LEFT JOIN organization o ON o.organization_id = u.organization_id
 LEFT JOIN organization anonymous_org ON anonymous_org.organization_id = c.organization_id
 LEFT JOIN department d ON d.id = c.department_id
 LEFT JOIN users reviewer ON reviewer.id = c.reviewed_by
+LEFT JOIN users assignee ON assignee.id = c.assigned_to
 WHERE c.tracking_code = ?;
 `;
 
@@ -179,13 +196,16 @@ SELECT
   o.email AS organization_email,
   o.phone AS organization_phone,
   o.address AS organization_address,
-  reviewer.full_name AS reviewer_name
+  reviewer.full_name AS reviewer_name,
+  assignee.full_name AS assigned_name,
+  assignee.email AS assigned_email
 FROM complaint c
 LEFT JOIN users u ON u.id = c.user_id
 LEFT JOIN organization o ON o.organization_id = u.organization_id
 LEFT JOIN organization anonymous_org ON anonymous_org.organization_id = c.organization_id
 LEFT JOIN department d ON d.id = c.department_id
 LEFT JOIN users reviewer ON reviewer.id = c.reviewed_by
+LEFT JOIN users assignee ON assignee.id = c.assigned_to
 WHERE c.is_anonymous = 1 AND c.organization_id IS NULL
 ORDER BY c.id DESC;
 `;
@@ -194,6 +214,7 @@ export const updateComplaintById = `
 UPDATE complaint
 SET
   department_id = ?,
+  assigned_to = ?,
   is_anonymous = ?,
   anonymous_label = ?,
   title = ?,

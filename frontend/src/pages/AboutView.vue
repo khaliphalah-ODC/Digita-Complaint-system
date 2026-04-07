@@ -1,18 +1,112 @@
 <script setup>
 import { RouterLink } from 'vue-router';
 import AuthTopNav from '../components/AuthTopNav.vue';
+import teamLeadImage from '../asset/teamImage/IMG-20260330-WA0018.jpg';
+import teamSupportImage from '../asset/teamImage/image4.png';
+import teamMemberTwoImage from '../asset/teamImage/team2.jpg';
+import teamMemberThreeImage from '../asset/teamImage/team3.jpg';
+
+const impactCards = [
+  {
+    title: 'For internal users',
+    description: 'Give staff and organization members a clearer way to raise issues and follow what happens next.'
+  },
+  {
+    title: 'For organizations',
+    description: 'Help teams move beyond scattered inboxes and manual follow-up with structured routing, review, and response workflows.'
+  },
+  {
+    title: 'For accountability',
+    description: 'Create a more visible record of complaint intake, status changes, response timelines, and final resolution.'
+  }
+];
+
+const valueCards = [
+  {
+    title: 'Transparency',
+    description: 'Every complaint, status update, and response stays easier to see and understand. The process should not feel hidden.'
+  },
+  {
+    title: 'Accountability',
+    description: 'Organizations need a structured path for intake, review, escalation, and closure instead of informal handoffs.'
+  },
+  {
+    title: 'Privacy',
+    description: 'Anonymous reporting remains important for users who need to speak up without exposing their identity.'
+  }
+];
+
+const capabilityPoints = [
+  'Internal complaint submission and complaint tracking',
+  'Organization-aware workflows, departments, and escalation',
+  'User, organization-admin, and super-admin experiences',
+  'Join-code and QR-assisted onboarding for organization access',
+  'Public feedback forms and organization-specific public links',
+  'Notifications, status history, and operational visibility'
+];
+
+const missionHighlights = [
+  {
+    label: 'Trackable',
+    text: 'Users can follow complaints with clearer status visibility instead of waiting in silence.'
+  },
+  {
+    label: 'Structured',
+    text: 'Organizations get one connected flow for intake, review, escalation, and resolution.'
+  },
+  {
+    label: 'Scalable',
+    text: 'The platform supports public workflows, organization workflows, and multi-role administration.'
+  }
+];
+
+const teamMembers = [
+  {
+    name: 'Yyeto',
+    role: 'Team Lead / System Designer',
+    image: teamLeadImage,
+    bio: 'Responsible for the overall system structure and coordination of the project. Contributions included designing the system architecture and development approach, leading the setup of the development environment, and guiding the team throughout the implementation process while programming along the way.'
+  },
+  {
+    name: 'Khaliphalah Bility',
+    role: 'Backend Developer (Core)',
+    image: teamSupportImage,
+    bio: 'Responsible for backend development and core system functionality. Contributions included building server-side logic with Node.js, implementing password hashing with bcrypt, handling authentication, developing API routes and business logic, and managing database interactions.'
+  },
+  {
+    name: 'Aboubacar T. Diallo',
+    role: 'Product Lead / Frontend Support Developer',
+    image: teamMemberThreeImage,
+    bio: 'Responsible for guiding the overall product direction from a usability and business perspective. Contributions included keeping the system simple and user-friendly, removing unnecessary features for the MVP, refining components, pages, and routes, and contributing to the Super Admin dashboard and UI improvements.'
+  },
+  {
+    name: 'Stanley',
+    role: 'Security & Backend Support Developer',
+    image: teamMemberTwoImage,
+    bio: 'Responsible for strengthening system security and supporting backend tasks. Contributions included supporting authentication and backend features, contributing to dashboards and components, improving overall system features, and helping design endpoints and routes.'
+  },
+  {
+    name: 'George',
+    role: 'UI/UX Designer',
+    image: teamLeadImage,
+    bio: 'Responsible for the visual interface and overall user experience. Contributions included designing layouts and user interfaces, ensuring visual consistency across the application, supporting frontend implementation, and contributing to multiple features across the system.'
+  },
+  {
+    name: 'Smith',
+    role: 'Full-Stack Support Developer',
+    image: teamMemberTwoImage,
+    bio: 'Responsible for providing support across both frontend and backend development. Contributions included supporting component development, assisting with routing and integration, and contributing to various features across the system.'
+  }
+];
 </script>
 
 <template>
   <div class="page-root flex min-h-screen w-full flex-col">
     <AuthTopNav fixed />
 
-    <!-- Hero Section -->
     <section class="hero-section relative flex items-center justify-center overflow-hidden pt-20">
-      <!-- Background overlay -->
       <div class="hero-overlay absolute inset-0 z-10"></div>
 
-      <!-- Decorative architectural line art -->
       <div class="absolute inset-0 z-0">
         <svg class="absolute bottom-0 left-0 w-full opacity-10" viewBox="0 0 1440 320" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M0,160 L80,160 L80,80 L160,80 L160,160 L240,160 L240,40 L320,40 L320,160 L400,160 L400,100 L480,100 L480,160 L560,160 L560,60 L640,60 L640,160 L720,160 L720,120 L800,120 L800,160 L880,160 L880,50 L960,50 L960,160 L1040,160 L1040,90 L1120,90 L1120,160 L1200,160 L1200,70 L1280,70 L1280,160 L1360,160 L1360,110 L1440,110 L1440,320 L0,320 Z" fill="white"/>
@@ -20,455 +114,543 @@ import AuthTopNav from '../components/AuthTopNav.vue';
       </div>
 
       <div class="relative z-20 mx-auto max-w-5xl px-6 py-20 text-center sm:py-28 lg:py-36">
-        <h1 class="hero-title text-5xl font-black leading-[0.95] tracking-tight text-white sm:text-6xl lg:text-8xl">
-          Submit Your
-          <span class="block text-[#f97316]">Complaints.</span>
+        <p class="section-kicker-light">About VoiceLink</p>
+        <h1 class="hero-title text-4xl font-black leading-[0.98] tracking-tight text-white sm:text-5xl lg:text-7xl xl:text-8xl">
+          Built for
+          <span class="block text-[#f97316]">Accountability.</span>
         </h1>
 
-        <p class="mx-auto mt-6 max-w-2xl text-base leading-7 text-blue-100/80 sm:text-lg">
-           A digital civic platform that allows citizens, students, and customers to report issues directly — and track every step of their resolution in real time.
+        <p class="mx-auto mt-6 max-w-3xl text-base leading-7 text-blue-100/80 sm:text-lg">
+          VoiceLink exists to make complaint handling more transparent, more structured, and more trustworthy for organizations and the people working within them.
         </p>
       </div>
-
-      <!-- Wave divider -->
-      <!--<div class="absolute bottom-0 left-0 right-0 z-20">
-        <svg viewBox="0 0 1440 80" preserveAspectRatio="none" class="w-full" xmlns="http://www.w3.org/2000/svg">
-          <path d="M0,40 C360,80 1080,0 1440,40 L1440,80 L0,80 Z" fill="#f5f7fa"/>
-        </svg>
-      </div>-->
     </section>
 
-    <!-- ─── MISSION ───────────────────────────────────────────── -->
-    <section class="bg-white px-6 py-20 sm:px-10 lg:px-16 lg:py-28">
-      <div class="mx-auto max-w-6xl">
-        <div class="grid items-center gap-16 lg:grid-cols-1">
-          <div>
-            <p class="section-kicker">Our Mission</p>
-            <h2 class="section-title mt-2">Every Complaint Deserves<br/>a Real Response.</h2>
-            <p class="mt-6 text-base leading-8 text-slate-600">
-              We believe accountability starts with access. Too often, citizens, students, and customers struggle to make their voices heard — complaints disappear into inboxes, go unacknowledged, or get lost in bureaucracy. ComplaintTrack changes that.
-            </p>
-            <p class="mt-4 text-base leading-8 text-slate-600">
-              Our platform ensures that every complaint is routed directly to the right organization, tracked transparently, and responded to within a clear timeline. We exist to make institutions answerable to the people they serve.
-            </p>
+    <section class="about-section-surface px-6 py-20 sm:px-10 lg:px-16 lg:py-24">
+      <div class="mx-auto max-w-7xl">
+        <div class="text-center">
+          <p class="section-kicker">Our Mission</p>
+          <h2 class="section-title mt-2">Every complaint deserves a real response.</h2>
+          <p class="mx-auto mt-6 max-w-4xl text-base leading-8 text-slate-600">
+            Too often, complaints disappear into inboxes, get passed around informally, or never receive a visible resolution. VoiceLink was created to improve that experience by giving people a clearer path to report issues and a better way to understand what happens after submission.
+          </p>
+          <p class="mx-auto mt-4 max-w-4xl text-base leading-8 text-slate-600">
+            The goal is not only to collect complaints, but to help organizations respond in a more organized, accountable, and user-centered way. The platform connects complaint intake, tracking, review, escalation, and feedback into one operational flow.
+          </p>
+        </div>
 
-           <!-- <div class="mt-8 grid grid-cols-2 gap-4">
-              <div class="mission-stat">
-                <p class="mission-stat-num text-orange-500">1,200+</p>
-                <p class="mission-stat-label">Complaints Filed</p>
-              </div>
-              <div class="mission-stat">
-                <p class="mission-stat-num text-emerald-600">900+</p>
-                <p class="mission-stat-label">Issues Resolved</p>
-              </div>
-              <div class="mission-stat">
-                <p class="mission-stat-num text-sky-600">50+</p>
-                <p class="mission-stat-label">Organizations</p>
-              </div>
-              <div class="mission-stat">
-                <p class="mission-stat-num text-violet-600">98%</p>
-                <p class="mission-stat-label">Satisfaction Rate</p>
-              </div>
-            </div>-->
+        <div class="mission-panel mt-10">
+          <p class="mission-panel__kicker">Why it matters</p>
+          <h3 class="mission-panel__title">A complaint system should reduce uncertainty, not create more of it.</h3>
+          <p class="mission-panel__copy">
+            VoiceLink is designed to help users and institutions navigate complaint handling with more confidence. The process becomes easier to follow, easier to manage, and easier to trust.
+          </p>
+
+          <div class="mt-6 grid gap-4 md:grid-cols-3">
+            <div
+              v-for="item in impactCards"
+              :key="item.title"
+              class="mission-mini-card"
+            >
+              <p class="mission-mini-card__kicker">{{ item.title }}</p>
+              <p class="mission-mini-card__text">{{ item.description }}</p>
+            </div>
           </div>
 
-          <!-- Visual block -->
-      <div class="relative">
-           <!-- <div class="mission-visual-card">
-              <div class="mv-inner">
-                <div class="mv-icon-row">
-                  <div class="mv-icon bg-orange-100 text-orange-500">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                  </div>
-                  <div class="mv-icon bg-sky-100 text-sky-500">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                  </div>
-                  <div class="mv-icon bg-emerald-100 text-emerald-500">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                  </div>
-                </div>
-                <h3 class="mt-6 text-lg font-bold text-[#0f2444]">Direct. Transparent. Resolved.</h3>
-                <p class="mt-3 text-sm leading-6 text-slate-500">From a citizen's complaint to an organization's verified response — every step is visible, tracked, and accountable.</p>
-
-                <div class="mt-6 space-y-3">
-                  <div class="timeline-item">
-                    <div class="tl-dot bg-orange-500"></div>
-                    <div class="tl-bar bg-orange-100"></div>
-                    <span class="text-xs font-semibold text-slate-600">Complaint Submitted</span>
-                  </div>
-                  <div class="timeline-item">
-                    <div class="tl-dot bg-sky-500"></div>
-                    <div class="tl-bar bg-sky-100"></div>
-                    <span class="text-xs font-semibold text-slate-600">Routed to Organization</span>
-                  </div>
-                  <div class="timeline-item">
-                    <div class="tl-dot bg-violet-500"></div>
-                    <div class="tl-bar bg-violet-100"></div>
-                    <span class="text-xs font-semibold text-slate-600">Under Review</span>
-                  </div>
-                  <div class="timeline-item">
-                    <div class="tl-dot bg-emerald-500"></div>
-                    <div class="tl-bar bg-emerald-100"></div>
-                    <span class="text-xs font-semibold text-emerald-700">✓ Resolved</span>
-                  </div> 
-                </div> 
-              </div>
-            </div>
-            <!-- Floating accent -->
-            <!--<div class="floating-badge">
-              <span class="text-2xl font-black text-emerald-600">98%</span>
-              <span class="text-xs text-slate-400 font-medium">satisfaction</span>
-            </div> -->
-          </div>-->
+          <div class="mission-highlight-grid mt-6">
+            <article
+              v-for="item in missionHighlights"
+              :key="item.label"
+              class="mission-highlight-card"
+            >
+              <p class="mission-highlight-label">{{ item.label }}</p>
+              <p class="mission-highlight-text">{{ item.text }}</p>
+            </article>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- ─── WHAT WE STAND FOR ─────────────────────────────────── -->
-    <section class="bg-[#f5f7fa] px-6 py-20 sm:px-10 lg:px-16 lg:py-24">
+    <section class="bg-[#eef3fa] px-6 py-20 sm:px-10 lg:px-16 lg:py-24">
       <div class="mx-auto max-w-6xl">
         <div class="mb-14 text-center">
-          <p class="section-kicker">Our Values</p>
-          <h2 class="section-title mt-2">What We Stand For</h2>
+          <p class="section-kicker">What We Stand For</p>
+          <h2 class="section-title mt-2">Principles behind the product</h2>
         </div>
 
         <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          <div class="value-card group">
-            <div class="value-icon bg-orange-100 text-orange-500 group-hover:bg-orange-500 group-hover:text-white">
-              <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-            </div>
-            <h3 class="mt-5 text-lg font-bold text-[#0f2444]">Transparency</h3>
-            <p class="mt-2 text-sm leading-6 text-slate-500">Every complaint, every status update, every response is visible to the person who filed it. No black boxes, no silence.</p>
+          <div
+            v-for="value in valueCards"
+            :key="value.title"
+            class="value-card"
+          >
+            <h3 class="value-title">{{ value.title }}</h3>
+            <p class="value-description">{{ value.description }}</p>
           </div>
-
-          <div class="value-card group">
-            <div class="value-icon bg-sky-100 text-sky-500 group-hover:bg-sky-500 group-hover:text-white">
-              <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-            </div>
-            <h3 class="mt-5 text-lg font-bold text-[#0f2444]">Accountability</h3>
-            <p class="mt-2 text-sm leading-6 text-slate-500">Organizations are held to response timelines. Complaints don't vanish — they stay on record until properly closed.</p>
-          </div>
-
-          <div class="value-card group">
-            <div class="value-icon bg-violet-100 text-violet-500 group-hover:bg-violet-600 group-hover:text-white">
-              <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-            </div>
-            <h3 class="mt-5 text-lg font-bold text-[#0f2444]">Privacy</h3>
-            <p class="mt-2 text-sm leading-6 text-slate-500">Anonymous submission is a first-class feature. Your identity is never required when you need to speak up safely.</p>
-          </div>
-
-         <!-- <div class="value-card group">
-            <div class="value-icon bg-emerald-100 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white">
-              <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-            </div>
-            <h3 class="mt-5 text-lg font-bold text-[#0f2444]">Speed</h3>
-            <p class="mt-2 text-sm leading-6 text-slate-500">Direct routing means complaints reach the right desk immediately — not after bouncing through three departments.</p>
-          </div>-->
-
-          <!--<div class="value-card group">
-            <div class="value-icon bg-amber-100 text-amber-600 group-hover:bg-amber-500 group-hover:text-white">
-              <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-            </div>
-            <h3 class="mt-5 text-lg font-bold text-[#0f2444]">Inclusivity</h3>
-            <p class="mt-2 text-sm leading-6 text-slate-500">Designed for citizens, students, and customers across all backgrounds. Clear language, simple forms, no barriers.</p>
-          </div>-->
-
-         <!-- <div class="value-card group">
-            <div class="value-icon bg-rose-100 text-rose-500 group-hover:bg-rose-500 group-hover:text-white">
-              <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
-            </div>
-            <h3 class="mt-5 text-lg font-bold text-[#0f2444]">Dignity</h3>
-            <p class="mt-2 text-sm leading-6 text-slate-500">Every user deserves to be heard respectfully. The interface and process are designed to reduce stress, not add to it.</p>
-          </div>-->
         </div>
       </div>
     </section>
 
-    <!-- ─── HOW WE SERVE ──────────────────────────────────────── -->
-    <!--<section class="relative overflow-hidden bg-[#0f2444] px-6 py-20 sm:px-10 lg:px-16 lg:py-28">
-      <div class="dots absolute inset-0 opacity-[0.04]"></div>
-      <div class="absolute right-0 top-0 h-96 w-96 rounded-full bg-orange-500/10 blur-3xl pointer-events-none"></div>
-      <div class="absolute bottom-0 left-0 h-64 w-64 rounded-full bg-sky-500/10 blur-3xl pointer-events-none"></div>
+    <section class="about-section-muted px-6 py-20 sm:px-10 lg:px-16 lg:py-24">
+      <div class="mx-auto max-w-6xl">
+        <div class="grid gap-12 lg:grid-cols-[0.92fr_1.08fr] lg:items-start">
+          <div>
+            <p class="section-kicker">What VoiceLink Solves</p>
+            <h2 class="section-title mt-2">A product structure designed for real workflows</h2>
+            <p class="mt-6 text-base leading-8 text-slate-600">
+              The platform is not limited to a single complaint form. It combines public entry points, structured internal workflows, organization-level controls, and platform-wide oversight in one system.
+            </p>
+          </div>
 
-      <div class="relative mx-auto max-w-6xl">
+          <div class="capability-panel">
+            <ul class="capability-list">
+              <li
+                v-for="point in capabilityPoints"
+                :key="point"
+                class="capability-item"
+              >
+                <span class="capability-dot"></span>
+                <span>{{ point }}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-[#f8fafc] px-6 py-20 sm:px-10 lg:px-16 lg:py-24">
+      <div class="mx-auto max-w-7xl">
         <div class="mb-14 text-center">
-          <p class="section-kicker-light">Who We Serve</p>
-          <h2 class="section-title-light mt-2">Built for Real People<br/>in Real Situations</h2>
+          <p class="section-kicker">The Team</p>
+          <h2 class="section-title mt-2">Built by a collaborative project team</h2>
+          <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-500">
+            This platform was developed as a team effort focused on civic technology, user experience, and practical complaint workflow design.
+          </p>
         </div>
 
-        <div class="grid gap-6 sm:grid-cols-3">
-          <div class="serve-card">
-            <div class="serve-icon text-orange-400">
-              <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          <article
+            v-for="member in teamMembers"
+            :key="member.name"
+            class="team-card team-card-member"
+          >
+            <div class="team-image-shell">
+              <img
+                :src="member.image"
+                :alt="member.name"
+                class="team-avatar-img"
+              />
+              <div class="team-image-overlay"></div>
+              <p class="team-role-badge">{{ member.role }}</p>
             </div>
-            <h3 class="mt-5 text-lg font-bold text-white">Citizens</h3>
-            <p class="mt-3 text-sm leading-7 text-blue-200/60">Residents who need to report civic issues — potholes, service failures, government inaction — and get a real response.</p>
+            <h3 class="mt-4 text-base font-bold text-[#0f2444]">{{ member.name }}</h3>
+            <p class="mt-3 text-sm leading-7 text-slate-500">
+              {{ member.bio }}
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-section px-6 py-20 sm:px-10 lg:px-16 lg:py-24">
+      <div class="mx-auto max-w-5xl">
+        <div class="cta-panel">
+          <div>
+            <p class="section-kicker-light">Next Step</p>
+            <h2 class="cta-title">Explore the platform in action.</h2>
+            <p class="cta-copy">
+              Submit a complaint, track a case, or create an account to see how VoiceLink turns complaint handling into a more transparent and structured experience.
+            </p>
           </div>
-          <div class="serve-card">
-            <div class="serve-icon text-sky-400">
-              <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 14l9-5-9-5-9 5 9 5z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg>
-            </div>
-            <h3 class="mt-5 text-lg font-bold text-white">Students</h3>
-            <p class="mt-3 text-sm leading-7 text-blue-200/60">University and school students who want to escalate academic or administrative concerns through a proper, documented channel.</p>
-          </div>
-          <div class="serve-card">
-            <div class="serve-icon text-emerald-400">
-              <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-            </div>
-            <h3 class="mt-5 text-lg font-bold text-white">Customers</h3>
-            <p class="mt-3 text-sm leading-7 text-blue-200/60">Customers of businesses and service providers who need a formal, trackable channel to raise quality or service complaints.</p>
+
+          <div class="cta-actions">
+            <RouterLink to="/signup" class="cta-btn cta-btn-primary">Create Account</RouterLink>
+            <RouterLink to="/track-complaint" class="cta-btn cta-btn-secondary">Track Complaint</RouterLink>
           </div>
         </div>
       </div>
-    </section>-->
-
-    <!-- ─── TEAM ──────────────────────────────────────────────── -->
-<section class="bg-white px-6 py-20 sm:px-10 lg:px-16 lg:py-28">
-  <div class="mx-auto max-w-5xl">
-    <div class="mb-14 text-center">
-      <p class="section-kicker">The Team</p>
-      <h2 class="section-title mt-2">The People Behind<br/>ComplaintTrack</h2>
-      <p class="mx-auto mt-4 max-w-xl text-sm leading-7 text-slate-500">A small, focused team of technologists and civic-minded builders committed to making accountability accessible to everyone.</p>
-    </div>
-
-    <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-
-      <!-- Card 1 — real photo -->
-      <div class="team-card">
-        <img
-          src="/images/yeato.jpeg"
-          alt="Yeato Yowah"
-          class="team-avatar-img"
-        />
-        <h3 class="mt-4 text-base font-bold text-[#0f2444]">Yeato Yowah</h3>
-        <p class="text-sm font-medium text-orange-500">Group Head</p>
-        <p class="mt-2 text-xs leading-6 text-slate-500">Built the core platform architecture and is passionate about civic tech solving real problems for everyday Liberians.</p>
-      </div>
-
-      <!-- Card 2 — initials until photo is ready -->
-      <div class="team-card">
-        <img
-          src="/images/yeato.jpeg"
-          alt="Yeato Yowah"
-          class="team-avatar-img"
-        />
-        <h3 class="mt-4 text-base font-bold text-[#0f2444]">Yeato Yowah</h3>
-        <p class="text-sm font-medium text-sky-600">UX & Product Design</p>
-        <p class="mt-2 text-xs leading-6 text-slate-500">Leads the user experience to ensure the platform is accessible, calm, and frustration-free for every type of user.</p>
-      </div>
-
-      <!-- Card 3 — initials until photo is ready -->
-      <div class="team-card">
-        <img
-          src="/images/yeato.jpeg"
-          alt="Yeato Yowah"
-          class="team-avatar-img"
-        />
-        <h3 class="mt-4 text-base font-bold text-[#0f2444]">Yeato Yowah</h3>
-        <p class="text-sm font-medium text-violet-600">Backend & Systems</p>
-        <p class="mt-2 text-xs leading-6 text-slate-500">Manages data security, routing logic, and the admin infrastructure that keeps organizations on track.</p>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-    <!-- ─── CTA ───────────────────────────────────────────────── -->
-    <!--<section class="cta-section relative overflow-hidden px-6 py-24 sm:px-10 lg:px-16">
-      <div class="cta-bg absolute inset-0"></div>
-      <div class="absolute left-0 top-0 h-64 w-64 rounded-full bg-orange-500/20 blur-3xl pointer-events-none"></div>
-      <div class="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-sky-400/10 blur-3xl pointer-events-none"></div>
-      <div class="relative z-10 mx-auto max-w-3xl text-center">
-        <p class="section-kicker-light">Ready to Get Started?</p>
-        <h2 class="mt-3 font-serif text-4xl font-black leading-tight text-white sm:text-5xl" style="font-family:'Playfair Display',Georgia,serif">
-          Your Voice Matters.<br/>Use It Today.
-        </h2>
-        <p class="mx-auto mt-5 max-w-lg text-base leading-7 text-blue-200/70">
-          Submit a complaint, track your case, or register your organization — ComplaintTrack is here to make accountability real.
-        </p>
-        <div class="mt-10 flex flex-wrap justify-center gap-4">
-          <RouterLink to="/submit-complaint"
-            class="inline-flex items-center gap-2.5 rounded-full bg-[#f97316] px-9 py-4 text-base font-bold text-white shadow-[0_14px_50px_rgba(249,115,22,0.55)] transition-all hover:-translate-y-1 hover:shadow-[0_20px_60px_rgba(249,115,22,0.65)]">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-            Submit a Complaint
-          </RouterLink>
-          <RouterLink to="/"
-            class="inline-flex items-center gap-2.5 rounded-full border border-white/25 bg-white/10 px-9 py-4 text-base font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/20">
-            ← Back to Home
-          </RouterLink>
-        </div>
-      </div>
-    </section>-->
+    </section>
   </div>
 </template>
 
 <style scoped>
-.page-root { font-family: 'Times New Roman', Times, serif; }
+.page-root {
+  font-family: Georgia, 'Times New Roman', serif;
+}
 
-/* ── Hero ──────────────────────────────────── */
 .hero-section {
-  min-height: 500px;
-    background-image: url('https://images.unsplash.com/photo-1573497620053-ea5300f94f21?w=1600&q=80');
+  min-height: 540px;
+  background-image: url('https://images.unsplash.com/photo-1573497620053-ea5300f94f21?w=1600&q=80');
   background-size: cover;
   background-position: center top;
 }
+
 .hero-overlay {
-  background: linear-gradient(135deg, rgba(10,28,64,0.88) 0%, rgba(15,52,100,0.82) 50%, rgba(30,60,110,0.75) 100%);
+  background: linear-gradient(135deg, rgba(10, 28, 64, 0.88) 0%, rgba(15, 52, 100, 0.82) 50%, rgba(30, 60, 110, 0.75) 100%);
 }
-.grid-lines {
-  background-image:
-    linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
-  background-size: 60px 60px;
+
+.about-section-surface {
+  background: linear-gradient(180deg, #f8fafd 0%, #f3f6fb 100%);
 }
-.orb { border-radius: 50%; filter: blur(80px); pointer-events: none; }
-.orb-a {
-  right: 5%; top: 15%; width: 420px; height: 420px;
-  background: radial-gradient(circle, rgba(249,115,22,0.18), transparent 70%);
+
+.about-section-muted {
+  background: linear-gradient(180deg, #f4f7fb 0%, #edf2f8 100%);
 }
-.orb-b {
-  left: 20%; bottom: 15%; width: 280px; height: 280px;
-  background: radial-gradient(circle, rgba(56,189,248,0.12), transparent 70%);
-}
-.hero-h1 {
-  font-family: 'Times New Roman', Times, serif;
+
+.hero-title {
+  font-family: Georgia, 'Times New Roman', serif;
   letter-spacing: -0.02em;
 }
-/* ── Animations ────────────────────────────── */
-@keyframes fade-down {
-  from { opacity: 0; transform: translateY(-16px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes fade-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.animate-fade-down { animation: fade-down 0.6s ease both; }
-.animate-fade-up   { animation: fade-up 0.7s ease both; }
-.animation-delay-200 { animation-delay: 0.2s; }
 
-/* ── Section type ──────────────────────────── */
-.section-kicker {
-  display: block; font-size: 0.7rem; font-weight: 700;
-  letter-spacing: 0.24em; text-transform: uppercase; color: #f97316;
-}
-.section-title {
-  font-family: 'Times New Roman', Times, serif;
-  font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 900;
-  color: #0f2444; line-height: 1.1;
-}
+.section-kicker,
 .section-kicker-light {
-  display: block; font-size: 0.7rem; font-weight: 700;
-  letter-spacing: 0.24em; text-transform: uppercase; color: #fb923c;
-}
-.section-title-light {
-  font-family: 'Times New Roman', Times, serif;
-  font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 900;
-  color: white; line-height: 1.1;
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
 }
 
-/* ── Mission section ───────────────────────── */
-.mission-stat {
-  padding: 1rem 1.25rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(15,36,68,0.08);
-  background: #f8fafc;
-}
-.mission-stat-num {
-  font-family: 'Times New Roman', Times, serif;
-  font-size: 2rem; font-weight: 900; line-height: 1;
-}
-.mission-stat-label {
-  margin-top: 0.25rem; font-size: 0.7rem; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8;
-}
-.mission-visual-card {
-  border-radius: 2rem;
-  border: 1px solid rgba(15,36,68,0.08);
-  background: white;
-  box-shadow: 0 8px 50px rgba(15,36,68,0.10);
-  
-  padding: 2px;
-}
-.mv-inner { padding: 2rem; border-radius: calc(2rem - 2px); }
-.mv-icon-row { display: flex; gap: 0.75rem; }
-.mv-icon {
-  display: flex; align-items: center; justify-content: center;
-  width: 3rem; height: 3rem; border-radius: 0.875rem;
-}
-.timeline-item {
-  display: flex; align-items: center; gap: 0.75rem;
-}
-.tl-dot { width: 10px; height: 10px; border-radius: 9999px; flex-shrink: 0; }
-.tl-bar { flex: 1; height: 4px; border-radius: 9999px; }
-.floating-badge {
-  position: absolute;
-  bottom: -1.25rem;
-  right: -1rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 2rem 30.25rem;
-  border-radius: 1.25rem;
-  background: white;
-  box-shadow: 0 12px 40px rgba(15,36,68,0.15);
-  border: 1px solid rgba(15,36,68,0.07);
+.section-kicker {
+  color: #f97316;
 }
 
-/* ── Value cards ───────────────────────────── */
-.value-card {
-  background: white;
-  border: 1px solid rgba(15,36,68,0.07);
-  border-radius: 1.25rem; padding: 1.75rem;
-  box-shadow: 0 4px 20px rgba(15,36,68,0.05);
-  transition: all 0.25s ease;
-}
-.value-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(15,36,68,0.10); }
-.value-icon {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 3.25rem; height: 3.25rem; border-radius: 1rem; transition: all 0.25s;
+.section-kicker-light {
+  color: #fb923c;
 }
 
-/* ── Serve cards ───────────────────────────── */
-.dots {
-  background-image: radial-gradient(circle, rgba(255,255,255,0.5) 1px, transparent 1px);
-  background-size: 30px 30px;
-}
-.serve-card {
-  padding: 2rem;
-  border-radius: 1.25rem;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.04);
-  backdrop-filter: blur(8px);
-  transition: all 0.25s;
-}
-.serve-card:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15); }
-.serve-icon {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 3.5rem; height: 3.5rem;
-  border-radius: 1rem;
-  background: rgba(255,255,255,0.06);
+.section-title,
+.cta-title {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.9rem, 4vw, 2.8rem);
+  font-weight: 900;
+  line-height: 1.08;
+  color: #0f2444;
 }
 
-/* ── Team cards ────────────────────────────── */
+.mission-panel,
+.capability-panel,
 .team-card {
-  text-align: center; padding: 2rem 1.5rem;
   border-radius: 1.5rem;
-  border: 1px solid rgba(15,36,68,0.07);
-  background: white;
-  box-shadow: 0 4px 20px rgba(15,36,68,0.06);
-  transition: all 0.25s;
+  border: 1px solid rgba(15, 36, 68, 0.08);
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: 0 10px 32px rgba(15, 36, 68, 0.06);
+  backdrop-filter: blur(14px);
 }
-.team-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(15,36,68,0.11); }
-.team-avatar-img {
-  width: 9rem;
-  height: 9rem;
+
+.mission-panel,
+.capability-panel {
+  padding: 1.6rem;
+}
+
+.mission-panel__kicker,
+.mission-mini-card__kicker,
+.team-summary-kicker {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #667a97;
+}
+
+.mission-panel__title,
+.team-summary-title {
+  margin-top: 0.5rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.35;
+  color: #0f2444;
+}
+
+.mission-panel__copy {
+  margin-top: 0.9rem;
+  color: #5f6f86;
+  line-height: 1.75;
+}
+
+.mission-highlight-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.mission-highlight-card {
+  border-radius: 1.2rem;
+  border: 1px solid rgba(15, 36, 68, 0.08);
+  background: rgba(255, 255, 255, 0.64);
+  padding: 1.15rem 1.2rem;
+  box-shadow: 0 8px 24px rgba(15, 36, 68, 0.04);
+}
+
+.mission-highlight-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #667a97;
+}
+
+.mission-highlight-text {
+  margin-top: 0.45rem;
+  color: #314866;
+  line-height: 1.65;
+}
+
+.mission-mini-card {
+  border-radius: 1.2rem;
+  border: 1px solid rgba(15, 36, 68, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(248, 251, 255, 0.82) 100%);
+  padding: 1.2rem;
+}
+
+.mission-mini-card__text {
+  margin-top: 0.45rem;
+  color: #233b60;
+  line-height: 1.65;
+}
+
+.value-card {
+  border: 1px solid rgba(15, 36, 68, 0.07);
+  border-radius: 1.3rem;
+  background: rgba(255, 255, 255, 0.84);
+  padding: 1.75rem;
+  box-shadow: 0 4px 20px rgba(15, 36, 68, 0.05);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  backdrop-filter: blur(12px);
+}
+
+.value-card:hover,
+.team-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(15, 36, 68, 0.1);
+}
+
+.value-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f2444;
+}
+
+.value-description {
+  margin-top: 0.65rem;
+  color: #5f6f86;
+  line-height: 1.75;
+}
+
+.capability-list,
+.team-summary-list {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.capability-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  color: #2c4467;
+  line-height: 1.7;
+}
+
+.capability-dot {
+  margin-top: 0.45rem;
+  height: 0.48rem;
+  width: 0.48rem;
+  flex-shrink: 0;
   border-radius: 9999px;
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.12);
+}
+
+.team-card {
+  padding: 0 0 2rem 0;
+}
+
+.team-card-featured,
+.team-card-member {
+  text-align: center;
+}
+
+.team-card-member {
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+  height: 100%;
+}
+
+.team-image-shell {
+  position: relative;
+  width: 100%;
+  margin: 0;
+}
+
+.team-avatar-img {
+  width: 100%;
+  height: 18rem;
+  border-radius: 1.5rem 1.5rem 0 0;
   object-fit: cover;
   object-position: center top;
-  border: 3px solid #f1f5f9;
-  box-shadow: 0 4px 12px rgba(15,36,68,0.12);
-  margin: 0 auto 0.5rem auto;
+  border: none;
+  box-shadow: 0 12px 24px rgba(15, 36, 68, 0.14);
   display: block;
+}
+
+.team-image-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 1.5rem 1.5rem 0 0;
+  background: linear-gradient(180deg, rgba(15, 36, 68, 0.04) 0%, rgba(15, 36, 68, 0.42) 100%);
+  pointer-events: none;
+}
+
+.team-role-badge {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 1;
+  border-radius: 9999px;
+  background: rgba(15, 36, 68, 0.72);
+  padding: 0.65rem 0.9rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f8fafc;
+  backdrop-filter: blur(10px);
+}
+
+.team-card-member h3,
+.team-card-member > p:not(.team-role-badge) {
+  padding-left: 1.4rem;
+  padding-right: 1.4rem;
+}
+
+.cta-section {
+  background: linear-gradient(180deg, #102442 0%, #17345f 100%);
+}
+
+.cta-panel {
+  display: grid;
+  gap: 1.5rem;
+  align-items: center;
+  border-radius: 1.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    radial-gradient(circle at top right, rgba(249, 115, 22, 0.12), transparent 28%),
+    rgba(255, 255, 255, 0.04);
+  padding: 2rem;
+  backdrop-filter: blur(14px);
+}
+
+.cta-title,
+.cta-copy {
+  color: white;
+}
+
+.cta-copy {
+  margin-top: 0.9rem;
+  max-width: 40rem;
+  line-height: 1.75;
+  color: rgba(221, 234, 248, 0.82);
+}
+
+.cta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+}
+
+.cta-btn {
+  display: inline-flex;
+  min-height: 50px;
+  min-width: 180px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding: 0 1.25rem;
+  text-decoration: none;
+  font-weight: 700;
+  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.cta-btn:hover {
+  transform: translateY(-2px);
+}
+
+.cta-btn-primary {
+  background: #f97316;
+  color: white;
+  box-shadow: 0 14px 32px rgba(249, 115, 22, 0.22);
+}
+
+.cta-btn-primary:hover {
+  background: #ea580c;
+}
+
+.cta-btn-secondary {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: white;
+}
+
+.cta-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+@media (min-width: 1024px) {
+  .cta-panel {
+    grid-template-columns: minmax(0, 1.2fr) auto;
+    padding: 2.3rem 2.4rem;
+  }
+
+  .mission-highlight-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .team-avatar-img {
+    height: 15rem;
+  }
+
+  .team-role-badge {
+    left: 0.8rem;
+    right: 0.8rem;
+    bottom: 0.8rem;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.72rem;
+  }
+
+  .cta-actions {
+    width: 100%;
+  }
+
+  .cta-btn {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-section {
+    min-height: 460px;
+  }
+
+  .section-title,
+  .cta-title {
+    font-size: clamp(1.75rem, 8.8vw, 2.2rem);
+  }
+
+  .mission-panel,
+  .capability-panel,
+  .value-card,
+  .team-card,
+  .cta-panel {
+    border-radius: 1.2rem;
+  }
+
+  .value-card,
+  .cta-panel {
+    padding: 1.2rem;
+  }
 }
 </style>

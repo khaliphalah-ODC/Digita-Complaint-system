@@ -9,6 +9,7 @@ export const Organization = `CREATE TABLE IF NOT EXISTS organization (
     logo TEXT,
     status TEXT DEFAULT 'active' CHECK(status IN ('active', 'inactive')),
     join_code TEXT UNIQUE,
+    public_feedback_slug TEXT UNIQUE,
     self_signup_enabled INTEGER NOT NULL DEFAULT 1 CHECK(self_signup_enabled IN (0, 1)),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -24,8 +25,9 @@ INSERT INTO organization (
   logo,
   status,
   join_code,
+  public_feedback_slug,
   self_signup_enabled
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
 export const selectOrganizations = `
@@ -57,10 +59,24 @@ WHERE join_code = ? AND status = 'active'
 LIMIT 1
 `;
 
+export const selectOrganizationByPublicFeedbackSlug = `
+SELECT *
+FROM organization
+WHERE public_feedback_slug = ? AND status = 'active'
+LIMIT 1
+`;
+
 export const selectAnyOrganizationByJoinCode = `
 SELECT *
 FROM organization
 WHERE join_code = ?
+LIMIT 1
+`;
+
+export const selectAnyOrganizationByPublicFeedbackSlug = `
+SELECT *
+FROM organization
+WHERE public_feedback_slug = ?
 LIMIT 1
 `;
 
@@ -84,6 +100,14 @@ export const updateOrganizationJoinCodeById = `
 UPDATE organization
 SET
   join_code = ?,
+  updated_at = CURRENT_TIMESTAMP
+WHERE organization_id = ?
+`;
+
+export const updateOrganizationPublicFeedbackSlugById = `
+UPDATE organization
+SET
+  public_feedback_slug = ?,
   updated_at = CURRENT_TIMESTAMP
 WHERE organization_id = ?
 `;

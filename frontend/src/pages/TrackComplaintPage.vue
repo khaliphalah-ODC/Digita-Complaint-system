@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import api, { extractApiError, unwrapResponse } from '../services/api.js';
+import { complaintsApi, extractApiError } from '../services/api.js';
 import LiveSupportModal from '../components/LiveSupportModal.vue';
 
 const route = useRoute();
@@ -19,16 +19,11 @@ const canOpenChat = computed(() => isAuthenticated.value && Boolean(complaint.va
 const shellClass = computed(() => (isUserWorkspace.value ? 'user-shell-panel w-full rounded-[30px] p-4 sm:p-5 md:p-7' : 'app-shell-panel w-full rounded-[30px] p-4 sm:p-5 md:p-7'));
 const cardClass = computed(() => (isUserWorkspace.value ? 'user-shell-card rounded-[24px] px-4 py-3' : 'app-ink-card rounded-[24px] px-4 py-3'));
 
-const ensureSuccess = (payload, fallbackMessage) => {
-  if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
-  return payload.data;
-};
-
 const workflowSteps = computed(() => {
   const row = complaint.value;
   const rawStatus = String(row?.status || 'submitted').toLowerCase();
-  const reviewed = ['in_review', 'resolved', 'closed'].includes(rawStatus) || Boolean(row?.reviewed_at || row?.admin_response);
-  const assigned = ['resolved', 'closed'].includes(rawStatus) || Boolean(row?.reviewer_name || row?.department_name);
+  const reviewed = ['in_review', 'resolved', 'closed'].includes(rawStatus) || Boolean(row?.reviewed_at || row?.admin_response || row?.assigned_name || row?.reviewer_name);
+  const assigned = Boolean(row?.assigned_name);
   const resolved = ['resolved', 'closed'].includes(rawStatus);
   const closed = rawStatus === 'closed';
 
@@ -44,9 +39,7 @@ const workflowSteps = computed(() => {
 const prettyStatus = (status) => {
   if (!status) return 'Submitted';
   if (status === 'in_review') {
-    return complaint.value?.department_name || complaint.value?.reviewer_name || complaint.value?.reviewed_at
-      ? 'Assigned'
-      : 'Reviewed';
+    return complaint.value?.assigned_name ? 'Assigned' : 'Reviewed';
   }
   return status.charAt(0).toUpperCase() + status.slice(1);
 };
@@ -62,6 +55,24 @@ const statusBadgeClass = computed(() => {
 const reporterName = computed(() => {
   if (!complaint.value) return 'N/A';
   return complaint.value.is_anonymous ? (complaint.value.anonymous_label || 'Anonymous') : (complaint.value.user_full_name || 'N/A');
+});
+
+const handlerTitle = computed(() => {
+  if (complaint.value?.assigned_name) return 'Assigned to';
+  if (complaint.value?.department_name) return 'Current queue';
+  return 'Handled by';
+});
+
+const handlerName = computed(() => {
+  if (complaint.value?.assigned_name) return complaint.value.assigned_name;
+  if (complaint.value?.department_name) return complaint.value.department_name;
+  return 'Pending assignment';
+});
+
+const handlerHelper = computed(() => {
+  if (complaint.value?.assigned_name) return 'A named staff member now owns this complaint and is responsible for follow-up.';
+  if (complaint.value?.department_name) return 'The complaint has been routed to this department, but no specific staff owner is assigned yet.';
+  return 'No department or staff owner has been assigned yet.';
 });
 
 const resolvedDate = computed(() => complaint.value?.reviewed_at || complaint.value?.updated_at || complaint.value?.created_at || 'N/A');
@@ -83,8 +94,7 @@ const loadComplaint = async (trackingCode) => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await api.get(`/complaint/track/${encodeURIComponent(trackingCode)}`);
-    complaint.value = ensureSuccess(unwrapResponse(response), 'Failed to fetch complaint');
+    complaint.value = await complaintsApi.trackByCode(trackingCode);
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to fetch complaint');
     complaint.value = null;
@@ -121,7 +131,7 @@ const downloadReceiptPdf = () => {
     <p><strong>Category:</strong> ${complaint.value.category || 'N/A'}</p>
     <p><strong>Priority:</strong> ${complaint.value.priority || 'N/A'}</p>
     <p><strong>Organization:</strong> ${complaint.value.organization_name || 'N/A'}</p>
-    <p><strong>Handled by:</strong> ${complaint.value.reviewer_name || 'Pending assignment'}</p>
+    <p><strong>Handled by:</strong> ${complaint.value.assigned_name || complaint.value.department_name || 'Pending assignment'}</p>
     <p><strong>Resolution:</strong> ${complaint.value.admin_response || 'No resolution response yet.'}</p>
     <script>window.print()<\/script>
   </body></html>`;
@@ -189,8 +199,9 @@ onUnmounted(() => {
           <p class="break-words text-xs leading-5 text-slate-500">{{ complaint.organization_address || '' }}</p>
         </article>
         <article :class="`${cardClass} text-left md:text-right`">
-          <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Handled by</p>
-          <p class="mt-2 break-words text-[0.98rem] font-semibold text-slate-700">{{ complaint.reviewer_name || 'Pending assignment' }}</p>
+          <p class="text-xs uppercase tracking-[0.12em] text-slate-500">{{ handlerTitle }}</p>
+          <p class="mt-2 break-words text-[0.98rem] font-semibold text-slate-700">{{ handlerName }}</p>
+          <p class="mt-1 break-words text-xs leading-5 text-slate-500">{{ handlerHelper }}</p>
         </article>
       </div>
 

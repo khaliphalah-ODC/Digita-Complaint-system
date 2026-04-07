@@ -50,6 +50,23 @@ const ensureAdminAssignee = (assignedTo, organizationId, callback) => {
 
 const isOrgAdmin = (req) => req.user?.role === 'org_admin';
 
+const normalizeResolvedAt = (status, value, { autoNowForResolved = true } = {}) => {
+  if (status !== 'resolved') {
+    return null;
+  }
+
+  const trimmed = value == null ? '' : String(value).trim();
+  if (trimmed) {
+    const parsed = new Date(trimmed);
+    if (!Number.isFinite(parsed.getTime())) {
+      throw new Error('resolved_at must be a valid datetime when provided');
+    }
+    return trimmed;
+  }
+
+  return autoNowForResolved ? new Date().toISOString() : null;
+};
+
 const notifyEscalationOrganization = (escalationRow, message) =>
   createSystemNotificationSafely(
     {
@@ -146,7 +163,8 @@ export const createEscalation = (req, res) => {
     escalation_level = 'level_1',
     reason,
     notes = null,
-    status = 'pending'
+    status = 'pending',
+    resolved_at = null
   } = req.body;
 
   if (!accessment_id || !reason) {
@@ -157,6 +175,9 @@ export const createEscalation = (req, res) => {
   }
   if (!VALID_ESCALATION_STATUSES.includes(status)) {
     return sendError(res, 400, `status must be one of: ${VALID_ESCALATION_STATUSES.join(', ')}`);
+  }
+  if (['resolved', 'rejected'].includes(status)) {
+    return sendError(res, 400, 'New escalations must start as pending or in_progress');
   }
 
   complaintDB.get(fetchAccessmentByIdQuery, [accessment_id], (accessmentErr, accessmentRow) => {
@@ -252,6 +273,28 @@ export const getAllEscalations = (req, res) => {
   });
 };
 
+export const getEscalationById = (req, res) => {
+  if (denySuperAdminInternalAccess(req, res, 'Super admin cannot access escalations directly')) {
+    return;
+  }
+  if (!isOrgAdmin(req)) {
+    return sendError(res, 403, 'Only org_admin can access escalations');
+  }
+
+  complaintDB.get(fetchEscalationByIdQuery, [req.params.id], (err, row) => {
+    if (err) {
+      return sendError(res, 500, 'Failed to fetch escalation', err.message);
+    }
+    if (!row) {
+      return sendError(res, 404, 'Escalation not found');
+    }
+    if (String(row.organization_id) !== String(req.user.organization_id)) {
+      return sendError(res, 403, 'Access denied');
+    }
+    return sendSuccess(res, 200, 'Escalation retrieved successfully', row);
+  });
+};
+
 export const updateEscalation = (req, res) => {
   if (denySuperAdminInternalAccess(req, res, 'Super admin cannot manage escalations directly')) {
     return;
@@ -295,9 +338,16 @@ export const updateEscalation = (req, res) => {
         return sendError(res, 400, 'Invalid escalation assignment', assigneeErr.message);
       }
 
+      let normalizedResolvedAt = null;
+      try {
+        normalizedResolvedAt = normalizeResolvedAt(status, resolved_at);
+      } catch (validationError) {
+        return sendError(res, 400, validationError.message);
+      }
+
       complaintDB.run(
         updateEscalationQuery,
-        [normalizedAssignedTo, escalation_level, reason, notes, status, resolved_at, req.params.id],
+        [normalizedAssignedTo, escalation_level, reason, notes, status, normalizedResolvedAt, req.params.id],
         function onUpdate(err) {
           if (err) {
             return sendError(res, 500, 'Failed to update escalation', err.message);
@@ -357,7 +407,14 @@ export const updateEscalationStatus = (req, res) => {
       return sendError(res, 403, 'Access denied');
     }
 
-    complaintDB.run(updateEscalationStatusQuery, [status, resolved_at, req.params.id], function onUpdate(err) {
+    let normalizedResolvedAt = null;
+    try {
+      normalizedResolvedAt = normalizeResolvedAt(status, resolved_at);
+    } catch (validationError) {
+      return sendError(res, 400, validationError.message);
+    }
+
+    complaintDB.run(updateEscalationStatusQuery, [status, normalizedResolvedAt, req.params.id], function onUpdate(err) {
       if (err) {
         return sendError(res, 500, 'Failed to update escalation status', err.message);
       }

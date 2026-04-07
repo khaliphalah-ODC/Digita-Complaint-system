@@ -1,7 +1,12 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
-import api, { extractApiError, unwrapResponse } from '../../services/api.js';
+import { complaintsApi, extractApiError } from '../../services/api.js';
+import EmptyState from '../../components/ui/EmptyState.vue';
+import ErrorState from '../../components/ui/ErrorState.vue';
+import LoadingSpinner from '../../components/ui/LoadingSpinner.vue';
+import StatusBadge from '../../components/ui/StatusBadge.vue';
+import { createUserComplaintAnalytics } from '../../services/analytics.service.js';
 import { useSessionStore } from '../../stores/session.js';
 
 const session = useSessionStore();
@@ -9,34 +14,41 @@ const loading = ref(false);
 const error = ref('');
 const complaints = ref([]);
 
-const ensureSuccess = (payload, fallbackMessage) => {
-  if (!payload?.success) {
-    throw new Error(payload?.message || fallbackMessage);
-  }
-  return payload.data;
-};
-
-const complaintSummary = computed(() => {
-  const rows = complaints.value || [];
-  return {
-    total: rows.length,
-    open: rows.filter((row) => row.status === 'submitted' || row.status === 'in_review').length,
-    resolved: rows.filter((row) => row.status === 'resolved' || row.status === 'closed').length
-  };
-});
-
-const recentComplaints = computed(() => (complaints.value || []).slice(0, 5));
+const complaintAnalytics = computed(() => createUserComplaintAnalytics(complaints.value || []));
+const complaintSummary = computed(() => complaintAnalytics.value.summary);
+const recentComplaints = computed(() => complaintAnalytics.value.recentComplaints);
 const isOrganizationMemberUser = computed(
   () => session.currentUser?.role === 'user' && Boolean(session.currentUser?.organization_id)
 );
+
+const getWorkflowSteps = (item) => {
+  const rawStatus = String(item?.status || 'submitted').toLowerCase();
+  const reviewed = ['in_review', 'resolved', 'closed'].includes(rawStatus) || Boolean(item?.reviewed_at || item?.admin_response || item?.assigned_name || item?.reviewer_name);
+  const assigned = Boolean(item?.assigned_name);
+  const resolved = ['resolved', 'closed'].includes(rawStatus);
+  const closed = rawStatus === 'closed';
+
+  return [
+    { key: 'submitted', label: 'Submitted', done: true },
+    { key: 'reviewed', label: 'Reviewed', done: reviewed },
+    { key: 'assigned', label: 'Assigned', done: assigned },
+    { key: 'resolved', label: 'Resolved', done: resolved },
+    { key: 'closed', label: 'Closed', done: closed }
+  ];
+};
+
+const getOwnerSummary = (item) => {
+  if (item?.assigned_name) return `Assigned to ${item.assigned_name}`;
+  if (item?.department_name) return `In ${item.department_name} queue`;
+  return 'Pending assignment';
+};
 
 const fetchComplaints = async () => {
   loading.value = true;
   error.value = '';
 
   try {
-    const response = await api.get('/complaint');
-    complaints.value = ensureSuccess(unwrapResponse(response), 'Failed to fetch complaints') || [];
+    complaints.value = await complaintsApi.list() || [];
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to fetch complaints');
   } finally {
@@ -84,25 +96,25 @@ onMounted(fetchComplaints);
         <div class="mt-4 grid gap-3">
           <RouterLink
             to="/submit-complaint"
-            class="w-full rounded-[22px] border border-[var(--app-line)] bg-white px-4 py-3 text-sm font-semibold text-[var(--app-title-color)] hover:border-[var(--app-line-strong)] hover:bg-[var(--app-surface-soft)]"
+            class="w-full rounded-[22px] border border-[var(--app-line)] !bg-orange-500 px-4 py-3 text-sm font-semibold text-[var(--app-title-color)] hover:border-[var(--app-line-strong)] hover:bg-[var(--app-surface-soft)]"
           >
             Submit Complaint
           </RouterLink>
           <RouterLink
             to="/track-complaint"
-            class="w-full rounded-[22px] border border-[var(--app-line)] bg-white px-4 py-3 text-sm font-semibold text-[var(--app-title-color)] hover:border-[var(--app-line-strong)] hover:bg-[var(--app-surface-soft)]"
+            class="w-full rounded-[22px] border border-[var(--app-line)] bg-orange-500 px-4 py-3 text-sm font-semibold text-[var(--app-title-color)] hover:border-[var(--app-line-strong)] hover:bg-[var(--app-surface-soft)]"
           >
             Track Complaint
           </RouterLink>
           <RouterLink
             to="/feedback"
-            class="w-full rounded-[22px] border border-[var(--app-line)] bg-white px-4 py-3 text-sm font-semibold text-[var(--app-title-color)] hover:border-[var(--app-line-strong)] hover:bg-[var(--app-surface-soft)]"
+            class="w-full rounded-[22px] border border-[var(--app-line)] bg-orange-500 px-4 py-3 text-sm font-semibold text-[var(--app-title-color)] hover:border-[var(--app-line-strong)] hover:bg-[var(--app-surface-soft)]"
           >
             Leave Feedback
           </RouterLink>
           <RouterLink
             to="/testimonial"
-            class="w-full rounded-[22px] border border-[var(--app-line)] bg-white px-4 py-3 text-sm font-semibold text-[var(--app-title-color)] hover:border-[var(--app-line-strong)] hover:bg-[var(--app-surface-soft)]"
+            class="w-full rounded-[22px] border border-[var(--app-line)] bg-orange-500 px-4 py-3 text-sm font-semibold text-[var(--app-title-color)] hover:border-[var(--app-line-strong)] hover:bg-[var(--app-surface-soft)]"
           >
             Share Your Experience
           </RouterLink>
@@ -120,9 +132,13 @@ onMounted(fetchComplaints);
           </button>
         </div>
 
-        <p v-if="loading" class="text-sm text-[var(--app-muted-color)]">Loading complaints...</p>
-        <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
-        <p v-else-if="recentComplaints.length === 0" class="text-sm text-[var(--app-muted-color)]">No complaints found yet.</p>
+        <LoadingSpinner v-if="loading" label="Loading complaints..." :centered="false" />
+        <ErrorState v-else-if="error" title="Could not load complaints" :description="error" />
+        <EmptyState
+          v-else-if="recentComplaints.length === 0"
+          title="No complaints found yet."
+          description="Once you submit a complaint, its latest status will appear here."
+        />
 
         <div v-else class="space-y-3">
           <article
@@ -137,6 +153,7 @@ onMounted(fetchComplaints);
                 <p class="mt-2 text-xs text-[var(--app-muted-color)]">Tracking: {{ item.tracking_code || 'N/A' }}</p>
                 <p class="text-xs text-[var(--app-muted-color)]">Organization: {{ item.organization_name || 'Not assigned' }}</p>
                 <p class="text-xs text-[var(--app-muted-color)]">Department: {{ item.department_name || 'Not specified' }}</p>
+                <p class="text-xs font-medium text-[var(--app-primary-ink)]">{{ getOwnerSummary(item) }}</p>
                 <RouterLink
                   v-if="item.status === 'resolved' || item.status === 'closed'"
                   to="/testimonial"
@@ -146,8 +163,33 @@ onMounted(fetchComplaints);
                 </RouterLink>
               </div>
               <div class="app-action-row flex flex-wrap gap-2">
-                <span class="app-badge app-badge-warning">{{ item.priority }}</span>
-                <span class="app-badge app-badge-neutral">{{ item.status }}</span>
+                <StatusBadge :value="item.priority" />
+                <StatusBadge :value="item.status" tone="neutral" />
+              </div>
+            </div>
+
+            <div class="mt-4 rounded-[22px] border border-[var(--app-line)] bg-[var(--app-surface-soft)] px-3 py-4 sm:px-4">
+              <div class="grid grid-cols-5 items-start gap-2 text-center text-[10px] font-semibold leading-4 text-slate-600 sm:text-[11px]">
+                <span v-for="step in getWorkflowSteps(item)" :key="`${item.id}-${step.key}-label`">{{ step.label }}</span>
+              </div>
+              <div class="mt-2 flex items-center justify-between">
+                <div
+                  v-for="(step, index) in getWorkflowSteps(item)"
+                  :key="`${item.id}-${step.key}`"
+                  class="flex w-full items-center"
+                >
+                  <div
+                    class="z-10 mx-auto h-5 w-5 rounded-full border-2 text-center text-[10px] leading-4"
+                    :class="step.done ? 'border-[var(--app-primary)] bg-[var(--app-primary)] text-white' : 'border-slate-300 bg-white text-slate-400'"
+                  >
+                    {{ step.done ? '✓' : '' }}
+                  </div>
+                  <div
+                    v-if="index < getWorkflowSteps(item).length - 1"
+                    class="-ml-1 h-1 flex-1"
+                    :class="step.done && getWorkflowSteps(item)[index + 1]?.done ? 'bg-[var(--app-primary)]' : 'bg-slate-200'"
+                  ></div>
+                </div>
               </div>
             </div>
           </article>

@@ -82,6 +82,23 @@ const notifyOrganizationAdmins = (complaintRow, type, message) => {
   );
 };
 
+const notifyAssignedUser = (complaintRow, message) => {
+  if (!complaintRow?.assigned_to) {
+    return Promise.resolve(null);
+  }
+
+  return createSystemNotificationSafely(
+    {
+      organizationId: complaintRow.complaint_organization_id || complaintRow.organization_id || null,
+      userId: complaintRow.assigned_to,
+      complaintId: complaintRow.id,
+      type: NOTIFICATION_TYPES.COMPLAINT_ASSIGNED,
+      message
+    },
+    'complaint assignment notification'
+  );
+};
+
 const isAllowedStatusTransition = (fromStatus, toStatus) => {
   if (fromStatus === toStatus) {
     return true;
@@ -102,6 +119,7 @@ const ensureComplaintTableSchema = async () => {
   if (!existing.has('user_id')) await runQuery('ALTER TABLE complaint ADD COLUMN user_id INTEGER');
   if (!existing.has('organization_id')) await runQuery('ALTER TABLE complaint ADD COLUMN organization_id INTEGER');
   if (!existing.has('department_id')) await runQuery('ALTER TABLE complaint ADD COLUMN department_id INTEGER');
+  if (!existing.has('assigned_to')) await runQuery('ALTER TABLE complaint ADD COLUMN assigned_to INTEGER');
   if (!existing.has('is_anonymous')) await runQuery('ALTER TABLE complaint ADD COLUMN is_anonymous INTEGER NOT NULL DEFAULT 0');
   if (!existing.has('anonymous_label')) await runQuery('ALTER TABLE complaint ADD COLUMN anonymous_label TEXT');
   if (!existing.has('title')) await runQuery('ALTER TABLE complaint ADD COLUMN title TEXT');
@@ -502,6 +520,7 @@ export const updateComplaint = (req, res) => {
     const isAnonymous = req.body.is_anonymous === undefined ? !!existing.is_anonymous : !!req.body.is_anonymous;
     const updated = {
       department_id: req.body.department_id === undefined ? existing.complaint_department_id : req.body.department_id,
+      assigned_to: req.body.assigned_to === undefined ? existing.assigned_to : req.body.assigned_to,
       is_anonymous: isAnonymous,
       anonymous_label: isAnonymous
         ? req.body.anonymous_label || existing.anonymous_label || 'Anonymous Reporter'
@@ -536,9 +555,22 @@ export const updateComplaint = (req, res) => {
       updated.department_id === null || updated.department_id === undefined || updated.department_id === ''
         ? null
         : Number(updated.department_id);
+    const normalizedAssignedTo =
+      updated.assigned_to === null || updated.assigned_to === undefined || updated.assigned_to === ''
+        ? null
+        : Number(updated.assigned_to);
 
     if (normalizedDepartmentId !== null && (!Number.isInteger(normalizedDepartmentId) || normalizedDepartmentId <= 0)) {
       return sendError(res, 400, 'department_id must be a valid department id when provided');
+    }
+    if (normalizedAssignedTo !== null && (!Number.isInteger(normalizedAssignedTo) || normalizedAssignedTo <= 0)) {
+      return sendError(res, 400, 'assigned_to must be a valid user id when provided');
+    }
+    if (req.user.role !== 'org_admin' && req.body.assigned_to !== undefined) {
+      return sendError(res, 403, 'Only admin can assign complaints');
+    }
+    if (req.user.role === 'org_admin' && normalizedAssignedTo !== null && updated.status === 'submitted') {
+      updated.status = 'in_review';
     }
 
     const enforceWorkflowRules = async () => {
@@ -569,6 +601,7 @@ export const updateComplaint = (req, res) => {
         updateComplaintById,
         [
           normalizedDepartmentId,
+          normalizedAssignedTo,
           updated.is_anonymous ? 1 : 0,
           updated.anonymous_label,
           updated.title,
@@ -593,8 +626,21 @@ export const updateComplaint = (req, res) => {
 
             const statusChanged = updated.status !== existing.status;
             const responseChanged = updated.admin_response !== existing.admin_response && updated.admin_response;
+            const assignmentChanged = String(row.assigned_to || '') !== String(existing.assigned_to || '');
 
             if (req.user.role === 'org_admin') {
+              if (assignmentChanged && row.assigned_to) {
+                void notifyAssignedUser(
+                  row,
+                  `You were assigned complaint "${row.title || 'Untitled Complaint'}".`
+                );
+                void notifyComplaintOwner(
+                  row,
+                  NOTIFICATION_TYPES.COMPLAINT_ASSIGNED,
+                  `Your complaint "${row.title || 'Untitled Complaint'}" was assigned to ${row.assigned_name || 'a staff member'}.`
+                );
+              }
+
               if (statusChanged) {
                 const statusType = updated.status === 'resolved'
                   ? NOTIFICATION_TYPES.COMPLAINT_RESOLVED
@@ -636,7 +682,7 @@ export const updateComplaint = (req, res) => {
       );
     };
 
-    const proceedWithUpdate = () => {
+    const proceedWithUpdate = (assigneeRow = null) => {
       if (normalizedDepartmentId === null) {
         return continueUpdate();
       }
@@ -651,11 +697,51 @@ export const updateComplaint = (req, res) => {
         if (String(departmentRow.organization_id) !== String(existing.complaint_organization_id)) {
           return sendError(res, 400, 'Selected department does not belong to the complaint organization');
         }
+        if (
+          assigneeRow &&
+          assigneeRow.department_id &&
+          String(assigneeRow.department_id) !== String(normalizedDepartmentId)
+        ) {
+          return sendError(res, 400, 'Selected assignee does not belong to the chosen department');
+        }
         return continueUpdate();
       });
     };
 
+    const validateAssignee = () => {
+      if (normalizedAssignedTo === null) {
+        return Promise.resolve(null);
+      }
+
+      return new Promise((resolve, reject) => {
+        complaintDB.get(fetchUserByIdQuery, [normalizedAssignedTo], (assigneeErr, assigneeRow) => {
+          if (assigneeErr) {
+            reject(new Error(`Failed to validate assigned user: ${assigneeErr.message}`));
+            return;
+          }
+          if (!assigneeRow) {
+            reject(new Error('Selected assignee was not found'));
+            return;
+          }
+          if (String(assigneeRow.status || '').toLowerCase() !== 'active') {
+            reject(new Error('Selected assignee is not active'));
+            return;
+          }
+          if (!['org_admin', 'user'].includes(String(assigneeRow.role || '').toLowerCase())) {
+            reject(new Error('Selected assignee must be an organization team member'));
+            return;
+          }
+          if (String(assigneeRow.organization_id || '') !== String(existing.complaint_organization_id || '')) {
+            reject(new Error('Selected assignee must belong to the same organization'));
+            return;
+          }
+          resolve(assigneeRow);
+        });
+      });
+    };
+
     enforceWorkflowRules()
+      .then(validateAssignee)
       .then(proceedWithUpdate)
       .catch((policyError) => {
         return sendError(res, 400, policyError.message || 'Complaint update violates workflow policy');

@@ -17,11 +17,25 @@ const dashboardRoute = computed(() => {
 });
 
 const isActive = (path) => route.path === path;
+
+const platformHighlights = [
+  'Guided complaint submission',
+  'Tracking codes and status updates',
+  'Department routing and escalation',
+  'Public feedback and organization access'
+];
+
+const supportLinks = [
+  { to: '/track-complaint', label: 'Track Complaint' },
+  { to: '/signup', label: 'Create Account' },
+  { to: '/services', label: 'Implementation Support' },
+  { to: '/contact', label: 'Get Help' }
+];
 </script>
 
 <template>
   <footer class="border-t border-white/10 bg-slate-950 text-slate-300">
-    <div class="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-6 py-14 md:grid-cols-3 md:gap-12 md:py-16">
+    <div class="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-6 py-14 md:grid-cols-2 xl:grid-cols-4 xl:gap-12 md:py-16">
       <section class="group border-l-2 border-transparent pl-4 transition-all duration-300 hover:border-orange-500">
         <h2 class="text-2xl font-black text-white">
           <span class="text-blue-500">
@@ -32,6 +46,23 @@ const isActive = (path) => route.path === path;
         <p class="mt-4 max-w-sm text-sm leading-relaxed text-slate-400">
           Empowering users to report, track, and resolve complaints efficiently with transparency and control.
         </p>
+
+        <div class="mt-6 space-y-3">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+            Platform Focus
+          </p>
+
+          <ul class="space-y-2 text-sm text-slate-400">
+            <li
+              v-for="item in platformHighlights"
+              :key="item"
+              class="flex items-start gap-2"
+            >
+              <span class="mt-1 h-1.5 w-1.5 rounded-full bg-orange-500"></span>
+              <span>{{ item }}</span>
+            </li>
+          </ul>
+        </div>
       </section>
 
       <nav class="group border-l-2 border-transparent pl-4 transition-all duration-300 hover:border-orange-500">
@@ -96,6 +127,35 @@ const isActive = (path) => route.path === path;
         </ul>
       </nav>
 
+      <nav class="group border-l-2 border-transparent pl-4 transition-all duration-300 hover:border-orange-500">
+        <h3 class="mb-5 text-lg font-semibold text-white">
+          Support
+        </h3>
+
+        <ul class="space-y-4 text-sm">
+          <li
+            v-for="link in supportLinks"
+            :key="link.to"
+          >
+            <RouterLink
+              :to="link.to"
+              :class="['nav-link', isActive(link.to) ? 'active' : '']"
+            >
+              {{ link.label }}
+            </RouterLink>
+          </li>
+        </ul>
+
+        <div class="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
+          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-orange-400">
+            Best For
+          </p>
+          <p class="mt-2 text-sm leading-6 text-slate-400">
+            Account access help, workflow clarification, organization onboarding, and complaint process guidance.
+          </p>
+        </div>
+      </nav>
+
       <section class="group border-l-2 border-transparent pl-4 transition-all duration-300 hover:border-orange-500">
         <h3 class="mb-5 text-lg font-semibold text-white">
           Contact
@@ -113,6 +173,14 @@ const isActive = (path) => route.path === path;
 
         <p class="mt-2 text-sm text-slate-400">
           Phone: +231 77 000 0000
+        </p>
+
+        <p class="mt-2 text-sm text-slate-400">
+          Availability: Mon - Fri, 8:00 AM to 5:00 PM
+        </p>
+
+        <p class="mt-2 text-sm text-slate-400">
+          Public support for tracking, onboarding, and organization setup questions.
         </p>
 
         <div class="mt-6 flex gap-6">
@@ -135,8 +203,11 @@ const isActive = (path) => route.path === path;
       </section>
     </div>
 
-    <div class="border-t border-white/10 py-6 text-center text-xs text-slate-500">
-      © 2026 Complaint MS. All rights reserved.
+    <div class="border-t border-white/10">
+      <div class="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-6 text-center text-xs text-slate-500 md:flex-row md:items-center md:justify-between md:text-left">
+        <p>© 2026 VoiceLink. All rights reserved.</p>
+        <p>Built for clearer complaint intake, workflow visibility, and institutional follow-up.</p>
+      </div>
     </div>
   </footer>
 </template>

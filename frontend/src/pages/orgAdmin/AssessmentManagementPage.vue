@@ -1,7 +1,12 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
-import api, { extractApiError, unwrapResponse } from '../../services/api';
+import { assessmentsApi, complaintsApi, extractApiError } from '../../services/api';
 import MobileDataCardList from '../../components/MobileDataCardList.vue';
+import DataTable from '../../components/ui/DataTable.vue';
+import EmptyState from '../../components/ui/EmptyState.vue';
+import FormField from '../../components/ui/FormField.vue';
+import LoadingSpinner from '../../components/ui/LoadingSpinner.vue';
+import StatusBadge from '../../components/ui/StatusBadge.vue';
 import { useSessionStore } from '../../stores/session';
 import { useUiToastStore } from '../../stores/uiToast';
 
@@ -44,11 +49,6 @@ const form = reactive({
   admin_response: ''
 });
 
-const ensureSuccess = (payload, fallbackMessage) => {
-  if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
-  return payload.data;
-};
-
 const resetForm = () => {
   editingId.value = null;
   form.complaint_id = '';
@@ -62,9 +62,9 @@ const fetchAssessments = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const [assessmentRes, complaintRes] = await Promise.all([api.get('/assessments'), api.get('/complaint')]);
-    assessments.value = ensureSuccess(unwrapResponse(assessmentRes), 'Failed to fetch assessments') || [];
-    complaints.value = ensureSuccess(unwrapResponse(complaintRes), 'Failed to fetch complaints') || [];
+    const [assessmentRows, complaintRows] = await Promise.all([assessmentsApi.list(), complaintsApi.list()]);
+    assessments.value = assessmentRows || [];
+    complaints.value = complaintRows || [];
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to fetch assessments');
   } finally {
@@ -99,10 +99,10 @@ const saveAssessment = async () => {
     };
 
     if (editingId.value) {
-      await api.put(`/assessments/${editingId.value}`, payload);
+      await assessmentsApi.update(editingId.value, payload);
       uiToast.success('Assessment updated successfully.');
     } else {
-      await api.post('/assessments', payload);
+      await assessmentsApi.create(payload);
       uiToast.success('Assessment created successfully.');
     }
 
@@ -121,7 +121,7 @@ const deleteAssessment = async (row) => {
   if (!ok) return;
   error.value = '';
   try {
-    await api.delete(`/assessments/${row.id}`);
+    await assessmentsApi.remove(row.id);
       uiToast.success('Assessment deleted successfully.');
     await fetchAssessments();
   } catch (requestError) {
@@ -164,6 +164,14 @@ const mobileCardFields = [
   { key: 'assessor', label: 'Assessor' },
   { key: 'updated', label: 'Updated' }
 ];
+const tableColumns = [
+  { key: 'id', label: 'ID' },
+  { key: 'complaint', label: 'Complaint' },
+  { key: 'status', label: 'Status' },
+  { key: 'assessor', label: 'Assessor' },
+  { key: 'updated', label: 'Updated' },
+  { key: 'actions', label: 'Actions' }
+];
 const goToPage = (nextPage) => {
   page.value = Math.min(Math.max(1, nextPage), totalPages.value);
 };
@@ -190,18 +198,18 @@ onMounted(async () => {
     <section :class="panelClass">
       <h2 :class="isOrgAdmin ? 'mb-3 text-lg font-bold text-white' : 'mb-3 text-lg font-bold text-slate-900'">{{ editingId ? 'Edit Assessment' : 'Create Assessment' }}</h2>
       <form class="grid grid-cols-1 gap-3 md:grid-cols-2" @submit.prevent="saveAssessment">
-        <select v-model="form.complaint_id" :class="selectClass">
-          <option value="">Select complaint</option>
-          <option v-for="row in complaints" :key="row.id" :value="String(row.id)">
-            #{{ row.id }} - {{ row.title || 'Untitled' }}
-          </option>
-        </select>
-        <select v-model="form.status" :class="selectClass">
-          <option v-for="status in statusOptions" :key="status" :value="status">{{ status }}</option>
-        </select>
-        <textarea v-model="form.findings" placeholder="Findings" :class="`${inputClass} md:col-span-2`" rows="2" />
-        <textarea v-model="form.recommendation" placeholder="Recommendation (optional)" :class="`${inputClass} md:col-span-2`" rows="2" />
-        <textarea v-model="form.admin_response" placeholder="Admin response (optional)" :class="`${inputClass} md:col-span-2`" rows="2" />
+        <FormField v-model="form.complaint_id" as="select" label="Complaint" :input-class="selectClass">
+          <template #options>
+            <option value="">Select complaint</option>
+            <option v-for="row in complaints" :key="row.id" :value="String(row.id)">
+              #{{ row.id }} - {{ row.title || 'Untitled' }}
+            </option>
+          </template>
+        </FormField>
+        <FormField v-model="form.status" as="select" label="Status" :options="statusOptions" :input-class="selectClass" />
+        <FormField v-model="form.findings" as="textarea" label="Findings" placeholder="Findings" :input-class="inputClass" wrapper-class="md:col-span-2" :rows="2" />
+        <FormField v-model="form.recommendation" as="textarea" label="Recommendation" placeholder="Recommendation (optional)" :input-class="inputClass" wrapper-class="md:col-span-2" :rows="2" />
+        <FormField v-model="form.admin_response" as="textarea" label="Admin Response" placeholder="Admin response (optional)" :input-class="inputClass" wrapper-class="md:col-span-2" :rows="2" />
         <div class="flex flex-col gap-2 sm:flex-row">
           <button :disabled="saving" type="submit" :class="`${primaryButtonClass} w-full sm:w-auto`">
             {{ saving ? 'Saving...' : editingId ? 'Update Assessment' : 'Create Assessment' }}
@@ -218,16 +226,24 @@ onMounted(async () => {
       <div class="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <h2 :class="isOrgAdmin ? 'text-lg font-bold text-white' : 'text-lg font-bold text-slate-900'">Assessments</h2>
         <div class="flex flex-col gap-2 sm:flex-row md:w-auto">
-          <input v-model="search" placeholder="Search assessments..." :class="`${inputClass} w-full sm:min-w-[14rem]`">
-          <select v-model="statusFilter" :class="`${selectClass} w-full sm:min-w-[11rem]`">
-            <option value="all">All status</option>
-            <option v-for="status in statusOptions" :key="status" :value="status">{{ status }}</option>
-          </select>
+          <FormField v-model="search" placeholder="Search assessments..." :input-class="`${inputClass} w-full sm:min-w-[14rem]`" />
+          <FormField v-model="statusFilter" as="select" :input-class="`${selectClass} w-full sm:min-w-[11rem]`">
+            <template #options>
+              <option value="all">All status</option>
+              <option v-for="status in statusOptions" :key="status" :value="status">{{ status }}</option>
+            </template>
+          </FormField>
         </div>
       </div>
 
-      <p v-if="loading" :class="infoTextClass">Loading assessments...</p>
-      <p v-else-if="filteredAssessments.length === 0" :class="infoTextClass">No assessments found.</p>
+      <LoadingSpinner v-if="loading" label="Loading assessments..." :label-class="infoTextClass" />
+      <EmptyState
+        v-else-if="filteredAssessments.length === 0"
+        title="No assessments found."
+        description="Create an assessment or widen the current filters."
+        :title-class="isOrgAdmin ? 'font-semibold text-white' : 'font-semibold text-[var(--app-title-color)]'"
+        :description-class="infoTextClass"
+      />
 
       <MobileDataCardList
         v-else
@@ -242,7 +258,7 @@ onMounted(async () => {
           <p class="break-words font-medium text-[var(--app-title-color)]">{{ item.complaint_title || complaintTitleById.get(Number(item.complaint_id)) || item.complaint_id }}</p>
         </template>
         <template #field-status="{ item }">
-          <p class="font-medium text-[var(--app-title-color)]">{{ item.status }}</p>
+          <StatusBadge :value="item.status" />
         </template>
         <template #field-assessor="{ item }">
           <p class="font-medium text-[var(--app-title-color)]">{{ item.assessor_id || 'N/A' }}</p>
@@ -258,43 +274,42 @@ onMounted(async () => {
         </template>
       </MobileDataCardList>
 
-      <div v-if="filteredAssessments.length > 0" class="hidden md:block app-table-shell overflow-x-auto pb-1">
-        <table :class="tableClass">
-          <thead :class="tableHeadClass">
-            <tr>
-              <th class="pb-2 pr-3">ID</th>
-              <th class="pb-2 pr-3">Complaint</th>
-              <th class="pb-2 pr-3">Status</th>
-              <th class="pb-2 pr-3">Assessor</th>
-              <th class="pb-2 pr-3">Updated</th>
-              <th class="pb-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in paginatedAssessments" :key="row.id" :class="tableRowClass">
-              <td data-label="ID" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white' : ''">#{{ row.id }}</td>
-              <td data-label="Complaint" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.complaint_title || complaintTitleById.get(Number(row.complaint_id)) || row.complaint_id }}</td>
-              <td data-label="Status" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.status }}</td>
-              <td data-label="Assessor" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.assessor_id || 'N/A' }}</td>
-              <td data-label="Updated" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.updated_at || row.created_at }}</td>
-              <td data-label="Actions" data-actions="true" class="py-2">
-                <div class="app-action-row flex flex-wrap gap-2">
-                  <button :class="editButtonClass" @click="startEdit(row)">Edit</button>
-                  <button :class="deleteButtonClass" @click="deleteAssessment(row)">Delete</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div v-if="filteredAssessments.length > 0" :class="`${footerClass} flex-col gap-2 sm:flex-row`">
-        <p>Showing {{ paginatedAssessments.length }} of {{ filteredAssessments.length }} assessments</p>
-        <div class="flex items-center gap-2 self-start sm:self-auto">
-          <button :class="pagerButtonClass" :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">Prev</button>
-          <span>Page {{ currentPage }} / {{ totalPages }}</span>
-          <button :class="pagerButtonClass" :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">Next</button>
-        </div>
-      </div>
+      <DataTable
+        :columns="tableColumns"
+        :rows="paginatedAssessments"
+        :page="currentPage"
+        :total-pages="totalPages"
+        :total-items="filteredAssessments.length"
+        :visible-count="paginatedAssessments.length"
+        pagination-label="assessments"
+        :table-class="tableClass"
+        shell-class="app-table-shell overflow-x-auto pb-1"
+        :footer-class="`${footerClass} flex-col gap-2 sm:flex-row`"
+        :pager-button-class="pagerButtonClass"
+        @update:page="goToPage"
+      >
+        <template #cell-id="{ row }">
+          <span :class="isOrgAdmin ? 'text-white' : ''">#{{ row.id }}</span>
+        </template>
+        <template #cell-complaint="{ row }">
+          <span :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.complaint_title || complaintTitleById.get(Number(row.complaint_id)) || row.complaint_id }}</span>
+        </template>
+        <template #cell-status="{ row }">
+          <StatusBadge :value="row.status" />
+        </template>
+        <template #cell-assessor="{ row }">
+          <span :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.assessor_id || 'N/A' }}</span>
+        </template>
+        <template #cell-updated="{ row }">
+          <span :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.updated_at || row.created_at }}</span>
+        </template>
+        <template #cell-actions="{ row }">
+          <div class="app-action-row flex flex-wrap gap-2">
+            <button :class="editButtonClass" @click="startEdit(row)">Edit</button>
+            <button :class="deleteButtonClass" @click="deleteAssessment(row)">Delete</button>
+          </div>
+        </template>
+      </DataTable>
     </section>
       </div>
     </div>

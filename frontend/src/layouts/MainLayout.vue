@@ -22,9 +22,14 @@ const isStandardUserShell = computed(() => isLoggedIn.value && !isSuperAdmin.val
 const isOrganizationLinkedUser = computed(
   () => session.currentUser?.role === 'user' && Boolean(session.currentUser?.organization_id)
 );
-const shouldShowUserNotificationBell = computed(
-  () => isLoggedIn.value && !isSuperAdmin.value && !isOrgAdmin.value
+const shouldShowOrganizationLogo = computed(
+  () => (isOrgAdmin.value || isOrganizationLinkedUser.value) && Boolean(session.currentOrganizationLogo)
 );
+const shouldShowNotificationBell = computed(
+  () => isLoggedIn.value && !isSuperAdmin.value
+);
+const notificationRoute = computed(() => (isOrgAdmin.value ? '/org-admin/notifications' : '/notifications'));
+const isNotificationRouteActive = computed(() => route.path === notificationRoute.value);
 
 const workspaceLabel = computed(() => {
   if (!isLoggedIn.value) return 'Public Workspace';
@@ -122,7 +127,7 @@ const closeMobileNav = () => {
 };
 
 const syncNotifications = (force = false) => {
-  if (!shouldShowUserNotificationBell.value) {
+  if (!shouldShowNotificationBell.value) {
     notificationStore.reset();
     return;
   }
@@ -144,8 +149,8 @@ watch(
 watch(
   () => route.fullPath,
   () => {
-    if (shouldShowUserNotificationBell.value) {
-      syncNotifications(route.path === '/notifications');
+    if (shouldShowNotificationBell.value) {
+      syncNotifications(route.path === notificationRoute.value);
     }
   }
 );
@@ -205,6 +210,13 @@ onMounted(() => {
                   Menu
                 </button>
 
+                <img
+                  v-if="shouldShowOrganizationLogo"
+                  :src="session.currentOrganizationLogo"
+                  alt="Organization logo"
+                  class="hidden h-11 w-11 rounded-2xl border border-[var(--app-line)] bg-white object-contain p-1.5 shadow-[var(--app-shadow-sm)] sm:block"
+                >
+
                 <div class="min-w-0">
                   <p class="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[var(--app-primary)]">
                     {{ workspaceLabel }}
@@ -217,12 +229,23 @@ onMounted(() => {
 
               <div v-if="isLoggedIn" class="flex min-w-0 items-center gap-2 sm:gap-3">
                 <RouterLink
-                  v-if="shouldShowUserNotificationBell"
-                  to="/notifications"
-                  class="group relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--app-nav-border)] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.98),rgba(239,244,249,0.92))] text-[var(--app-primary)] shadow-[var(--app-shadow-sm)] hover:-translate-y-0.5 hover:border-[var(--app-primary)]/20 hover:text-[var(--app-primary-ink)]"
+                  v-if="shouldShowNotificationBell"
+                  :to="notificationRoute"
+                  :class="[
+                    'group relative inline-flex h-10 w-10 items-center justify-center rounded-full border shadow-[var(--app-shadow-sm)] transition',
+                    isNotificationRouteActive
+                      ? 'border-[var(--app-primary)]/30 bg-[linear-gradient(180deg,rgba(33,78,137,0.14),rgba(33,78,137,0.08))] text-[var(--app-primary-ink)]'
+                      : 'border-[var(--app-nav-border)] bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(241,245,249,0.98))] text-slate-600 hover:-translate-y-0.5 hover:border-[var(--app-primary)]/20 hover:bg-white hover:text-[var(--app-primary-ink)]'
+                  ]"
                   title="Notifications"
                 >
-                  <font-awesome-icon :icon="['fas', 'bell']" class="text-sm" />
+                  <font-awesome-icon
+                    :icon="['fas', 'bell']"
+                    :class="[
+                      'text-[0.95rem] transition',
+                      isNotificationRouteActive ? 'opacity-100' : 'opacity-90 group-hover:opacity-100 !text-blue-500'
+                    ]"
+                  />
                   <span
                     v-if="unreadCount > 0"
                     class="absolute -right-1.5 -top-1.5 inline-flex min-w-[1.4rem] items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--app-primary),var(--app-accent))] px-1.5 py-0.5 text-[0.64rem] font-bold leading-none text-white shadow-[var(--app-shadow-sm)] ring-2 ring-white"

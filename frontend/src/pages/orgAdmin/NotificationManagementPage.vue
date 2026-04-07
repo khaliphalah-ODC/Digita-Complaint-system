@@ -1,8 +1,15 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
-import api, { extractApiError, unwrapResponse } from '../../services/api';
+import { authApi, complaintsApi, extractApiError, notificationsApi } from '../../services/api';
 import MobileDataCardList from '../../components/MobileDataCardList.vue';
+import DataTable from '../../components/ui/DataTable.vue';
+import EmptyState from '../../components/ui/EmptyState.vue';
+import ErrorState from '../../components/ui/ErrorState.vue';
+import FormField from '../../components/ui/FormField.vue';
+import LoadingSpinner from '../../components/ui/LoadingSpinner.vue';
+import StatusBadge from '../../components/ui/StatusBadge.vue';
 import { useUiToastStore } from '../../stores/uiToast';
+import { useNotificationStore } from '../../stores/notifications.js';
 import { useSessionStore } from '../../stores/session';
 
 const loading = ref(false);
@@ -17,6 +24,7 @@ const page = ref(1);
 const pageSize = 8;
 const uiToast = useUiToastStore();
 const session = useSessionStore();
+const notificationStore = useNotificationStore();
 const isOrgAdmin = computed(() => session.currentUser?.role === 'org_admin');
 const titleClass = computed(() => (isOrgAdmin.value ? 'text-2xl font-bold text-white' : 'text-2xl font-bold text-slate-900'));
 const metaClass = computed(() => (isOrgAdmin.value ? 'text-sm text-white/70' : 'text-sm text-slate-600'));
@@ -51,11 +59,6 @@ const form = reactive({
   is_read: false
 });
 
-const ensureSuccess = (payload, fallbackMessage) => {
-  if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
-  return payload.data;
-};
-
 const resetForm = () => {
   form.user_id = '';
   form.complaint_id = '';
@@ -68,14 +71,18 @@ const fetchNotifications = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const [notificationRes, complaintRes, userRes] = await Promise.all([
-      api.get('/notification'),
-      api.get('/complaint'),
-      api.get('/users')
+    const [notificationRows, complaintRows, userRows] = await Promise.all([
+      notificationsApi.list(),
+      complaintsApi.list(),
+      authApi.listUsers()
     ]);
-    notifications.value = ensureSuccess(unwrapResponse(notificationRes), 'Failed to fetch notifications') || [];
-    complaints.value = ensureSuccess(unwrapResponse(complaintRes), 'Failed to fetch complaints') || [];
-    users.value = ensureSuccess(unwrapResponse(userRes), 'Failed to fetch users') || [];
+    notifications.value = notificationRows || [];
+    complaints.value = complaintRows || [];
+    users.value = userRows || [];
+    if (isOrgAdmin.value) {
+      notificationStore.notifications = [...notifications.value];
+      notificationStore.initialized = true;
+    }
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to fetch notifications');
   } finally {
@@ -92,7 +99,7 @@ const createNotification = async () => {
   saving.value = true;
   error.value = '';
   try {
-    await api.post('/notification', {
+    await notificationsApi.create({
       user_id: form.user_id ? Number(form.user_id) : null,
       complaint_id: form.complaint_id ? Number(form.complaint_id) : null,
       type: form.type.trim(),
@@ -113,7 +120,7 @@ const createNotification = async () => {
 const markAsRead = async (row) => {
   error.value = '';
   try {
-    await api.patch(`/notification/${row.id}/read`);
+    await notificationsApi.markRead(row.id);
     uiToast.success('Notification marked as read.');
     await fetchNotifications();
   } catch (requestError) {
@@ -127,7 +134,7 @@ const deleteNotification = async (row) => {
   if (!ok) return;
   error.value = '';
   try {
-    await api.delete(`/notification/${row.id}`);
+    await notificationsApi.remove(row.id);
     uiToast.success('Notification deleted successfully.');
     await fetchNotifications();
   } catch (requestError) {
@@ -177,6 +184,15 @@ const mobileCardFields = [
   { key: 'complaint', label: 'Complaint' },
   { key: 'status', label: 'Status' }
 ];
+const tableColumns = [
+  { key: 'id', label: 'ID' },
+  { key: 'type', label: 'Type' },
+  { key: 'message', label: 'Message' },
+  { key: 'user', label: 'User' },
+  { key: 'complaint', label: 'Complaint' },
+  { key: 'status', label: 'Status' },
+  { key: 'actions', label: 'Actions' }
+];
 const goToPage = (nextPage) => {
   page.value = Math.min(Math.max(1, nextPage), totalPages.value);
 };
@@ -200,24 +216,28 @@ onMounted(fetchNotifications);
     <section v-if="!isOrgAdmin" :class="panelClass">
       <h2 :class="isOrgAdmin ? 'mb-3 text-lg font-bold text-white' : 'mb-3 text-lg font-bold text-slate-900'">Create Notification</h2>
       <form class="grid grid-cols-1 gap-3 md:grid-cols-2" @submit.prevent="createNotification">
-        <select v-model="form.user_id" :class="selectClass">
-          <option value="">Target user (optional)</option>
-          <option v-for="row in users" :key="row.id" :value="String(row.id)">
-            {{ row.full_name }} (#{{ row.id }})
-          </option>
-        </select>
-        <select v-model="form.complaint_id" :class="selectClass">
-          <option value="">Linked complaint (optional)</option>
-          <option v-for="row in complaints" :key="row.id" :value="String(row.id)">
-            #{{ row.id }} - {{ row.title || 'Untitled' }}
-          </option>
-        </select>
-        <input v-model="form.type" placeholder="Type (e.g. complaint_update)" :class="inputClass">
+        <FormField v-model="form.user_id" as="select" label="Target User" :input-class="selectClass">
+          <template #options>
+            <option value="">Target user (optional)</option>
+            <option v-for="row in users" :key="row.id" :value="String(row.id)">
+              {{ row.full_name }} (#{{ row.id }})
+            </option>
+          </template>
+        </FormField>
+        <FormField v-model="form.complaint_id" as="select" label="Complaint" :input-class="selectClass">
+          <template #options>
+            <option value="">Linked complaint (optional)</option>
+            <option v-for="row in complaints" :key="row.id" :value="String(row.id)">
+              #{{ row.id }} - {{ row.title || 'Untitled' }}
+            </option>
+          </template>
+        </FormField>
+        <FormField v-model="form.type" label="Type" placeholder="Type (e.g. complaint_update)" :input-class="inputClass" />
         <label :class="isOrgAdmin ? 'inline-flex items-center gap-2 text-sm text-white/80' : 'inline-flex items-center gap-2 text-sm text-slate-700'">
           <input v-model="form.is_read" type="checkbox" class="h-4 w-4 rounded border-slate-300">
           Mark as read on create
         </label>
-        <textarea v-model="form.message" placeholder="Message" :class="`${inputClass} md:col-span-2`" rows="2" />
+        <FormField v-model="form.message" as="textarea" label="Message" placeholder="Message" :input-class="inputClass" wrapper-class="md:col-span-2" :rows="2" />
         <div class="flex flex-col gap-2 sm:flex-row">
           <button :disabled="saving" type="submit" :class="`${primaryButtonClass} w-full sm:w-auto`">
             {{ saving ? 'Saving...' : 'Create Notification' }}
@@ -227,7 +247,7 @@ onMounted(fetchNotifications);
           </button>
         </div>
       </form>
-      <p v-if="error" class="mt-3 text-sm text-red-600">{{ error }}</p>
+      <ErrorState v-if="error" title="Could not save notification" :description="error" />
     </section>
 
     <section v-else :class="panelClass">
@@ -241,17 +261,26 @@ onMounted(fetchNotifications);
       <div class="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <h2 :class="isOrgAdmin ? 'text-lg font-bold text-white' : 'text-lg font-bold text-slate-900'">Notifications</h2>
         <div class="flex flex-col gap-2 sm:flex-row">
-          <input v-model="search" placeholder="Search type/message..." :class="`${inputClass} w-full sm:min-w-[14rem]`">
-          <select v-model="readFilter" :class="`${selectClass} w-full sm:min-w-[11rem]`">
-            <option value="all">All</option>
-            <option value="unread">Unread</option>
-            <option value="read">Read</option>
-          </select>
+          <FormField v-model="search" placeholder="Search type/message..." :input-class="`${inputClass} w-full sm:min-w-[14rem]`" />
+          <FormField v-model="readFilter" as="select" :input-class="`${selectClass} w-full sm:min-w-[11rem]`">
+            <template #options>
+              <option value="all">All</option>
+              <option value="unread">Unread</option>
+              <option value="read">Read</option>
+            </template>
+          </FormField>
         </div>
       </div>
 
-      <p v-if="loading" :class="infoTextClass">Loading notifications...</p>
-      <p v-else-if="filteredNotifications.length === 0" :class="infoTextClass">No notifications found.</p>
+      <LoadingSpinner v-if="loading" label="Loading notifications..." :label-class="infoTextClass" />
+      <ErrorState v-else-if="error && isOrgAdmin" title="Could not load notifications" :description="error" />
+      <EmptyState
+        v-else-if="filteredNotifications.length === 0"
+        title="No notifications found."
+        description="Automatic complaint updates will appear here once activity starts."
+        :title-class="isOrgAdmin ? 'font-semibold text-white' : 'font-semibold text-[var(--app-title-color)]'"
+        :description-class="infoTextClass"
+      />
 
       <MobileDataCardList
         v-else
@@ -275,7 +304,7 @@ onMounted(fetchNotifications);
           <p class="break-words font-medium text-[var(--app-title-color)]">{{ complaintTitleById.get(Number(item.complaint_id)) || item.complaint_id || 'N/A' }}</p>
         </template>
         <template #field-status="{ item }">
-          <p class="font-medium text-[var(--app-title-color)]">{{ Number(item.is_read) === 1 ? 'read' : 'unread' }}</p>
+          <StatusBadge :value="Number(item.is_read) === 1 ? 'read' : 'unread'" :tone="Number(item.is_read) === 1 ? 'neutral' : 'warning'" />
         </template>
         <template #actions="{ item }">
           <div class="app-action-row flex flex-wrap gap-2">
@@ -291,51 +320,51 @@ onMounted(fetchNotifications);
         </template>
       </MobileDataCardList>
 
-      <div v-if="filteredNotifications.length > 0" class="hidden md:block app-table-shell overflow-x-auto pb-1">
-        <table :class="tableClass">
-          <thead :class="tableHeadClass">
-            <tr>
-              <th class="pb-2 pr-3">ID</th>
-              <th class="pb-2 pr-3">Type</th>
-              <th class="pb-2 pr-3">Message</th>
-              <th class="pb-2 pr-3">User</th>
-              <th class="pb-2 pr-3">Complaint</th>
-              <th class="pb-2 pr-3">Status</th>
-              <th class="pb-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in paginatedNotifications" :key="row.id" :class="tableRowClass">
-              <td data-label="ID" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white' : ''">#{{ row.id }}</td>
-              <td data-label="Type" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.type }}</td>
-              <td data-label="Message" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.message }}</td>
-              <td data-label="User" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ userNameById.get(Number(row.user_id)) || row.user_id || 'All users' }}</td>
-              <td data-label="Complaint" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ complaintTitleById.get(Number(row.complaint_id)) || row.complaint_id || 'N/A' }}</td>
-              <td data-label="Status" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ Number(row.is_read) === 1 ? 'read' : 'unread' }}</td>
-              <td data-label="Actions" data-actions="true" class="py-2">
-                <div class="app-action-row flex flex-wrap gap-2">
-                  <button
-                    v-if="Number(row.is_read) === 0"
-                    :class="successActionClass"
-                    @click="markAsRead(row)"
-                  >
-                    Mark Read
-                  </button>
-                  <button :class="deleteButtonClass" @click="deleteNotification(row)">Delete</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div v-if="filteredNotifications.length > 0" :class="`${footerClass} flex-col gap-2 sm:flex-row`">
-        <p>Showing {{ paginatedNotifications.length }} of {{ filteredNotifications.length }} notifications</p>
-        <div class="flex items-center gap-2 self-start sm:self-auto">
-          <button :class="pagerButtonClass" :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">Prev</button>
-          <span>Page {{ currentPage }} / {{ totalPages }}</span>
-          <button :class="pagerButtonClass" :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">Next</button>
-        </div>
-      </div>
+      <DataTable
+        :columns="tableColumns"
+        :rows="paginatedNotifications"
+        :page="currentPage"
+        :total-pages="totalPages"
+        :total-items="filteredNotifications.length"
+        :visible-count="paginatedNotifications.length"
+        pagination-label="notifications"
+        :table-class="tableClass"
+        shell-class="app-table-shell overflow-x-auto pb-1"
+        :footer-class="`${footerClass} flex-col gap-2 sm:flex-row`"
+        :pager-button-class="pagerButtonClass"
+        @update:page="goToPage"
+      >
+        <template #cell-id="{ row }">
+          <span :class="isOrgAdmin ? 'text-white' : ''">#{{ row.id }}</span>
+        </template>
+        <template #cell-type="{ row }">
+          <span :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.type }}</span>
+        </template>
+        <template #cell-message="{ row }">
+          <span :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.message }}</span>
+        </template>
+        <template #cell-user="{ row }">
+          <span :class="isOrgAdmin ? 'text-white/80' : ''">{{ userNameById.get(Number(row.user_id)) || row.user_id || 'All users' }}</span>
+        </template>
+        <template #cell-complaint="{ row }">
+          <span :class="isOrgAdmin ? 'text-white/80' : ''">{{ complaintTitleById.get(Number(row.complaint_id)) || row.complaint_id || 'N/A' }}</span>
+        </template>
+        <template #cell-status="{ row }">
+          <StatusBadge :value="Number(row.is_read) === 1 ? 'read' : 'unread'" :tone="Number(row.is_read) === 1 ? 'neutral' : 'warning'" />
+        </template>
+        <template #cell-actions="{ row }">
+          <div class="app-action-row flex flex-wrap gap-2">
+            <button
+              v-if="Number(row.is_read) === 0"
+              :class="successActionClass"
+              @click="markAsRead(row)"
+            >
+              Mark Read
+            </button>
+            <button :class="deleteButtonClass" @click="deleteNotification(row)">Delete</button>
+          </div>
+        </template>
+      </DataTable>
     </section>
       </div>
     </div>

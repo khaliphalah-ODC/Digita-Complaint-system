@@ -1,7 +1,12 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue';
-import api, { extractApiError, unwrapResponse } from '../../services/api';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { assessmentsApi, authApi, escalationsApi, extractApiError } from '../../services/api';
 import MobileDataCardList from '../../components/MobileDataCardList.vue';
+import DataTable from '../../components/ui/DataTable.vue';
+import EmptyState from '../../components/ui/EmptyState.vue';
+import FormField from '../../components/ui/FormField.vue';
+import LoadingSpinner from '../../components/ui/LoadingSpinner.vue';
+import StatusBadge from '../../components/ui/StatusBadge.vue';
 import { useSessionStore } from '../../stores/session';
 import { useUiToastStore } from '../../stores/uiToast';
 
@@ -40,7 +45,7 @@ const resolveButtonClass = computed(() => (isOrgAdmin.value ? 'rounded bg-emeral
 const deleteButtonClass = computed(() => (isOrgAdmin.value ? 'app-btn-danger min-h-[30px] px-2 py-1 text-xs' : 'rounded bg-red-50 px-2 py-1 text-xs font-semibold text-red-700'));
 
 const form = reactive({
-  accessment_id: '',
+  assessment_id: '',
   escalated_by: '',
   assigned_to: '',
   escalation_level: 'level_1',
@@ -50,14 +55,9 @@ const form = reactive({
   resolved_at: ''
 });
 
-const ensureSuccess = (payload, fallbackMessage) => {
-  if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
-  return payload.data;
-};
-
 const resetForm = () => {
   editingId.value = null;
-  form.accessment_id = '';
+  form.assessment_id = '';
   form.escalated_by = String(session.currentUser?.id || '');
   form.assigned_to = '';
   form.escalation_level = 'level_1';
@@ -71,14 +71,14 @@ const fetchEscalations = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const [escalationRes, assessmentRes, userRes] = await Promise.all([
-      api.get('/escalations'),
-      api.get('/assessments'),
-      api.get('/users')
+    const [escalationRows, assessmentRows, userRows] = await Promise.all([
+      escalationsApi.list(),
+      assessmentsApi.list(),
+      authApi.listUsers()
     ]);
-    escalations.value = ensureSuccess(unwrapResponse(escalationRes), 'Failed to fetch escalations') || [];
-    assessments.value = ensureSuccess(unwrapResponse(assessmentRes), 'Failed to fetch assessments') || [];
-    users.value = ensureSuccess(unwrapResponse(userRes), 'Failed to fetch users') || [];
+    escalations.value = escalationRows || [];
+    assessments.value = assessmentRows || [];
+    users.value = userRows || [];
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to fetch escalations');
   } finally {
@@ -88,18 +88,24 @@ const fetchEscalations = async () => {
 
 const startEdit = (row) => {
   editingId.value = row.id;
-  form.accessment_id = String(row.accessment_id ?? '');
+  form.assessment_id = String(row.assessment_id ?? '');
   form.escalated_by = String(row.escalated_by ?? (session.currentUser?.id || ''));
   form.assigned_to = row.assigned_to ? String(row.assigned_to) : '';
   form.escalation_level = row.escalation_level || 'level_1';
   form.reason = row.reason || '';
   form.notes = row.notes || '';
   form.status = row.status || 'pending';
-  form.resolved_at = row.resolved_at || '';
+  form.resolved_at = row.resolved_at ? String(row.resolved_at).slice(0, 16) : '';
 };
 
+watch(() => form.status, (nextStatus) => {
+  if (nextStatus !== 'resolved') {
+    form.resolved_at = '';
+  }
+});
+
 const saveEscalation = async () => {
-  if (!form.accessment_id || !form.reason.trim()) {
+  if (!form.assessment_id || !form.reason.trim()) {
     error.value = 'assessment_id and reason are required.';
     return;
   }
@@ -108,21 +114,21 @@ const saveEscalation = async () => {
   error.value = '';
   try {
     const payload = {
-      accessment_id: Number(form.accessment_id),
+      assessment_id: Number(form.assessment_id),
       escalated_by: Number(form.escalated_by),
       assigned_to: form.assigned_to ? Number(form.assigned_to) : null,
       escalation_level: form.escalation_level,
       reason: form.reason.trim(),
       notes: form.notes.trim() || null,
       status: form.status,
-      resolved_at: form.resolved_at || null
+      resolved_at: form.status === 'resolved' ? (form.resolved_at || null) : null
     };
 
     if (editingId.value) {
-      await api.put(`/escalations/${editingId.value}`, payload);
+      await escalationsApi.update(editingId.value, payload);
       uiToast.success('Escalation updated successfully.');
     } else {
-      await api.post('/escalations', payload);
+      await escalationsApi.create(payload);
       uiToast.success('Escalation created successfully.');
     }
 
@@ -141,7 +147,7 @@ const deleteEscalation = async (row) => {
   if (!ok) return;
   error.value = '';
   try {
-    await api.delete(`/escalations/${row.id}`);
+    await escalationsApi.remove(row.id);
     uiToast.success('Escalation deleted successfully.');
     await fetchEscalations();
   } catch (requestError) {
@@ -153,7 +159,7 @@ const deleteEscalation = async (row) => {
 const markResolvedNow = async (row) => {
   error.value = '';
   try {
-    await api.patch(`/escalations/${row.id}/status`, {
+    await escalationsApi.updateStatus(row.id, {
       status: 'resolved',
       resolved_at: new Date().toISOString()
     });
@@ -165,7 +171,7 @@ const markResolvedNow = async (row) => {
   }
 };
 
-const accessmentTitleById = computed(() => {
+const assessmentTitleById = computed(() => {
   const map = new Map();
   for (const row of assessments.value) {
     map.set(Number(row.id), row.complaint_title || `Assessment #${row.id}`);
@@ -207,6 +213,15 @@ const mobileCardFields = [
   { key: 'assigned', label: 'Assigned To' },
   { key: 'updated', label: 'Updated' }
 ];
+const tableColumns = [
+  { key: 'id', label: 'ID' },
+  { key: 'assessment', label: 'Assessment' },
+  { key: 'level', label: 'Level' },
+  { key: 'status', label: 'Status' },
+  { key: 'assigned', label: 'Assigned To' },
+  { key: 'updated', label: 'Updated' },
+  { key: 'actions', label: 'Actions' }
+];
 const goToPage = (nextPage) => {
   page.value = Math.min(Math.max(1, nextPage), totalPages.value);
 };
@@ -236,32 +251,41 @@ onMounted(async () => {
     <section :class="panelClass">
       <h2 :class="isOrgAdmin ? 'mb-3 text-lg font-bold text-white' : 'mb-3 text-lg font-bold text-slate-900'">{{ editingId ? 'Edit Escalation' : 'Create Escalation' }}</h2>
       <form class="grid grid-cols-1 gap-3 md:grid-cols-2" @submit.prevent="saveEscalation">
-        <select v-model="form.accessment_id" :class="selectClass">
-          <option value="">Select assessment</option>
-          <option v-for="row in assessments" :key="row.id" :value="String(row.id)">
-            #{{ row.id }} - {{ row.complaint_title || row.findings?.slice(0, 40) || 'Assessment' }}
-          </option>
-        </select>
-        <select v-model="form.escalated_by" :class="selectClass">
-          <option :value="String(session.currentUser?.id || '')">
-            {{ session.currentUser?.full_name || 'Current User' }} (#{{ session.currentUser?.id || 'N/A' }})
-          </option>
-        </select>
-        <select v-model="form.assigned_to" :class="selectClass">
-          <option value="">Assigned to admin (optional)</option>
-          <option v-for="row in adminUsers" :key="`assigned-${row.id}`" :value="String(row.id)">
-            {{ row.full_name }} (#{{ row.id }})
-          </option>
-        </select>
-        <select v-model="form.escalation_level" :class="selectClass">
-          <option v-for="level in levelOptions" :key="level" :value="level">{{ level }}</option>
-        </select>
-        <select v-model="form.status" :class="selectClass">
-          <option v-for="status in statusOptions" :key="status" :value="status">{{ status }}</option>
-        </select>
-        <input v-model="form.resolved_at" placeholder="resolved_at (ISO or datetime, optional)" :class="inputClass">
-        <textarea v-model="form.reason" placeholder="Reason" :class="`${inputClass} md:col-span-2`" rows="2" />
-        <textarea v-model="form.notes" placeholder="Notes (optional)" :class="`${inputClass} md:col-span-2`" rows="2" />
+        <FormField v-model="form.assessment_id" as="select" label="Assessment" :input-class="selectClass">
+          <template #options>
+            <option value="">Select assessment</option>
+            <option v-for="row in assessments" :key="row.id" :value="String(row.id)">
+              #{{ row.id }} - {{ row.complaint_title || row.findings?.slice(0, 40) || 'Assessment' }}
+            </option>
+          </template>
+        </FormField>
+        <FormField v-model="form.escalated_by" as="select" label="Escalated By" :input-class="selectClass">
+          <template #options>
+            <option :value="String(session.currentUser?.id || '')">
+              {{ session.currentUser?.full_name || 'Current User' }} (#{{ session.currentUser?.id || 'N/A' }})
+            </option>
+          </template>
+        </FormField>
+        <FormField v-model="form.assigned_to" as="select" label="Assigned To" :input-class="selectClass">
+          <template #options>
+            <option value="">Assigned to admin (optional)</option>
+            <option v-for="row in adminUsers" :key="`assigned-${row.id}`" :value="String(row.id)">
+              {{ row.full_name }} (#{{ row.id }})
+            </option>
+          </template>
+        </FormField>
+        <FormField v-model="form.escalation_level" as="select" label="Escalation Level" :options="levelOptions" :input-class="selectClass" />
+        <FormField v-model="form.status" as="select" label="Status" :options="statusOptions" :input-class="selectClass" />
+        <FormField
+          v-model="form.resolved_at"
+          label="Resolved At"
+          type="datetime-local"
+          :disabled="form.status !== 'resolved'"
+          :help="form.status === 'resolved' ? 'Optional. Leave blank to let the system use the current time.' : 'Available only when the escalation status is resolved.'"
+          :input-class="inputClass"
+        />
+        <FormField v-model="form.reason" as="textarea" label="Reason" placeholder="Reason" :input-class="inputClass" wrapper-class="md:col-span-2" :rows="2" />
+        <FormField v-model="form.notes" as="textarea" label="Notes" placeholder="Notes (optional)" :input-class="inputClass" wrapper-class="md:col-span-2" :rows="2" />
         <div class="flex flex-col gap-2 sm:flex-row">
           <button :disabled="saving" type="submit" :class="`${primaryButtonClass} w-full sm:w-auto`">
             {{ saving ? 'Saving...' : editingId ? 'Update Escalation' : 'Create Escalation' }}
@@ -278,16 +302,24 @@ onMounted(async () => {
       <div class="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <h2 :class="isOrgAdmin ? 'text-lg font-bold text-white' : 'text-lg font-bold text-slate-900'">Escalations</h2>
         <div class="flex flex-col gap-2 sm:flex-row">
-          <input v-model="search" placeholder="Search reason/notes..." :class="`${inputClass} w-full sm:min-w-[14rem]`">
-          <select v-model="statusFilter" :class="`${selectClass} w-full sm:min-w-[11rem]`">
-            <option value="all">All status</option>
-            <option v-for="status in statusOptions" :key="status" :value="status">{{ status }}</option>
-          </select>
+          <FormField v-model="search" placeholder="Search reason/notes..." :input-class="`${inputClass} w-full sm:min-w-[14rem]`" />
+          <FormField v-model="statusFilter" as="select" :input-class="`${selectClass} w-full sm:min-w-[11rem]`">
+            <template #options>
+              <option value="all">All status</option>
+              <option v-for="status in statusOptions" :key="status" :value="status">{{ status }}</option>
+            </template>
+          </FormField>
         </div>
       </div>
 
-      <p v-if="loading" :class="infoTextClass">Loading escalations...</p>
-      <p v-else-if="filteredEscalations.length === 0" :class="infoTextClass">No escalations found.</p>
+      <LoadingSpinner v-if="loading" label="Loading escalations..." :label-class="infoTextClass" />
+      <EmptyState
+        v-else-if="filteredEscalations.length === 0"
+        title="No escalations found."
+        description="Create an escalation or widen the current search."
+        :title-class="isOrgAdmin ? 'font-semibold text-white' : 'font-semibold text-[var(--app-title-color)]'"
+        :description-class="infoTextClass"
+      />
 
       <MobileDataCardList
         v-else
@@ -299,13 +331,13 @@ onMounted(async () => {
           <p class="font-medium text-[var(--app-title-color)]">#{{ item.id }}</p>
         </template>
         <template #field-assessment="{ item }">
-          <p class="break-words font-medium text-[var(--app-title-color)]">{{ accessmentTitleById.get(Number(item.accessment_id)) || item.accessment_id }}</p>
+          <p class="break-words font-medium text-[var(--app-title-color)]">{{ assessmentTitleById.get(Number(item.assessment_id)) || item.assessment_id }}</p>
         </template>
         <template #field-level="{ item }">
           <p class="font-medium text-[var(--app-title-color)]">{{ item.escalation_level }}</p>
         </template>
         <template #field-status="{ item }">
-          <p class="font-medium text-[var(--app-title-color)]">{{ item.status }}</p>
+          <StatusBadge :value="item.status" />
         </template>
         <template #field-assigned="{ item }">
           <p class="break-words font-medium text-[var(--app-title-color)]">{{ userNameById.get(Number(item.assigned_to)) || item.assigned_to || 'N/A' }}</p>
@@ -328,52 +360,52 @@ onMounted(async () => {
         </template>
       </MobileDataCardList>
 
-      <div v-if="filteredEscalations.length > 0" class="hidden md:block app-table-shell overflow-x-auto pb-1">
-        <table :class="tableClass">
-          <thead :class="tableHeadClass">
-            <tr>
-              <th class="pb-2 pr-3">ID</th>
-              <th class="pb-2 pr-3">Assessment</th>
-              <th class="pb-2 pr-3">Level</th>
-              <th class="pb-2 pr-3">Status</th>
-              <th class="pb-2 pr-3">Assigned To</th>
-              <th class="pb-2 pr-3">Updated</th>
-              <th class="pb-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in paginatedEscalations" :key="row.id" :class="tableRowClass">
-              <td data-label="ID" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white' : ''">#{{ row.id }}</td>
-              <td data-label="Assessment" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ accessmentTitleById.get(Number(row.accessment_id)) || row.accessment_id }}</td>
-              <td data-label="Level" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.escalation_level }}</td>
-              <td data-label="Status" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.status }}</td>
-              <td data-label="Assigned To" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ userNameById.get(Number(row.assigned_to)) || row.assigned_to || 'N/A' }}</td>
-              <td data-label="Updated" class="py-2 pr-3" :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.updated_at || row.created_at }}</td>
-              <td data-label="Actions" data-actions="true" class="py-2">
-                <div class="app-action-row flex flex-wrap gap-2">
-                  <button :class="editButtonClass" @click="startEdit(row)">Edit</button>
-                  <button
-                    v-if="row.status !== 'resolved'"
-                    :class="resolveButtonClass"
-                    @click="markResolvedNow(row)"
-                  >
-                    Resolve
-                  </button>
-                  <button :class="deleteButtonClass" @click="deleteEscalation(row)">Delete</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div v-if="filteredEscalations.length > 0" :class="`${footerClass} flex-col gap-2 sm:flex-row`">
-        <p>Showing {{ paginatedEscalations.length }} of {{ filteredEscalations.length }} escalations</p>
-        <div class="flex items-center gap-2 self-start sm:self-auto">
-          <button :class="pagerButtonClass" :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">Prev</button>
-          <span>Page {{ currentPage }} / {{ totalPages }}</span>
-          <button :class="pagerButtonClass" :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">Next</button>
-        </div>
-      </div>
+      <DataTable
+        :columns="tableColumns"
+        :rows="paginatedEscalations"
+        :page="currentPage"
+        :total-pages="totalPages"
+        :total-items="filteredEscalations.length"
+        :visible-count="paginatedEscalations.length"
+        pagination-label="escalations"
+        :table-class="tableClass"
+        shell-class="app-table-shell overflow-x-auto pb-1"
+        :footer-class="`${footerClass} flex-col gap-2 sm:flex-row`"
+        :pager-button-class="pagerButtonClass"
+        @update:page="goToPage"
+      >
+        <template #cell-id="{ row }">
+          <span :class="isOrgAdmin ? 'text-white' : ''">#{{ row.id }}</span>
+        </template>
+        <template #cell-assessment="{ row }">
+          <span :class="isOrgAdmin ? 'text-white/80' : ''">{{ assessmentTitleById.get(Number(row.assessment_id)) || row.assessment_id }}</span>
+        </template>
+        <template #cell-level="{ row }">
+          <span :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.escalation_level }}</span>
+        </template>
+        <template #cell-status="{ row }">
+          <StatusBadge :value="row.status" />
+        </template>
+        <template #cell-assigned="{ row }">
+          <span :class="isOrgAdmin ? 'text-white/80' : ''">{{ userNameById.get(Number(row.assigned_to)) || row.assigned_to || 'N/A' }}</span>
+        </template>
+        <template #cell-updated="{ row }">
+          <span :class="isOrgAdmin ? 'text-white/80' : ''">{{ row.updated_at || row.created_at }}</span>
+        </template>
+        <template #cell-actions="{ row }">
+          <div class="app-action-row flex flex-wrap gap-2">
+            <button :class="editButtonClass" @click="startEdit(row)">Edit</button>
+            <button
+              v-if="row.status !== 'resolved'"
+              :class="resolveButtonClass"
+              @click="markResolvedNow(row)"
+            >
+              Resolve
+            </button>
+            <button :class="deleteButtonClass" @click="deleteEscalation(row)">Delete</button>
+          </div>
+        </template>
+      </DataTable>
     </section>
       </div>
     </div>

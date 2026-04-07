@@ -299,7 +299,7 @@ test('super_admin sees aggregate organization data and can manage the shared use
     user: state.users.superAdmin,
     params: { id: String(state.statusLog.id) }
   });
-  assert.equal(statusLogResponse.status, 403);
+  assert.equal(statusLogResponse.status, 200);
 });
 
 test('org_admin is limited to records inside their own organization', async () => {

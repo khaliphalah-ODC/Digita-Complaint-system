@@ -1,11 +1,15 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
-import api, { extractApiError, unwrapResponse } from '../../services/api';
+import { extractApiError, organizationsApi } from '../../services/api';
 import AnalyticsBarChart from '../../components/superAdmin/AnalyticsBarChart.vue';
 import AnalyticsLineChart from '../../components/superAdmin/AnalyticsLineChart.vue';
 import MobileDataCardList from '../../components/MobileDataCardList.vue';
 import PageHeader from '../../components/superAdmin/PageHeader.vue';
+import EmptyState from '../../components/ui/EmptyState.vue';
+import ErrorState from '../../components/ui/ErrorState.vue';
+import LoadingSpinner from '../../components/ui/LoadingSpinner.vue';
+import { createSuperAdminAnalytics } from '../../services/analytics.service.js';
 import { useSessionStore } from '../../stores/session';
 
 const session = useSessionStore();
@@ -13,19 +17,13 @@ const organizations = ref([]);
 const organizationsError = ref('');
 const loadingOrganizations = ref(false);
 
-const ensureSuccess = (payload, fallbackMessage) => {
-  if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
-  return payload.data;
-};
-
 const toPercent = (value) => `${Math.max(0, Math.min(100, Math.round(value || 0)))}%`;
 
 const fetchOrganizations = async () => {
   loadingOrganizations.value = true;
   organizationsError.value = '';
   try {
-    const response = await api.get('/organization');
-    organizations.value = ensureSuccess(unwrapResponse(response), 'Failed to fetch organizations') || [];
+    organizations.value = await organizationsApi.list() || [];
   } catch (requestError) {
     organizationsError.value = extractApiError(requestError, 'Failed to fetch organizations');
   } finally {
@@ -39,136 +37,10 @@ const refreshDashboard = async () => {
 
 const pageError = computed(() => session.dashboardError || organizationsError.value);
 const pageLoading = computed(() => session.loadingDashboard || loadingOrganizations.value);
-
-const totalComplaints = computed(() => Number(session.dashboardStats.totalComplaints || 0));
-const submittedComplaints = computed(() => Number(session.dashboardStats.submittedComplaints || 0));
-const inReviewComplaints = computed(() => Number(session.dashboardStats.inReviewComplaints || 0));
-const resolvedComplaints = computed(() => Number(session.dashboardStats.resolvedComplaints || 0));
-const closedComplaints = computed(() => Number(session.dashboardStats.closedComplaints || 0));
-
-const openComplaints = computed(() => submittedComplaints.value + inReviewComplaints.value);
-const resolvedTotal = computed(() => resolvedComplaints.value + closedComplaints.value);
-
-const totalEscalations = computed(() => {
-  const counts = session.dashboardStats.escalationStatusCounts || {};
-  return Number(counts.pending || 0)
-    + Number(counts.in_progress || 0)
-    + Number(counts.resolved || 0)
-    + Number(counts.rejected || 0);
-});
-
-const openEscalations = computed(() => {
-  const counts = session.dashboardStats.escalationStatusCounts || {};
-  return Number(counts.pending || 0) + Number(counts.in_progress || 0);
-});
-
-const activeOrganizations = computed(() =>
-  organizations.value.filter((item) => String(item.status || '').toLowerCase() === 'active')
-);
-
-const inactiveOrganizations = computed(() =>
-  organizations.value.filter((item) => String(item.status || '').toLowerCase() !== 'active')
-);
-
-const organizationsWithoutAdmin = computed(() =>
-  organizations.value.filter((item) => !item.organization_admin?.email && !item.organization_admin?.full_name)
-);
-
-const resolutionRate = computed(() => (
-  totalComplaints.value > 0 ? (resolvedTotal.value / totalComplaints.value) * 100 : 0
-));
-
-const globalPendingRate = computed(() => (
-  totalComplaints.value > 0 ? (openComplaints.value / totalComplaints.value) : 0
-));
-
-const globalEscalationRate = computed(() => (
-  totalComplaints.value > 0 ? (openEscalations.value / totalComplaints.value) : 0
-));
-
-const averageComplaintsPerOrganization = computed(() => (
-  activeOrganizations.value.length > 0
-    ? Math.round(totalComplaints.value / activeOrganizations.value.length)
-    : 0
-));
-
-const organizationComplaintMap = computed(() => {
-  const map = new Map();
-
-  for (const row of session.dashboardStats.complaintsByOrganization || []) {
-    map.set(Number(row.organization_id), Number(row.complaints || row.value || 0));
-  }
-
-  for (const row of organizations.value) {
-    const key = Number(row.organization_id);
-    if (!map.has(key)) {
-      map.set(key, Number(row.complaints_count || row.complaints || 0));
-    }
-  }
-
-  return map;
-});
-
-const organizationOverviewRows = computed(() => {
-  const rows = (organizations.value || []).map((organization) => {
-    const id = Number(organization.organization_id);
-    const total = Number(organizationComplaintMap.value.get(id) || 0);
-    const status = String(organization.status || 'inactive').toLowerCase();
-    const hasAdmin = Boolean(
-      organization.organization_admin?.email || organization.organization_admin?.full_name
-    );
-    const complaintPressure = averageComplaintsPerOrganization.value > 0
-      ? total / averageComplaintsPerOrganization.value
-      : 0;
-    const pendingMultiplier = status === 'active' ? 1 : 1.3;
-    const adminMultiplier = hasAdmin ? 1 : 1.25;
-    const estimatedPending = Math.min(
-      total,
-      Math.round(total * globalPendingRate.value * pendingMultiplier * adminMultiplier)
-    );
-    const responseRate = Math.max(
-      18,
-      Math.min(
-        98,
-        Math.round(
-          resolutionRate.value
-          - (hasAdmin ? 0 : 12)
-          - (status === 'active' ? 0 : 18)
-          - Math.max(0, (complaintPressure - 1) * 9)
-        )
-      )
-    );
-    const escalationRate = Math.max(
-      2,
-      Math.min(
-        95,
-        Math.round(
-          (globalEscalationRate.value * 100)
-          + (status === 'active' ? 0 : 9)
-          + (hasAdmin ? 0 : 6)
-          + Math.max(0, (complaintPressure - 1) * 8)
-        )
-      )
-    );
-
-    const riskScore = estimatedPending + escalationRate + (hasAdmin ? 0 : 18) + (status === 'active' ? 0 : 24);
-
-    return {
-      id,
-      name: organization.name || 'Unnamed organization',
-      status,
-      totalComplaints: total,
-      pendingComplaints: estimatedPending,
-      responseRate,
-      escalationRate,
-      hasAdmin,
-      adminName: organization.organization_admin?.full_name || 'Not assigned',
-      riskScore
-    };
-  });
-
-  return rows.sort((a, b) => b.riskScore - a.riskScore);
-});
+const dashboardAnalytics = computed(() => createSuperAdminAnalytics({
+  organizations: organizations.value || [],
+  dashboardStats: session.dashboardStats || {}
+}));
 const organizationOverviewCardFields = [
   { key: 'organization', label: 'Organization' },
   { key: 'total', label: 'Total Complaints' },
@@ -177,103 +49,17 @@ const organizationOverviewCardFields = [
   { key: 'escalation', label: 'Escalation Rate' },
   { key: 'status', label: 'Status' }
 ];
-
-const organizationStatusSeries = computed(() => [
-  {
-    label: 'Active',
-    value: activeOrganizations.value.length,
-    tone: '#183a63'
-  },
-  {
-    label: 'Inactive',
-    value: inactiveOrganizations.value.length,
-    tone: '#f59e0b'
-  },
-  {
-    label: 'Missing Org Admin',
-    value: organizationsWithoutAdmin.value.length,
-    tone: '#dc2626'
-  }
-]);
-
-const complaintStatusSeries = computed(() => [
-  { label: 'Submitted', value: submittedComplaints.value, tone: '#f59e0b' },
-  { label: 'In Review', value: inReviewComplaints.value, tone: '#2563eb' },
-  { label: 'Resolved', value: resolvedComplaints.value, tone: '#16a34a' },
-  { label: 'Closed', value: closedComplaints.value, tone: '#64748b' }
-]);
-
-const complaintTrendSeries = computed(() => session.dashboardStats.complaintMonthlyTrend || []);
-
-const organizationLoadSeries = computed(() =>
-  organizationOverviewRows.value
-    .slice(0, 6)
-    .map((row) => ({
-      label: row.name,
-      value: row.totalComplaints,
-      tone: row.status === 'active' ? '#183a63' : '#9b4d43'
-    }))
-);
-
-const underperformingOrganizations = computed(() =>
-  organizationOverviewRows.value
-    .filter((row) => row.pendingComplaints >= 10 || row.escalationRate >= 18 || !row.hasAdmin || row.status !== 'active')
-    .slice(0, 5)
-);
-
-const systemAlerts = computed(() => {
-  const items = [];
-
-  if (organizationsWithoutAdmin.value.length > 0) {
-    items.push({
-      title: `${organizationsWithoutAdmin.value.length} organizations are missing org-admin coverage`,
-      detail: 'These organizations need an assigned org-admin before their internal response performance can stabilize.',
-      tone: 'danger'
-    });
-  }
-
-  if (inactiveOrganizations.value.length > 0) {
-    items.push({
-      title: `${inactiveOrganizations.value.length} organizations are currently inactive`,
-      detail: 'Inactive organizations remain visible in system oversight but should not be treated as healthy routing targets.',
-      tone: 'warning'
-    });
-  }
-
-  if (openEscalations.value > 0) {
-    items.push({
-      title: `${openEscalations.value} escalations remain open across organizations`,
-      detail: 'Use this signal to identify where organization-level operations are struggling before the backlog grows further.',
-      tone: 'danger'
-    });
-  }
-
-  if (Number(session.dashboardStats.unassignedAnonymousComplaints || 0) > 0) {
-    items.push({
-      title: `${session.dashboardStats.unassignedAnonymousComplaints} anonymous complaints still need organization routing`,
-      detail: 'This is a platform supervision signal only. Routing decisions should stay inside the organization oversight workflow.',
-      tone: 'warning'
-    });
-  }
-
-  if (underperformingOrganizations.value.length > 0) {
-    items.push({
-      title: `${underperformingOrganizations.value.length} organizations are below expected performance`,
-      detail: 'Pending volume, escalation exposure, or missing administrative ownership is putting these organizations at risk.',
-      tone: 'danger'
-    });
-  }
-
-  if (!items.length) {
-    items.push({
-      title: 'No critical system alerts right now',
-      detail: 'Organization coverage, complaint flow, and escalation visibility all look stable at the platform level.',
-      tone: 'info'
-    });
-  }
-
-  return items.slice(0, 5);
-});
+const organizationOverviewRows = computed(() => dashboardAnalytics.value.organizationOverviewRows);
+const organizationStatusSeries = computed(() => dashboardAnalytics.value.organizationStatusSeries);
+const complaintStatusSeries = computed(() => dashboardAnalytics.value.complaintStatusSeries);
+const complaintTrendSeries = computed(() => dashboardAnalytics.value.complaintTrendSeries);
+const organizationLoadSeries = computed(() => dashboardAnalytics.value.organizationLoadSeries);
+const underperformingOrganizations = computed(() => dashboardAnalytics.value.underperformingOrganizations);
+const systemAlerts = computed(() => dashboardAnalytics.value.systemAlerts);
+const organizationsWithoutAdmin = computed(() => dashboardAnalytics.value.organizationsWithoutAdmin);
+const averageComplaintsPerOrganization = computed(() => dashboardAnalytics.value.averageComplaintsPerOrganization);
+const openEscalations = computed(() => dashboardAnalytics.value.openEscalations);
+const resolutionRate = computed(() => dashboardAnalytics.value.resolutionRate);
 
 const actionCards = [
   {
@@ -296,13 +82,13 @@ const actionCards = [
 const kpis = computed(() => [
   {
     label: 'Total Organizations',
-    value: Number(session.dashboardStats.totalOrganizations || organizations.value.length || 0),
+    value: dashboardAnalytics.value.summaryCards[0]?.value || 0,
     detail: 'platform directory',
     icon: '🏢'
   },
   {
     label: 'Active Organizations',
-    value: Number(session.dashboardStats.activeOrganizations || activeOrganizations.value.length || 0),
+    value: dashboardAnalytics.value.summaryCards[1]?.value || 0,
     detail: 'currently operational',
     icon: '✅'
   },
@@ -352,12 +138,7 @@ onMounted(refreshDashboard);
           </template>
         </PageHeader>
 
-        <p
-          v-if="pageError"
-          class="rounded-[var(--app-radius-md)] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-        >
-          {{ pageError }}
-        </p>
+        <ErrorState v-if="pageError" title="Could not load oversight dashboard" :description="pageError" />
 
         <section class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
           <article
@@ -446,9 +227,7 @@ onMounted(refreshDashboard);
               </RouterLink>
             </div>
 
-            <div v-if="pageLoading" class="app-empty-state">
-              Loading organization oversight data...
-            </div>
+            <LoadingSpinner v-if="pageLoading" label="Loading organization oversight data..." />
 
             <MobileDataCardList
               v-else-if="organizationOverviewRows.length"
@@ -515,9 +294,11 @@ onMounted(refreshDashboard);
               </table>
             </div>
 
-            <div v-else class="app-empty-state">
-              No organization overview data is available yet.
-            </div>
+            <EmptyState
+              v-else
+              title="No organization overview data is available yet."
+              description="Organization health data will appear here once platform stats are available."
+            />
           </section>
 
           <div class="space-y-4">
@@ -548,9 +329,11 @@ onMounted(refreshDashboard);
                 </article>
               </div>
 
-              <div v-else class="app-empty-state">
-                No organizations are currently flagged for elevated supervision.
-              </div>
+              <EmptyState
+                v-else
+                title="No organizations are currently flagged for elevated supervision."
+                description="Current organization performance signals look healthy."
+              />
             </section>
 
             <AnalyticsBarChart

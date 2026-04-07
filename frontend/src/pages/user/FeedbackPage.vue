@@ -1,7 +1,12 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import api, { extractApiError, unwrapResponse } from '../../services/api.js';
+import { complaintsApi, extractApiError, feedbackApi } from '../../services/api.js';
+import EmptyState from '../../components/ui/EmptyState.vue';
+import ErrorState from '../../components/ui/ErrorState.vue';
+import FormField from '../../components/ui/FormField.vue';
+import LoadingSpinner from '../../components/ui/LoadingSpinner.vue';
+import StatusBadge from '../../components/ui/StatusBadge.vue';
 import { useSessionStore } from '../../stores/session.js';
 
 const router = useRouter();
@@ -19,11 +24,6 @@ const form = reactive({
   comment: ''
 });
 
-const ensureSuccess = (payload, fallbackMessage) => {
-  if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
-  return payload.data;
-};
-
 const isAdminFamily = computed(() => ['super_admin', 'org_admin'].includes(session.currentUser?.role || ''));
 const isUserWorkspace = computed(() => session.currentUser?.role === 'user');
 const panelClass = computed(() => (isUserWorkspace.value ? 'user-shell-panel rounded-[30px] p-4' : 'app-shell-panel rounded-[30px] p-4'));
@@ -31,6 +31,7 @@ const statCardClass = computed(() => (isUserWorkspace.value ? 'user-shell-card r
 const softTextClass = computed(() => (isUserWorkspace.value ? 'text-sm text-[var(--app-muted-color)]' : 'text-sm text-slate-600'));
 const headingClass = computed(() => (isUserWorkspace.value ? 'mt-2 text-3xl font-semibold text-[var(--app-primary-ink)]' : 'mt-2 text-3xl font-semibold text-slate-900'));
 const inputClass = computed(() => (isUserWorkspace.value ? 'app-input text-[var(--app-primary-ink)]' : 'app-input'));
+const fieldClass = computed(() => (isUserWorkspace.value ? 'app-input text-[var(--app-primary-ink)]' : 'app-input'));
 const secondaryButtonClass = computed(() => 'app-btn-secondary');
 const feedbackSummary = computed(() => {
   const rows = feedbackRows.value || [];
@@ -55,8 +56,7 @@ const feedbackSummary = computed(() => {
 
 const fetchComplaints = async () => {
   try {
-    const response = await api.get('/complaint');
-    const rows = ensureSuccess(unwrapResponse(response), 'Failed to fetch complaints');
+    const rows = await complaintsApi.list();
     complaintOptions.value = (rows || []).map((row) => ({
       id: row.id,
       label: `${row.tracking_code || `#${row.id}`} - ${row.title || 'Untitled Complaint'}`
@@ -70,8 +70,7 @@ const fetchFeedback = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await api.get('/feedback');
-    feedbackRows.value = ensureSuccess(unwrapResponse(response), 'Failed to fetch feedback') || [];
+    feedbackRows.value = await feedbackApi.list() || [];
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to fetch feedback');
   } finally {
@@ -102,9 +101,9 @@ const saveFeedback = async () => {
     };
 
     if (editingId.value) {
-      await api.put(`/feedback/${editingId.value}`, { rating: payload.rating, comment: payload.comment });
+      await feedbackApi.update(editingId.value, { rating: payload.rating, comment: payload.comment });
     } else {
-      await api.post('/feedback', payload);
+      await feedbackApi.create(payload);
     }
 
     resetForm();
@@ -129,7 +128,7 @@ const deleteFeedback = async (row) => {
 
   error.value = '';
   try {
-    await api.delete(`/feedback/${row.id}`);
+    await feedbackApi.remove(row.id);
     await fetchFeedback();
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to delete feedback');
@@ -208,24 +207,40 @@ onMounted(async () => {
     <section :class="panelClass">
       <h2 class="mb-4 text-xl font-semibold text-[var(--app-primary-ink)]">{{ editingId ? 'Edit Feedback' : 'Create Feedback' }}</h2>
       <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <select v-model="form.complaint_id" :class="inputClass">
-          <option value="">Select complaint</option>
-          <option v-for="c in complaintOptions" :key="c.id" :value="c.id">{{ c.label }}</option>
-        </select>
+        <FormField
+          v-model="form.complaint_id"
+          as="select"
+          label="Complaint"
+          :input-class="fieldClass"
+        >
+          <template #options>
+            <option value="">Select complaint</option>
+            <option v-for="c in complaintOptions" :key="c.id" :value="c.id">{{ c.label }}</option>
+          </template>
+        </FormField>
 
-        <select v-model="form.rating" :class="inputClass">
-          <option :value="5">5 - Excellent</option>
-          <option :value="4">4 - Good</option>
-          <option :value="3">3 - Fair</option>
-          <option :value="2">2 - Poor</option>
-          <option :value="1">1 - Bad</option>
-        </select>
+        <FormField
+          v-model="form.rating"
+          as="select"
+          label="Rating"
+          :input-class="fieldClass"
+          :options="[
+            { value: 5, label: '5 - Excellent' },
+            { value: 4, label: '4 - Good' },
+            { value: 3, label: '3 - Fair' },
+            { value: 2, label: '2 - Poor' },
+            { value: 1, label: '1 - Bad' }
+          ]"
+        />
 
-        <textarea
+        <FormField
           v-model="form.comment"
-          rows="3"
+          as="textarea"
+          label="Comment"
           placeholder="Write your feedback"
-          :class="`${inputClass} md:col-span-2`"
+          :rows="3"
+          :input-class="`${fieldClass} md:col-span-2`"
+          wrapper-class="md:col-span-2"
         />
 
         <div class="flex gap-2 md:col-span-2">
@@ -241,9 +256,18 @@ onMounted(async () => {
 
     <section :class="panelClass">
       <h2 class="mb-4 text-xl font-semibold text-[var(--app-primary-ink)]">Feedback Records</h2>
-      <p v-if="loading" class="text-sm text-[var(--app-muted-color)]">Loading feedback...</p>
-      <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
-      <p v-else-if="feedbackRows.length === 0" class="text-sm text-[var(--app-muted-color)]">No feedback found.</p>
+      <LoadingSpinner v-if="loading" label="Loading feedback..." />
+      <ErrorState
+        v-else-if="error"
+        title="Unable to load feedback"
+        :description="error"
+      />
+      <EmptyState
+        v-else-if="feedbackRows.length === 0"
+        title="No feedback found"
+        description="Once you submit feedback for a complaint, it will appear here."
+        compact
+      />
 
       <div v-else class="space-y-3">
         <article v-for="row in feedbackRows" :key="row.id" :class="`${statCardClass} p-5`">
@@ -257,7 +281,7 @@ onMounted(async () => {
               </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-              <span class="app-badge app-badge-neutral">Rating: {{ row.rating }}/5</span>
+              <StatusBadge :value="`${row.rating}/5`" tone="neutral" />
               <button class="app-btn-secondary px-3 py-1 text-xs" @click="startEdit(row)">Edit</button>
               <button class="app-btn-danger min-h-[30px] px-3 py-1 text-xs" @click="deleteFeedback(row)">Delete</button>
             </div>

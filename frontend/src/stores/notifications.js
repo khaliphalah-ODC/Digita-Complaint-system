@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
-import api, { extractApiError, unwrapResponse } from '../services/api.js';
+import { extractApiError, notificationsApi } from '../services/api.js';
 
 export const useNotificationStore = defineStore('notifications', () => {
   const notifications = ref([]);
@@ -9,13 +9,6 @@ export const useNotificationStore = defineStore('notifications', () => {
   const markingId = ref(null);
   const initialized = ref(false);
   const lastFetchedAt = ref(0);
-
-  const ensureSuccess = (payload, fallbackMessage) => {
-    if (!payload?.success) {
-      throw new Error(payload?.message || fallbackMessage);
-    }
-    return payload.data;
-  };
 
   const unreadNotifications = computed(() =>
     notifications.value.filter((item) => Number(item.is_read) !== 1)
@@ -56,11 +49,7 @@ export const useNotificationStore = defineStore('notifications', () => {
     error.value = '';
 
     try {
-      const response = await api.get('/notification');
-      notifications.value = ensureSuccess(
-        unwrapResponse(response),
-        'Failed to fetch notifications'
-      ) || [];
+      notifications.value = await notificationsApi.list() || [];
       initialized.value = true;
       lastFetchedAt.value = Date.now();
       return notifications.value;
@@ -84,11 +73,7 @@ export const useNotificationStore = defineStore('notifications', () => {
     error.value = '';
 
     try {
-      const response = await api.patch(`/notification/${id}/read`);
-      const updated = ensureSuccess(
-        unwrapResponse(response),
-        'Failed to mark notification as read'
-      );
+      const updated = await notificationsApi.markRead(id);
 
       notifications.value = notifications.value.map((row) =>
         Number(row.id) === Number(updated.id) ? updated : row

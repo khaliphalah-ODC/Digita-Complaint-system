@@ -3,7 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import MobileDataCardList from '../../components/MobileDataCardList.vue';
 import PageHeader from '../../components/superAdmin/PageHeader.vue';
-import api, { extractApiError, unwrapResponse } from '../../services/api.js';
+import { auditLogsApi, extractApiError, organizationsApi, platformSettingsApi } from '../../services/api.js';
 import { useSessionStore } from '../../stores/session.js';
 
 const loading = ref(false);
@@ -73,18 +73,12 @@ const auditCardFields = [
   { key: 'metadata', label: 'Metadata' }
 ];
 
-const ensureSuccess = (payload, fallbackMessage) => {
-  if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
-  return payload.data;
-};
-
 const fetchPlatformSettings = async () => {
   loading.value = true;
   error.value = '';
   success.value = '';
   try {
-    const response = await api.get('/platform-settings');
-    const data = ensureSuccess(unwrapResponse(response), 'Failed to fetch platform settings');
+    const data = await platformSettingsApi.get();
     form.system_name = String(data?.system_name || '').trim();
     form.maintenance_mode = Number(data?.maintenance_mode || 0) === 1;
     form.default_org_status = String(data?.default_org_status || 'active');
@@ -119,7 +113,7 @@ const savePlatformSettings = async () => {
   error.value = '';
   success.value = '';
   try {
-    const response = await api.put('/platform-settings', {
+    const data = await platformSettingsApi.update({
       system_name: form.system_name.trim(),
       maintenance_mode: form.maintenance_mode ? 1 : 0,
       default_org_status: form.default_org_status,
@@ -139,7 +133,6 @@ const savePlatformSettings = async () => {
       notify_on_chat_message: form.notify_on_chat_message ? 1 : 0,
       notify_on_assignment: form.notify_on_assignment ? 1 : 0
     });
-    const data = ensureSuccess(unwrapResponse(response), 'Failed to update platform settings');
     form.system_name = String(data?.system_name || '').trim();
     form.maintenance_mode = Number(data?.maintenance_mode || 0) === 1;
     form.default_org_status = String(data?.default_org_status || 'active');
@@ -190,8 +183,7 @@ const fetchOrganizations = async () => {
   orgLoading.value = true;
   orgError.value = '';
   try {
-    const response = await api.get('/organization');
-    organizations.value = ensureSuccess(unwrapResponse(response), 'Failed to fetch organizations') || [];
+    organizations.value = await organizationsApi.list() || [];
   } catch (requestError) {
     orgError.value = extractApiError(requestError, 'Failed to fetch organizations');
   } finally {
@@ -205,8 +197,7 @@ const toggleOrganizationStatus = async (org) => {
   orgError.value = '';
   try {
     const nextStatus = String(org.status || 'active') === 'active' ? 'inactive' : 'active';
-    const response = await api.patch(`/organization/${org.organization_id}/status`, { status: nextStatus });
-    const updated = ensureSuccess(unwrapResponse(response), 'Failed to update organization status');
+    const updated = await organizationsApi.updateStatus(org.organization_id, { status: nextStatus });
     organizations.value = organizations.value.map((row) =>
       row.organization_id === updated.organization_id ? updated : row
     );
@@ -277,7 +268,7 @@ const fetchAuditLogs = async () => {
   auditLoading.value = true;
   auditError.value = '';
   try {
-    const response = await api.get('/audit-logs', {
+    const payload = await auditLogsApi.list({
       params: {
         limit: auditPagination.limit,
         offset: auditPagination.offset,
@@ -287,7 +278,6 @@ const fetchAuditLogs = async () => {
         target_table: auditFilters.target_table || undefined
       }
     });
-    const payload = ensureSuccess(unwrapResponse(response), 'Failed to fetch audit logs');
     auditRows.value = payload?.items || [];
     auditTotal.value = Number(payload?.total || 0);
   } catch (requestError) {

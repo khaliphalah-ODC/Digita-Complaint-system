@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import api, { extractApiError, unwrapResponse } from '../../services/api.js';
+import { extractApiError, organizationsApi } from '../../services/api.js';
 import PageHeader from '../../components/superAdmin/PageHeader.vue';
 
 const route = useRoute();
@@ -16,11 +16,6 @@ const joinCodeError = ref('');
 const joinCodeCopying = ref(false);
 const joinLinkCopying = ref(false);
 const joinCodeDownloading = ref(false);
-
-const ensureSuccess = (payload, fallbackMessage) => {
-  if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
-  return payload.data;
-};
 
 const mapUrl = computed(() => {
   const addr = organization.value?.address;
@@ -70,8 +65,7 @@ const fetchJoinCode = async (organizationId) => {
   joinCodeLoading.value = true;
   joinCodeError.value = '';
   try {
-    const response = await api.get(`/organization/${organizationId}/join-code`);
-    joinCode.value = ensureSuccess(unwrapResponse(response), 'Failed to fetch join code');
+    joinCode.value = await organizationsApi.getJoinCode(organizationId);
   } catch (requestError) {
     joinCodeError.value = extractApiError(requestError, 'Failed to fetch join code');
   } finally {
@@ -84,9 +78,7 @@ const regenerateJoinCode = async () => {
   joinCodeLoading.value = true;
   joinCodeError.value = '';
   try {
-    const response = await api.post(`/organization/${organization.value.organization_id}/join-code/regenerate`);
-    const payload = ensureSuccess(unwrapResponse(response), 'Failed to regenerate join code');
-    joinCode.value = payload?.join_code || null;
+    joinCode.value = await organizationsApi.regenerateJoinCode(organization.value.organization_id);
   } catch (requestError) {
     joinCodeError.value = extractApiError(requestError, 'Failed to regenerate join code');
   } finally {
@@ -151,8 +143,7 @@ const load = async () => {
   error.value = '';
   try {
     const orgId = route.params.id;
-    const orgRes = await api.get(`/organization/${orgId}`);
-    organization.value = ensureSuccess(unwrapResponse(orgRes), 'Failed to fetch organization');
+    organization.value = await organizationsApi.getById(orgId);
     await fetchJoinCode(orgId);
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to load organization detail');

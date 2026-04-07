@@ -8,11 +8,13 @@ import {
   Organization,
   deleteOrganizationById,
   insertOrganization,
+  selectAnyOrganizationByPublicFeedbackSlug,
   selectAnyOrganizationByJoinCode,
   selectOrganizationByJoinCode,
   selectOrganizations,
   selectOrganizationById,
   updateOrganizationJoinCodeById,
+  updateOrganizationPublicFeedbackSlugById,
   updateOrganizationStatusById,
   updateOrganizationSelfSignupById,
   updateOrganizationById
@@ -39,6 +41,12 @@ const allQuery = (sql, params = []) =>
   });
 
 const generateJoinCode = () => randomBytes(4).toString('hex').toUpperCase();
+const slugify = (value) => String(value || '')
+  .toLowerCase()
+  .trim()
+  .replace(/[^a-z0-9]+/g, '-')
+  .replace(/^-+|-+$/g, '')
+  .slice(0, 60);
 
 const generateUniqueJoinCode = async () => {
   for (let attempt = 0; attempt < 8; attempt += 1) {
@@ -50,6 +58,21 @@ const generateUniqueJoinCode = async () => {
   }
 
   throw new Error('Failed to generate a unique join code');
+};
+
+const generateUniquePublicFeedbackSlug = async (name, organizationId = null) => {
+  const base = slugify(name) || `organization-${organizationId || randomBytes(2).toString('hex')}`;
+  let candidate = base;
+
+  for (let attempt = 0; attempt < 24; attempt += 1) {
+    const existing = await getQuery(selectAnyOrganizationByPublicFeedbackSlug, [candidate]);
+    if (!existing || Number(existing.organization_id) === Number(organizationId)) {
+      return candidate;
+    }
+    candidate = `${base}-${attempt + 2}`;
+  }
+
+  throw new Error('Failed to generate a unique public feedback slug');
 };
 
 const buildJoinCodePayload = (organizationRow) => {
@@ -160,9 +183,28 @@ export const CreateOrganizationTable = () => {
           });
         }
 
+        if (!existing.has('public_feedback_slug')) {
+          await new Promise((resolve, reject) => {
+            complaintDB.run('ALTER TABLE organization ADD COLUMN public_feedback_slug TEXT', (alterErr) => {
+              if (alterErr) return reject(alterErr);
+              return resolve();
+            });
+          });
+        }
+
         await new Promise((resolve, reject) => {
           complaintDB.run(
             'CREATE UNIQUE INDEX IF NOT EXISTS idx_organization_join_code ON organization(join_code)',
+            (indexErr) => {
+              if (indexErr) return reject(indexErr);
+              return resolve();
+            }
+          );
+        });
+
+        await new Promise((resolve, reject) => {
+          complaintDB.run(
+            'CREATE UNIQUE INDEX IF NOT EXISTS idx_organization_public_feedback_slug ON organization(public_feedback_slug)',
             (indexErr) => {
               if (indexErr) return reject(indexErr);
               return resolve();
@@ -190,6 +232,20 @@ export const CreateOrganizationTable = () => {
           const joinCode = await generateUniqueJoinCode();
           await new Promise((resolve, reject) => {
             complaintDB.run(updateOrganizationJoinCodeById, [joinCode, row.organization_id], (updateErr) => {
+              if (updateErr) return reject(updateErr);
+              return resolve();
+            });
+          });
+        }
+
+        const rowsMissingFeedbackSlug = await allQuery(
+          'SELECT organization_id, name FROM organization WHERE public_feedback_slug IS NULL OR TRIM(public_feedback_slug) = ""'
+        );
+
+        for (const row of rowsMissingFeedbackSlug) {
+          const feedbackSlug = await generateUniquePublicFeedbackSlug(row.name, row.organization_id);
+          await new Promise((resolve, reject) => {
+            complaintDB.run(updateOrganizationPublicFeedbackSlugById, [feedbackSlug, row.organization_id], (updateErr) => {
               if (updateErr) return reject(updateErr);
               return resolve();
             });
@@ -276,9 +332,10 @@ export const createOrganization = (req, res) => {
   }
 
   generateUniqueJoinCode().then((joinCode) => {
+    generateUniquePublicFeedbackSlug(name).then((publicFeedbackSlug) => {
     complaintDB.run(
       insertOrganization,
-      [name, organization_type, email, phone, address, logo, status, joinCode, 1],
+      [name, organization_type, email, phone, address, logo, status, joinCode, publicFeedbackSlug, 1],
     function onCreate(err) {
       if (err) {
         if (isUniqueConstraintError(err)) {
@@ -328,6 +385,7 @@ export const createOrganization = (req, res) => {
       });
     }
     );
+    }).catch((slugErr) => sendError(res, 500, 'Failed to generate public feedback slug', slugErr.message));
   }).catch((joinCodeErr) => sendError(res, 500, 'Failed to generate organization join code', joinCodeErr.message));
 };
 

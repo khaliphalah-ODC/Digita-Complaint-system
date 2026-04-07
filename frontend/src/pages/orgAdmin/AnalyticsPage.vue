@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import AnalyticsDonutChart from '../../components/superAdmin/AnalyticsDonutChart.vue';
 import AnalyticsLineChart from '../../components/superAdmin/AnalyticsLineChart.vue';
-import api, { extractApiError, unwrapResponse } from '../../services/api';
+import { complaintsApi, extractApiError } from '../../services/api';
 import { useUiToastStore } from '../../stores/uiToast';
 
 const uiToast = useUiToastStore();
@@ -12,19 +12,11 @@ const lastRefresh = ref(null);
 const error = ref('');
 let pollHandle = null;
 
-const ensureSuccess = (payload, fallbackMessage) => {
-  if (!payload?.success) {
-    throw new Error(payload?.message || fallbackMessage);
-  }
-  return payload.data;
-};
-
 const fetchComplaints = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await api.get('/complaint');
-    complaints.value = ensureSuccess(unwrapResponse(response), 'Failed to fetch complaints') || [];
+    complaints.value = await complaintsApi.list() || [];
     lastRefresh.value = new Date();
   } catch (requestError) {
     error.value = extractApiError(requestError, 'Failed to load complaints');
@@ -124,20 +116,20 @@ onUnmounted(() => {
     </header>
 
     <section class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-      <article class="app-footer-card rounded-[24px] p-4">
-        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">Total Complaints</p>
-        <p class="mt-2 text-3xl font-black text-white">{{ summaryStats.total }}</p>
-        <p class="text-xs text-white/60">Includes public and organization submissions.</p>
+      <article class="app-section-card app-metric-card">
+        <p class="app-metric-label">Total Complaints</p>
+        <p class="app-metric-value">{{ summaryStats.total }}</p>
+        <p class="app-metric-detail">Includes public and organization submissions.</p>
       </article>
-      <article class="app-footer-card rounded-[24px] p-4">
-        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">Open Issues</p>
-        <p class="mt-2 text-3xl font-black text-white">{{ summaryStats.open }}</p>
-        <p class="text-xs text-white/60">Submitted, reviewed, or assigned complaints.</p>
+      <article class="app-section-card app-metric-card">
+        <p class="app-metric-label">Open Issues</p>
+        <p class="app-metric-value">{{ summaryStats.open }}</p>
+        <p class="app-metric-detail">Submitted, reviewed, or assigned complaints.</p>
       </article>
-      <article class="app-footer-card rounded-[24px] p-4">
-        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">Resolved</p>
-        <p class="mt-2 text-3xl font-black text-white">{{ summaryStats.resolved }}</p>
-        <p class="text-xs text-white/60">Resolved or closed complaints.</p>
+      <article class="app-section-card app-metric-card">
+        <p class="app-metric-label">Resolved</p>
+        <p class="app-metric-value">{{ summaryStats.resolved }}</p>
+        <p class="app-metric-detail">Resolved or closed complaints.</p>
       </article>
     </section>
 

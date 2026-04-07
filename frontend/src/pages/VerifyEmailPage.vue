@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AuthTopNav from '../components/AuthTopNav.vue';
-import api, { extractApiError } from '../services/api';
+import { authApi, extractApiError } from '../services/api';
 
 const route = useRoute();
 const router = useRouter();
@@ -26,14 +26,14 @@ const verifyEmail = async () => {
   }
 
   try {
-    const response = await api.post('/users/verify-email', {
+    await authApi.verifyEmail({
       email: email.value,
       token: token.value,
     });
 
     loading.value = false;
     success.value = true;
-    message.value = response?.data?.message || 'Your email has been verified successfully.';
+    message.value = 'Your email has been verified successfully.';
   } catch (error) {
     loading.value = false;
     success.value = false;
@@ -51,11 +51,11 @@ const resendVerification = async () => {
   resendMessage.value = '';
 
   try {
-    const response = await api.post('/users/resend-verification', {
+    await authApi.resendVerification({
       email: email.value
     });
 
-    resendMessage.value = response?.data?.message || 'A new verification email has been sent.';
+    resendMessage.value = 'A new verification email has been sent.';
   } catch (error) {
     resendMessage.value = extractApiError(error, 'We could not resend the verification email.');
   } finally {

@@ -4,7 +4,7 @@ import { Swiper, SwiperSlide } from 'swiper/vue';
 import { Autoplay, Pagination } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/pagination';
-import api, { unwrapResponse } from '../services/api';
+import { testimonialsApi } from '../services/api';
 
 const testimonials = ref([]);
 const loadingTestimonials = ref(true);
@@ -15,9 +15,7 @@ const avatarColor = (i) => avatarColors[i % avatarColors.length];
 
 onMounted(async () => {
   try {
-    const response = await api.get('/testimonials/public', { skipAuth: true });
-    const payload = unwrapResponse(response);
-    const rows = Array.isArray(payload) ? payload : payload.data ?? [];
+    const rows = await testimonialsApi.listPublic() || [];
     testimonials.value = rows.slice(0, 6);
   } catch (error) {
     console.error('Failed to load testimonials:', error);

@@ -1,7 +1,12 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import api, { extractApiError, unwrapResponse } from '../../services/api';
+import { complaintsApi, extractApiError, organizationsApi } from '../../services/api';
 import PageHeader from '../../components/superAdmin/PageHeader.vue';
+import EmptyState from '../../components/ui/EmptyState.vue';
+import ErrorState from '../../components/ui/ErrorState.vue';
+import FormField from '../../components/ui/FormField.vue';
+import LoadingSpinner from '../../components/ui/LoadingSpinner.vue';
+import StatusBadge from '../../components/ui/StatusBadge.vue';
 
 const loading = ref(false);
 const assigningId = ref(null);
@@ -10,14 +15,8 @@ const organizations = ref([]);
 const unassignedComplaints = ref([]);
 const triageAssignments = ref({});
 
-const ensureSuccess = (payload, fallbackMessage) => {
-  if (!payload?.success) throw new Error(payload?.message || fallbackMessage);
-  return payload.data;
-};
-
 const fetchOrganizations = async () => {
-  const response = await api.get('/organization');
-  organizations.value = ensureSuccess(unwrapResponse(response), 'Failed to fetch organizations') || [];
+  organizations.value = await organizationsApi.list() || [];
 };
 
 const fetchUnassignedComplaints = async () => {
@@ -25,8 +24,7 @@ const fetchUnassignedComplaints = async () => {
   error.value = '';
 
   try {
-    const response = await api.get('/complaint/unassigned');
-    const rows = ensureSuccess(unwrapResponse(response), 'Failed to fetch unassigned complaints') || [];
+    const rows = await complaintsApi.listUnassigned() || [];
     unassignedComplaints.value = rows;
 
     const nextAssignments = {};
@@ -52,7 +50,7 @@ const assignComplaint = async (row) => {
   error.value = '';
 
   try {
-    await api.patch(`/complaint/${row.id}/assign-organization`, {
+    await complaintsApi.assignOrganization(row.id, {
       organization_id: organizationId
     });
     await Promise.all([fetchOrganizations(), fetchUnassignedComplaints()]);
@@ -73,9 +71,9 @@ const triageSummary = computed(() => ({
 
 const priorityClass = (priority) => {
   const value = String(priority || '').toLowerCase();
-  if (value === 'urgent') return 'bg-red-50 text-red-700';
-  if (value === 'high') return 'bg-amber-50 text-amber-700';
-  return 'bg-slate-100 text-slate-700';
+  if (value === 'urgent' || value === 'high') return 'danger';
+  if (value === 'medium') return 'warning';
+  return 'neutral';
 };
 
 onMounted(async () => {
@@ -127,9 +125,13 @@ onMounted(async () => {
             <p class="mt-1 text-sm text-slate-600">Review each complaint summary, choose the destination organization, and assign it into the main workflow.</p>
           </div>
 
-          <p v-if="loading" class="text-sm text-slate-500">Loading unassigned complaints...</p>
-          <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
-          <p v-else-if="unassignedComplaints.length === 0" class="text-sm text-slate-500">No unassigned anonymous complaints.</p>
+          <LoadingSpinner v-if="loading" label="Loading unassigned complaints..." />
+          <ErrorState v-else-if="error" title="Could not load triage queue" :description="error" />
+          <EmptyState
+            v-else-if="unassignedComplaints.length === 0"
+            title="No unassigned anonymous complaints."
+            description="New triage items will appear here when complaints need platform routing."
+          />
 
           <div v-else class="space-y-3">
         <article
@@ -141,9 +143,7 @@ onMounted(async () => {
             <div>
               <div class="flex flex-wrap items-center gap-2">
                 <h3 class="text-base font-semibold text-slate-900">{{ row.title || 'Untitled Complaint' }}</h3>
-                <span class="inline-flex rounded-lg px-2.5 py-1 text-xs font-medium" :class="priorityClass(row.priority)">
-                  {{ row.priority || 'medium' }}
-                </span>
+                <StatusBadge :value="row.priority || 'medium'" :tone="priorityClass(row.priority)" />
               </div>
               <p class="mt-2 text-sm text-slate-600">{{ row.complaint }}</p>
 
@@ -164,20 +164,18 @@ onMounted(async () => {
             </div>
 
             <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <label class="mb-2 block text-sm font-medium text-slate-700">Assign organization</label>
-              <select
-                v-model="triageAssignments[row.id]"
-                class="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-900 outline-none focus:border-blue-500"
-              >
-                <option value="">Select organization</option>
-                <option
-                  v-for="organization in activeOrganizations"
-                  :key="organization.organization_id"
-                  :value="organization.organization_id"
-                >
-                  {{ organization.name }}
-                </option>
-              </select>
+              <FormField v-model="triageAssignments[row.id]" as="select" label="Assign organization">
+                <template #options>
+                  <option value="">Select organization</option>
+                  <option
+                    v-for="organization in activeOrganizations"
+                    :key="organization.organization_id"
+                    :value="organization.organization_id"
+                  >
+                    {{ organization.name }}
+                  </option>
+                </template>
+              </FormField>
 
               <button
                 :disabled="assigningId === row.id || !triageAssignments[row.id]"

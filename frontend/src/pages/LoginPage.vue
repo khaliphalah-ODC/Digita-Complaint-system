@@ -70,11 +70,11 @@ const goToVerificationHelp = () => {
         <aside class="app-auth-aside relative flex min-h-[320px] flex-col justify-between px-7 py-7 text-white sm:min-h-[520px] sm:w-[44%] sm:px-9 sm:py-9">
           <div class="absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 rounded-full bg-white/8 blur-lg"></div>
           <div>
-            <p class="text-base font-semibold text-white/72">Complaint MS</p>
+            <p class="text-base font-semibold text-white/72">VoiceLink</p>
           </div>
 
           <div class="relative text-center">
-            <h1 class="text-5xl !text-white tracking-tight">Hey There!</h1>
+            <h1 class="text-4xl !text-white tracking-tight sm:text-5xl">Hey There!</h1>
             <p class="mt-8 text-lg leading-8 text-white/80">
               Welcome Back.
               <br>
@@ -94,7 +94,7 @@ const goToVerificationHelp = () => {
         </aside>
 
         <form class="app-auth-form px-6 py-7 sm:w-[56%] sm:px-9 sm:py-9 lg:px-10 lg:py-10" @submit.prevent="submit">
-          <div class="mx-auto max-w-[320px]">
+          <div class="mx-auto w-full max-w-md">
             <div class="mb-6 flex rounded-full border border-[var(--app-line)] bg-white/90 p-1 text-sm font-semibold text-slate-600 shadow-sm sm:hidden">
               <RouterLink
                 to="/signin"
