@@ -1,12 +1,12 @@
-# VoiceLink Frontend
+# SpeakUp Frontend
 
-This is the frontend application for **VoiceLink**. It provides the public website, authentication screens, internal complaint workflows, organization admin workspace, and super admin oversight dashboards.
+This is the frontend application for **SpeakUp**. It provides the public website, authentication screens, internal complaint workflows, organization admin workspace, and super admin oversight dashboards.
 
-The app is built with **Vue 3**, **Vite**, **Pinia**, **Vue Router**, **Tailwind CSS v4**, and **Axios**, and is designed as a single-page application that talks to the VoiceLink backend REST API.
+The app is built with **Vue 3**, **Vite**, **Pinia**, **Vue Router**, **Tailwind CSS v4**, and **Axios**, and is designed as a single-page application that talks to the SpeakUp backend REST API.
 
 ## Live Deployment
 
-- Frontend demo: `https://voicelink-odc.netlify.app`
+- Frontend demo: `https://speakup-odec.netlify.app`
 - Backend API used by the frontend: `https://digital-complaint-system-api-production.up.railway.app`
 
 ## Overview
@@ -503,7 +503,7 @@ VITE_SOCIAL_INSTAGRAM_URL=https://www.instagram.com
 
 - Node.js `^20.19.0 || >=22.12.0`
 - npm
-- running VoiceLink backend API for full functionality
+- running SpeakUp backend API for full functionality
 
 ### Install dependencies
 

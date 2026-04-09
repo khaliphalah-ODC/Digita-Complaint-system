@@ -62,7 +62,7 @@ const missionHighlights = [
 
 const teamMembers = [
   {
-    name: 'Yyeto',
+    name: 'Yeato Yowah',
     role: 'Team Lead / System Designer',
     image: teamLeadImage,
     bio: 'Responsible for the overall system structure and coordination of the project. Contributions included designing the system architecture and development approach, leading the setup of the development environment, and guiding the team throughout the implementation process while programming along the way.'
@@ -114,14 +114,14 @@ const teamMembers = [
       </div>
 
       <div class="relative z-20 mx-auto max-w-5xl px-6 py-20 text-center sm:py-28 lg:py-36">
-        <p class="section-kicker-light">About VoiceLink</p>
+        <p class="section-kicker-light">About SpeakUp</p>
         <h1 class="hero-title text-4xl font-black leading-[0.98] tracking-tight text-white sm:text-5xl lg:text-7xl xl:text-8xl">
           Built for
           <span class="block text-[#f97316]">Accountability.</span>
         </h1>
 
         <p class="mx-auto mt-6 max-w-3xl text-base leading-7 text-blue-100/80 sm:text-lg">
-          VoiceLink exists to make complaint handling more transparent, more structured, and more trustworthy for organizations and the people working within them.
+          SpeakUp exists to make complaint handling more transparent, more structured, and more trustworthy for organizations and the people working within them.
         </p>
       </div>
     </section>
@@ -132,7 +132,7 @@ const teamMembers = [
           <p class="section-kicker">Our Mission</p>
           <h2 class="section-title mt-2">Every complaint deserves a real response.</h2>
           <p class="mx-auto mt-6 max-w-4xl text-base leading-8 text-slate-600">
-            Too often, complaints disappear into inboxes, get passed around informally, or never receive a visible resolution. VoiceLink was created to improve that experience by giving people a clearer path to report issues and a better way to understand what happens after submission.
+            Too often, complaints disappear into inboxes, get passed around informally, or never receive a visible resolution. SpeakUp was created to improve that experience by giving people a clearer path to report issues and a better way to understand what happens after submission.
           </p>
           <p class="mx-auto mt-4 max-w-4xl text-base leading-8 text-slate-600">
             The goal is not only to collect complaints, but to help organizations respond in a more organized, accountable, and user-centered way. The platform connects complaint intake, tracking, review, escalation, and feedback into one operational flow.
@@ -143,7 +143,7 @@ const teamMembers = [
           <p class="mission-panel__kicker">Why it matters</p>
           <h3 class="mission-panel__title">A complaint system should reduce uncertainty, not create more of it.</h3>
           <p class="mission-panel__copy">
-            VoiceLink is designed to help users and institutions navigate complaint handling with more confidence. The process becomes easier to follow, easier to manage, and easier to trust.
+            SpeakUp is designed to help users and institutions navigate complaint handling with more confidence. The process becomes easier to follow, easier to manage, and easier to trust.
           </p>
 
           <div class="mt-6 grid gap-4 md:grid-cols-3">
@@ -195,7 +195,7 @@ const teamMembers = [
       <div class="mx-auto max-w-6xl">
         <div class="grid gap-12 lg:grid-cols-[0.92fr_1.08fr] lg:items-start">
           <div>
-            <p class="section-kicker">What VoiceLink Solves</p>
+            <p class="section-kicker">What SpeakUp Solves</p>
             <h2 class="section-title mt-2">A product structure designed for real workflows</h2>
             <p class="mt-6 text-base leading-8 text-slate-600">
               The platform is not limited to a single complaint form. It combines public entry points, structured internal workflows, organization-level controls, and platform-wide oversight in one system.
@@ -259,7 +259,7 @@ const teamMembers = [
             <p class="section-kicker-light">Next Step</p>
             <h2 class="cta-title">Explore the platform in action.</h2>
             <p class="cta-copy">
-              Submit a complaint, track a case, or create an account to see how VoiceLink turns complaint handling into a more transparent and structured experience.
+              Submit a complaint, track a case, or create an account to see how SpeakUp turns complaint handling into a more transparent and structured experience.
             </p>
           </div>
 

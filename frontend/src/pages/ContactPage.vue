@@ -39,7 +39,7 @@ const faqCards = [
   },
   {
     title: 'Can I use the platform as an organization?',
-    description: 'Yes. VoiceLink supports organization administrators, department-based routing, and reporting tools for institutional response teams.'
+    description: 'Yes. SpeakUp supports organization administrators, department-based routing, and reporting tools for institutional response teams.'
   },
   {
     title: 'Is this suitable for public service environments?',
@@ -50,7 +50,7 @@ const faqCards = [
 const contactSupportAreas = [
   {
     label: 'Account guidance',
-    copy: 'Get help with sign-in, onboarding, password recovery, and understanding how VoiceLink access works across roles.'
+    copy: 'Get help with sign-in, onboarding, password recovery, and understanding how SpeakUp access works across roles.'
   },
   {
     label: 'Organization support',

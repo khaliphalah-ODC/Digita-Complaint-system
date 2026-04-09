@@ -205,7 +205,7 @@ const supportLinks = [
 
     <div class="border-t border-white/10">
       <div class="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-6 text-center text-xs text-slate-500 md:flex-row md:items-center md:justify-between md:text-left">
-        <p>© 2026 VoiceLink. All rights reserved.</p>
+        <p>© 2026 SpeakUp. All rights reserved.</p>
         <p>Built for clearer complaint intake, workflow visibility, and institutional follow-up.</p>
       </div>
     </div>

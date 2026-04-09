@@ -154,7 +154,7 @@ onMounted(() => {
             <aside class="app-auth-aside relative flex min-h-[320px] flex-col justify-between px-7 py-7 text-white sm:min-h-[520px] sm:w-[44%] sm:px-9 sm:py-9">
               <div class="absolute left-1/2 top-1/4 h-20 w-20 -translate-x-1/2 rounded-full bg-white/8 blur-lg"></div>
               <div>
-                <p class="text-base font-semibold text-white/72">VoiceLink</p>
+                <p class="text-base font-semibold text-white/72">SpeakUp</p>
               </div>
 
               <div class="relative text-center">

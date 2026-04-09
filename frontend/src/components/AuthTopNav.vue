@@ -80,9 +80,9 @@ watch(isCompactNav, (compact) => {
   <header :class="[wrapperClass, 'public-nav', scrolled ? 'public-nav-scrolled' : '']">
     <div class="public-nav__container">
       <RouterLink to="/" class="public-nav__logo">
-        <img :src="publicLogo" alt="VoiceLink logo" class="public-nav__brand-image">
+        <img :src="publicLogo" alt="SpeakUp logo" class="public-nav__brand-image">
         <div class="public-nav__logo-text">
-          <div class="public-nav__title">VoiceLink</div>
+          <div class="public-nav__title">SpeakUp</div>
           <div class="public-nav__sub"><span class="text-orange-500">Speak Up, </span>We're Listening</div>
         </div>
       </RouterLink>
@@ -122,7 +122,7 @@ watch(isCompactNav, (compact) => {
       <div v-if="isCompactNav && mobileMenuOpen" class="public-nav__mobile">
         <div class="public-nav__mobile-head">
           <p class="public-nav__mobile-kicker">Navigation</p>
-          <p class="public-nav__mobile-title"> VoiceLink </p>
+          <p class="public-nav__mobile-title"> SpeakUp </p>
         </div>
 
       <RouterLink

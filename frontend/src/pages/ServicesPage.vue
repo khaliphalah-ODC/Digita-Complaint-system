@@ -57,7 +57,7 @@ const serviceAudience = [
           <p class="services-kicker">Services</p>
           <h1 class="services-title mt-4">Digital complaint services built for faster response and stronger accountability.</h1>
           <p class="services-intro mt-4 max-w-3xl text-base leading-7 text-blue-100/82 sm:text-lg">
-            VoiceLink helps institutions receive, manage, and resolve complaints with clearer workflows, visible progress, and better user communication.
+            SpeakUp helps institutions receive, manage, and resolve complaints with clearer workflows, visible progress, and better user communication.
           </p>
 
           <div class="mt-5 flex flex-wrap gap-3">

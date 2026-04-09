@@ -156,7 +156,7 @@ onBeforeUnmount(() => {
           v-model="form.message"
           class="field-textarea"
           rows="4"
-          placeholder="Tell others what it was like using VoiceLink. What did you find most useful? How did it help you?"
+          placeholder="Tell others what it was like using SpeakUp. What did you find most useful? How did it help you?"
           maxlength="500"
         ></textarea>
         <p class="char-count">{{ form.message.length }} / 500</p>

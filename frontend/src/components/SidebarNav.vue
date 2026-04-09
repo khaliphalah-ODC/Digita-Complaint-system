@@ -142,7 +142,7 @@ const userLinks = computed(() => {
       <template v-if="mobile">
         <div class="rounded-[22px] border border-[var(--app-line)] bg-white/88 p-4 shadow-[var(--app-shadow-xs)]">
           <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--app-primary)]">Civic Console</p>
-          <p class="mt-2 text-[1.8rem] font-black tracking-tight text-[var(--app-title-color)]">VoiceLink</p>
+          <p class="mt-2 text-[1.8rem] font-black tracking-tight text-[var(--app-title-color)]">SpeakUp</p>
           <p class="mt-1 text-sm text-[var(--app-nav-text-muted)]">{{ workspaceLabel }}</p>
 
           <div class="mt-4 flex items-center gap-3 rounded-[18px] border border-[var(--app-line)] bg-[var(--app-surface-soft)] px-3 py-3">
@@ -188,7 +188,7 @@ const userLinks = computed(() => {
 
       <template v-else>
         <div class="flex items-center justify-center pb-4">
-          <img :src="sidebarLogo" alt="VoiceLink logo" class="app-nav-sidebar-logo h-[3.15rem] w-[3.15rem] object-contain p-1.5">
+          <img :src="sidebarLogo" alt="SpeakUp logo" class="app-nav-sidebar-logo h-[3.15rem] w-[3.15rem] object-contain p-1.5">
         </div>
 
         <nav class="mt-4 flex flex-1 flex-col items-center gap-2.5">
@@ -219,7 +219,7 @@ const userLinks = computed(() => {
       <template v-if="mobile">
         <div class="rounded-[22px] border border-[var(--app-line)] bg-white/88 p-4 shadow-[var(--app-shadow-xs)]">
           <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--app-primary)]">Civic Console</p>
-          <p class="mt-2 text-[1.8rem] font-black tracking-tight text-[var(--app-title-color)]">VoiceLink</p>
+          <p class="mt-2 text-[1.8rem] font-black tracking-tight text-[var(--app-title-color)]">SpeakUp</p>
           <p class="mt-1 text-sm text-[var(--app-nav-text-muted)]">{{ workspaceLabel }}</p>
 
           <div
@@ -282,7 +282,7 @@ const userLinks = computed(() => {
         <div class="flex items-center justify-center pb-4">
           <img
             :src="shouldShowOrganizationLogo ? organizationLogo : sidebarLogo"
-            :alt="shouldShowOrganizationLogo ? 'Organization logo' : 'VoiceLink logo'"
+            :alt="shouldShowOrganizationLogo ? 'Organization logo' : 'SpeakUp logo'"
             class="app-nav-sidebar-logo h-[3.15rem] w-[3.15rem] rounded-2xl object-contain bg-white p-1.5"
           >
         </div>
@@ -315,7 +315,7 @@ const userLinks = computed(() => {
       <template v-if="mobile">
         <div class="rounded-[22px] border border-[var(--app-line)] bg-white/88 p-4 shadow-[var(--app-shadow-xs)]">
           <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--app-primary)]">Civic Console</p>
-          <p class="mt-2 text-[1.8rem] font-black tracking-tight text-slate-900">VoiceLink</p>
+          <p class="mt-2 text-[1.8rem] font-black tracking-tight text-slate-900">SpeakUp</p>
           <p class="mt-1 text-sm text-slate-600">{{ workspaceLabel }}</p>
 
           <div
@@ -386,7 +386,7 @@ const userLinks = computed(() => {
         <div class="flex items-center justify-center pb-4">
           <img
             :src="shouldShowOrganizationLogo ? organizationLogo : sidebarLogo"
-            :alt="shouldShowOrganizationLogo ? 'Organization logo' : 'VoiceLink logo'"
+            :alt="shouldShowOrganizationLogo ? 'Organization logo' : 'SpeakUp logo'"
             class="app-nav-sidebar-logo h-[3.15rem] w-[3.15rem] rounded-2xl object-contain bg-white p-1.5"
           >
         </div>

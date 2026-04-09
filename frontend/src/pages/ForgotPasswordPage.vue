@@ -88,7 +88,7 @@ const submit = async () => {
         <aside class="app-auth-aside relative flex min-h-[360px] flex-col justify-between px-8 py-8 text-white sm:min-h-[560px] sm:w-[44%] sm:px-10 sm:py-10">
           <div class="absolute left-1/2 top-1/4 h-20 w-20 -translate-x-1/2 rounded-full bg-white/8 blur-lg"></div>
           <div>
-            <p class="text-base font-semibold text-white/72">VoiceLink</p>
+            <p class="text-base font-semibold text-white/72">SpeakUp</p>
           </div>
 
           <div class="relative text-center">

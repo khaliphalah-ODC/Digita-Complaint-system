@@ -1,11 +1,11 @@
-# VoiceLink Backend
+# SpeakUp Backend
 
-Production-ready backend service for **VoiceLink**. This API is built with **Node.js**, **Express.js**, and **SQLite**, and provides secure complaint intake, role-based access control, complaint lifecycle tracking, escalation handling, notifications, and multi-organization support.
+Production-ready backend service for **SpeakUp**. This API is built with **Node.js**, **Express.js**, and **SQLite**, and provides secure complaint intake, role-based access control, complaint lifecycle tracking, escalation handling, notifications, and multi-organization support.
 
 ## Live Deployment
 
 - Public API base: `https://digital-complaint-system-api-production.up.railway.app`
-- Live frontend consuming this API: `https://voicelink-odc.netlify.app`
+- Live frontend consuming this API: `https://speakup-odec.netlify.app`
 
 ## Backend Overview
 
@@ -2065,7 +2065,7 @@ MAIL_PORT=587
 MAIL_SECURE=false
 MAIL_USER=no-reply@example.com
 MAIL_PASS=replace_with_mail_password
-MAIL_FROM="VoiceLink <no-reply@example.com>"
+MAIL_FROM="SpeakUp <no-reply@example.com>"
 CONTACT_FORM_TO=support@example.com
 
 EMAIL_VERIFICATION_URL=http://localhost:5173/verify-email

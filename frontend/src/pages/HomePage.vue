@@ -190,8 +190,8 @@ onUnmounted(() => {
 
           <p class="hero-subtitle mx-auto mt-7 max-w-3xl text-base leading-7 text-blue-100/80 sm:text-lg">
             {{ isCompactHero
-              ? 'VoiceLink helps institutions receive complaints, track progress, and close the loop with more transparency.'
-              : 'VoiceLink gives institutions a professional way to receive complaints, track progress, manage escalation, and close the loop with transparency.' }}
+              ? 'SpeakUp helps institutions receive complaints, track progress, and close the loop with more transparency.'
+              : 'SpeakUp gives institutions a professional way to receive complaints, track progress, manage escalation, and close the loop with transparency.' }}
           </p>
 
           <div class="mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -250,7 +250,7 @@ onUnmounted(() => {
             <p class="section-kicker">How It Works</p>
             <h2 class="section-title text-white">A clear complaint journey from intake to resolution</h2>
             <p class="section-intro workflow-intro">
-              VoiceLink is structured around a simple operational flow that helps both complainants and organizations know what comes next.
+              SpeakUp is structured around a simple operational flow that helps both complainants and organizations know what comes next.
             </p>
 
             <div class="onboarding-feature-card mt-8">

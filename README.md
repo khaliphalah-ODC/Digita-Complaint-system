@@ -1,10 +1,10 @@
-# VoiceLink
+# SpeakUp
 
-A full-stack complaint intake, tracking, and case-management platform for multi-organization environments. VoiceLink focuses on internal complaint handling and tracking with role-based workflows for users, organization admins, and super admins.
+A full-stack complaint intake, tracking, and case-management platform for multi-organization environments. SpeakUp focuses on internal complaint handling and tracking with role-based workflows for users, organization admins, and super admins.
 
 ## Quick Access
 
-- Live Demo: [voicelink-odc.netlify.app](https://voicelink-odc.netlify.app)
+- Live Demo: [speakup-odec.netlify.app](https://speakup-odec.netlify.app)
 - Backend API: [digital-complaint-system-api-production.up.railway.app](https://digital-complaint-system-api-production.up.railway.app)
 
 This repository contains:
@@ -14,7 +14,7 @@ This repository contains:
 
 ## Live Deployment
 
-- Frontend demo: `https://voicelink-odc.netlify.app`
+- Frontend demo: `https://speakup-odec.netlify.app`
 - Backend API: `https://digital-complaint-system-api-production.up.railway.app`
 
 Subproject documentation:
@@ -24,7 +24,7 @@ Subproject documentation:
 
 ## Overview
 
-**VoiceLink** is built to help organizations receive complaints digitally, route them to the right team, track progress through structured workflow stages, and give complainants a more transparent experience through tracking codes, notifications, and status history.
+**SpeakUp** is built to help organizations receive complaints digitally, route them to the right team, track progress through structured workflow stages, and give complainants a more transparent experience through tracking codes, notifications, and status history.
 
 It supports:
 
@@ -48,11 +48,11 @@ Many complaint processes still depend on fragmented channels such as paper forms
 - organizations lack tenant-safe administration
 - oversight and reporting are difficult
 
-VoiceLink addresses this by turning complaint handling into a structured digital workflow from intake to closure.
+SpeakUp addresses this by turning complaint handling into a structured digital workflow from intake to closure.
 
 ## Why This Project Matters
 
-Complaint handling is directly tied to trust, responsiveness, and accountability. A system like VoiceLink helps institutions:
+Complaint handling is directly tied to trust, responsiveness, and accountability. A system like SpeakUp helps institutions:
 
 - reduce manual follow-up burden
 - improve visibility for complainants
@@ -60,9 +60,9 @@ Complaint handling is directly tied to trust, responsiveness, and accountability
 - preserve workflow history for audits and reporting
 - support multi-organization operations without mixing data
 
-## Why VoiceLink Stands Out From Google Forms and Basic Complaint Tools
+## Why SpeakUp Stands Out From Google Forms and Basic Complaint Tools
 
-Unlike a simple form tool, VoiceLink does not stop at collecting a complaint. It supports:
+Unlike a simple form tool, SpeakUp does not stop at collecting a complaint. It supports:
 
 - unique tracking codes
 - complaint lifecycle updates
@@ -74,11 +74,11 @@ Unlike a simple form tool, VoiceLink does not stop at collecting a complaint. It
 - feedback and testimonial flows
 - organization-level settings and public feedback forms
 
-A generic form captures input. VoiceLink manages the case after submission.
+A generic form captures input. SpeakUp manages the case after submission.
 
-## Why VoiceLink Stands Out From Many Existing Complaint Systems
+## Why SpeakUp Stands Out From Many Existing Complaint Systems
 
-Many complaint platforms focus on only one side of the problem: either intake or internal administration. VoiceLink combines workflow visibility, structured case handling, and platform oversight in one codebase:
+Many complaint platforms focus on only one side of the problem: either intake or internal administration. SpeakUp combines workflow visibility, structured case handling, and platform oversight in one codebase:
 
 - organization-facing complaint and feedback tools
 - user self-service tracking
@@ -545,7 +545,7 @@ MAIL_PORT=587
 MAIL_SECURE=false
 MAIL_USER=no-reply@example.com
 MAIL_PASS=<replace_with_mail_password>
-MAIL_FROM="VoiceLink <no-reply@example.com>"
+MAIL_FROM="SpeakUp <no-reply@example.com>"
 CONTACT_FORM_TO=support@example.com
 
 EMAIL_VERIFICATION_URL=http://localhost:5173/verify-email
